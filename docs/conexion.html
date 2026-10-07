@@ -1035,10 +1035,8 @@ EOF</pre>
       <td>Los Schurter son IP67 certificados. Del mo.switch mini solo encontré «a prueba de salpicaduras», no IP67. <span class="pend">por confirmar</span> el diámetro del manubrio con un vernier.</td></tr>
     <tr><td>8</td><td>Pantalla legible al sol</td><td>Newhaven NHD-5.0-HDMI-N-RSXP-CTU (5″, <b>900 nits</b>, US$89.20). Si cabe una de 7″: NHD-7.0-HDMI-N-RSXN (<b>1000 nits</b> típ., 800 mín., US$98.36)</td>
       <td>HDMI, 800 × 480, de −20 a 70 °C, se alimenta con 5–7 V (la de 7″ gasta 0.73 A a 5 V). La de 5″ mide 136 × 76 × 18 mm. Más un cable micro-HDMI → HDMI corto.</td></tr>
-    <tr><td>9</td><td>Montaje de la pantalla</td><td>RAM Mounts RAM-B-408-75-1U (base para tubo de 3/4″ a 1″, bola de 1″) + brazo RAM de bola B</td>
-      <td>Se abraza al semimanubrio de 22 mm. La pantalla se fija con una base impresa. Las bases RAM que entran en el vástago no sirven aquí:
-      esta moto tiene un perno en la cabeza del vástago, no un tubo hueco (manual 14-2/14-3), y ese punto es para el imán del sensor.
-      <span class="pend">por confirmar</span> que quepa entre la tija y el puño.</td></tr>
+    <tr><td>9</td><td>Montaje de la pantalla</td><td>Sin RAM: la pantalla va montada en la moto (decisión de Adrián, 2026-10-06)</td>
+      <td>Soporte propio impreso en PETG o ASA, fijo al tablero o al carenado. Que no estorbe al girar de tope a tope ni tape los testigos del tablero.</td></tr>
     <tr><td>10</td><td>Caja de la Pi</td><td>Hammond 1554N2GYSL (IP68, 119 × 119 × 61 mm)</td><td>Cabe la Pi 4 (85 × 56 mm) con el convertidor. Va al frente, junto al tablero.
       <span class="pend">por confirmar</span> que quepa detrás del tablero o del carenado.</td></tr>
     <tr><td>11</td><td>Sensor de dirección</td><td>Módulo con el chip <b>ams AS5600</b>, de cualquier marca, que tenga el pin DIR</td>
@@ -1089,7 +1087,7 @@ EOF</pre>
   <li><b>Si la ECU contesta el modo 01 y si tu Steren acepta el inicio KDS:</b> con la prueba de 5 minutos.</li>
   <li><b>El modelo exacto de tu Steren</b> (¿SCAN-020?), el nombre de la red, cuántos clientes acepta y si pasa tráfico entre ellos: mira la etiqueta y prueba abrir <code>:8080</code> desde el celular.</li>
   <li><b>El tipo de fusible y qué circuito está muerto con la llave en OFF:</b> abre la caja (p. 587) y mide. Que no sea el de la ECU ni el de encendido.</li>
-  <li><b>El diámetro del semimanubrio:</b> con un vernier (22 mm esperado), y que la base RAM quepa entre la tija y el puño.</li>
+  <li><b>El diámetro del semimanubrio:</b> con un vernier (22 mm esperado), para la abrazadera de los botones.</li>
   <li><b>Espacio y temperatura al frente, detrás del tablero:</b> la ficha de la Pi 4 la especifica para 0–50 °C. Mide un día de calor con el motor caliente.</li>
   <li><b>La pantalla elegida:</b> cuánto consume y si se alimenta del mismo convertidor.</li>
   <li><b>El módulo AS5600 que compres:</b> el orden de sus pines (serigrafía), que tenga DIR, y que a 3.3 V tenga VDD5V y VDD3V3 unidos (puente o resistencia de 0 Ω).</li>
