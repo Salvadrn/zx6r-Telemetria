@@ -77,12 +77,12 @@ Para ver cómo se ve cada resultado sin la moto: `python3 tools/pretest.py --dem
 
 ## Qué comprar
 
-La lista completa está en **[`BOM.csv`](BOM.csv)**, con precio aproximado en pesos y liga de cada pieza (precios del 2026-10-01). Va en fases:
+La lista completa está en **[`BOM.xlsx`](BOM.xlsx)** (Excel) y en [`BOM.csv`](BOM.csv), con precio aproximado en pesos y liga de cada pieza (precios del 2026-10-01). El Excel calcula los totales solo y tiene una columna de estado (Pendiente / Pedido / Llegó) para ir marcando lo que compras. Va en fases:
 
 | Fase | Qué | Aprox. |
 |---|---|---|
 | 1 · Prueba | Solo el cable adaptador KDS → OBD2, para ver si tu Steren habla con la moto | $707 |
-| 2 · Montaje | Pi 4, microSD, energía, pantalla, montajes, caja, botones, sensor de dirección y cableado | ~$11,300 + envíos |
+| 2 · Montaje | Pi 4, microSD, energía, pantalla, caja, botones, sensor de dirección y cableado | ~$9,800 + envíos |
 | 3 · Condicional | OBDLink EX, solo si el Steren no pasa la prueba | $1,719 |
 
 Los envíos no están incluidos: Pololu, Newhaven y K&J mandan desde EE. UU. En Mouser el envío es gratis desde US$100, y lo que va de Mouser suma ~US$87.
@@ -255,7 +255,7 @@ python/analizador.py   versión Python (un solo archivo)
 cpp/                   versión C++ (CMake)
 web/index.html         visor web; lo sirven las dos versiones
 docs/conexion.html     hoja de conexión
-BOM.csv                lista de materiales con precios y ligas
+BOM.xlsx, BOM.csv      lista de materiales con precios y ligas
 tools/pretest.py       pretest: ¿OBD2 estándar o KDS? (antes de comprar)
 docs/*.png, *.jpg      capturas para este README
 ```
