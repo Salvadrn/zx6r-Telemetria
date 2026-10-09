@@ -1,0 +1,726 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>¿Cómo se conecta el sensor de dirección AS5600?</title>
+<style>
+html,body{margin:0}
+.hoja{
+  --tp:#1a1a1a; --ts:#5b5b5b; --s1:#ffffff; --s2:#f6f5f2; --bd:#e2dfda;
+  --pwr:#1f5e8b; --act:#7a2f2f; --sig:#8a6d00; --ok:#1e7d32; --bad:#b3261e; --dat:#6b3fa0; --off:#9e9e9e; --gnd:#1a1a1a;
+  --pwr-t:#1f5e8b; --sig-t:#8a6d00; --ok-t:#1e7d32; --bad-t:#b3261e; --dat-t:#6b3fa0;
+  color:var(--text-primary,var(--tp)); background:var(--surface-0,var(--s1));
+  font-family:var(--font-sans,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif);
+  font-size:14px; line-height:1.6; font-weight:400;
+  max-width:1180px; margin:0 auto; padding:18px 16px 56px; box-sizing:border-box;
+}
+@media (prefers-color-scheme:dark){
+  html{background:#141416}
+  .hoja{ --tp:#ececec; --ts:#a8a8a8; --s1:#141416; --s2:#1d1d20; --bd:#38383c; --gnd:#ececec;
+         --pwr-t:#6aa6d6; --sig-t:#d1b04a; --ok-t:#55b46a; --bad-t:#e5675f; --dat-t:#ad8fdc; }
+}
+.hoja *{box-sizing:border-box}
+.hoja h1{font-size:22px; font-weight:500; margin:0 0 6px; letter-spacing:-.01em; line-height:1.3}
+.hoja h2{font-size:16px; font-weight:500; margin:34px 0 12px; letter-spacing:.06em; text-transform:uppercase;
+  padding-bottom:6px; border-bottom:1px solid var(--border,var(--bd))}
+.hoja h3{font-size:14px; font-weight:500; margin:0 0 8px}
+.hoja p{margin:0 0 10px}
+.hoja a{color:var(--pwr-t)}
+.hoja .bajada{color:var(--text-secondary,var(--ts)); margin:0 0 18px; max-width:900px}
+.hoja .sub,.hoja .why{color:var(--text-secondary,var(--ts))}
+.hoja .why{font-size:13px; line-height:1.5}
+.hoja .tiny{font-size:12.5px}
+.hoja code,.hoja pre{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:12.5px}
+.hoja code{background:color-mix(in srgb,#9e9e9e 16%,transparent); padding:1px 5px; border-radius:4px}
+.hoja pre{background:var(--surface-1,var(--s2)); border:1px solid var(--border,var(--bd)); border-radius:8px;
+  padding:12px 14px; overflow-x:auto; line-height:1.5; margin:0 0 12px}
+.hoja .caja{background:var(--surface-1,var(--s2)); border:1px solid var(--border,var(--bd)); border-radius:8px; padding:16px 18px; margin-bottom:16px}
+.hoja .cols{display:grid; grid-template-columns:1fr 1fr; gap:2rem; align-items:start}
+.hoja .cols > *{min-width:0}
+@media (max-width:900px){ .hoja .cols{grid-template-columns:1fr; gap:1rem} }
+.hoja .banda{border-radius:8px; padding:14px 18px; margin:0 0 14px; border:2px solid}
+.hoja .banda h3{font-size:15px; margin:0 0 6px}
+.hoja .b-dat{border-color:#6b3fa0; background:color-mix(in srgb,#6b3fa0 9%,transparent)}
+.hoja .b-dat h3{color:var(--dat-t)}
+.hoja .b-ok{border-color:#1e7d32; background:color-mix(in srgb,#1e7d32 8%,transparent)}
+.hoja .b-ok h3{color:var(--ok-t)}
+.hoja .b-bad{border-color:#b3261e; background:color-mix(in srgb,#b3261e 8%,transparent)}
+.hoja .b-bad h3{color:var(--bad-t)}
+/* filas "a dónde va cada pin" */
+.hoja .lista h3{margin-top:4px; font-size:13px; letter-spacing:.06em; text-transform:uppercase; color:var(--text-secondary,var(--ts))}
+.hoja .fila{display:grid; grid-template-columns:24px 92px 1fr; gap:10px; align-items:start; padding:8px 0;
+  border-top:1px solid var(--border,var(--bd))}
+.hoja .fila:first-of-type{border-top:0}
+.hoja .chip{width:20px; height:20px; border-radius:3px; margin-top:2px}
+.hoja .nom{font-weight:500; font-size:13.5px; line-height:1.35}
+.hoja .dst{font-weight:500}
+.hoja .c-pwr{background:#1f5e8b} .hoja .c-sig{background:#8a6d00} .hoja .c-dat{background:#6b3fa0}
+.hoja .c-gnd{background:var(--gnd); outline:1px solid #9e9e9e} .hoja .c-off{background:#9e9e9e} .hoja .c-bad{background:#b3261e}
+.hoja .c-ok{background:#1e7d32}
+.hoja .t-pwr{color:var(--pwr-t)} .hoja .t-sig{color:var(--sig-t)} .hoja .t-dat{color:var(--dat-t)}
+.hoja .t-ok{color:var(--ok-t)} .hoja .t-bad{color:var(--bad-t)} .hoja .t-off{color:#9e9e9e}
+/* etiquetas */
+.hoja .pend{display:inline-block; font-size:12px; letter-spacing:.04em; text-transform:uppercase; line-height:1.4;
+  border:1px solid #b3261e; color:var(--bad-t); border-radius:4px; padding:0 6px; vertical-align:1px; white-space:nowrap}
+.hoja .conf{display:inline-block; font-size:12px; letter-spacing:.04em; text-transform:uppercase; line-height:1.4;
+  border:1px solid #9e9e9e; color:var(--text-secondary,var(--ts)); border-radius:4px; padding:0 6px; vertical-align:1px; white-space:nowrap}
+.hoja .okt{display:inline-block; font-size:12px; letter-spacing:.04em; text-transform:uppercase; line-height:1.4;
+  border:1px solid #1e7d32; color:var(--ok-t); border-radius:4px; padding:0 6px; vertical-align:1px; white-space:nowrap}
+/* conector KDS: 4 cables por color */
+.hoja .cables{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; margin:8px 0 6px}
+.hoja .cable{border:1px solid var(--border,var(--bd)); border-radius:6px; padding:8px 6px; text-align:center; font-size:12.5px; line-height:1.35}
+.hoja .cable .bar{height:8px; border-radius:2px; margin:0 0 6px}
+.hoja .cable b{font-weight:500; font-size:13.5px; display:block}
+/* cara OBD2 16 */
+.hoja .obd{display:grid; grid-template-columns:repeat(8,minmax(0,1fr)); gap:4px; max-width:360px; margin:8px 0 4px;
+  border:1.5px solid var(--text-primary,var(--tp)); border-radius:10px 10px 18px 18px; padding:8px 10px 10px}
+.hoja .obd div{text-align:center; font-size:12px; line-height:1.2; padding:4px 0; border-radius:3px; border:1px solid #9e9e9e; color:#9e9e9e}
+.hoja .obd .u-pwr{border-color:#1f5e8b; background:color-mix(in srgb,#1f5e8b 16%,transparent); color:var(--pwr-t); font-weight:500}
+.hoja .obd .u-gnd{border-color:var(--gnd); background:color-mix(in srgb,#9e9e9e 22%,transparent); color:var(--text-primary,var(--tp)); font-weight:500}
+.hoja .obd .u-dat{border-color:#6b3fa0; background:color-mix(in srgb,#6b3fa0 16%,transparent); color:var(--dat-t); font-weight:500}
+/* header de la Pi, pines 1-14 */
+.hoja .hdr{display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:4px; max-width:400px; margin:8px 0 2px}
+.hoja .hdr div{border:1px solid #9e9e9e; border-radius:4px; text-align:center; padding:4px 0 3px; font-size:12px; line-height:1.25; color:#9e9e9e}
+.hoja .hdr div b{display:block; font-weight:500; font-size:12.5px}
+.hoja .hdr .h-sig{border-color:#8a6d00; background:color-mix(in srgb,#8a6d00 16%,transparent); color:var(--sig-t)}
+.hoja .hdr .h-gnd{border-color:var(--gnd); background:color-mix(in srgb,#9e9e9e 24%,transparent); color:var(--text-primary,var(--tp))}
+.hoja .hdr .h-pwr3{border-color:#1f5e8b; background:color-mix(in srgb,#1f5e8b 16%,transparent); color:var(--pwr-t)}
+.hoja .hdr .h-dat{border-color:#6b3fa0; background:color-mix(in srgb,#6b3fa0 16%,transparent); color:var(--dat-t)}
+.hoja .hdr .h-bad{border-color:#b3261e; color:var(--bad-t); background:repeating-linear-gradient(135deg,transparent 0 5px,color-mix(in srgb,#b3261e 14%,transparent) 5px 8px)}
+.hoja .hdrlab{display:flex; justify-content:space-between; max-width:400px; font-size:12px; color:var(--text-secondary,var(--ts))}
+/* esquemáticos */
+.hoja .esq{overflow-x:auto; -webkit-overflow-scrolling:touch}
+/* 400 px mínimo: así el texto del esquemático nunca baja de 12 px; en el celular se desliza de lado */
+.hoja .esq svg{display:block; width:100%; min-width:400px; height:auto; color:var(--text-primary,var(--tp))}
+@media (max-width:480px){
+  .hoja{padding:14px 12px 48px}
+  .hoja .cables{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+.hoja svg text{font-family:inherit; fill:currentColor}
+.hoja svg .s{fill:var(--text-secondary,var(--ts))}
+.hoja svg .tp{fill:var(--pwr-t)} .hoja svg .tg{fill:var(--sig-t)} .hoja svg .td{fill:var(--dat-t)}
+.hoja svg .tk{fill:var(--ok-t)} .hoja svg .tb{fill:var(--bad-t)} .hoja svg .to{fill:#9e9e9e}
+.hoja svg .box{fill:var(--surface-1,var(--s2)); stroke:currentColor; stroke-width:1.3}
+.hoja svg .mask{fill:var(--surface-0,var(--s1))}
+.hoja .leyenda{display:flex; flex-wrap:wrap; gap:6px 16px; font-size:12.5px; color:var(--text-secondary,var(--ts)); margin:6px 0 0}
+.hoja .leyenda span{display:inline-flex; align-items:center; gap:6px}
+.hoja .leyenda i{display:inline-block; width:22px; height:0; border-top:3px solid}
+/* callouts */
+.hoja .dudas{display:grid; grid-template-columns:1fr 1fr; gap:1.25rem}
+@media (max-width:900px){ .hoja .dudas{grid-template-columns:1fr} }
+.hoja .co{border:2px solid; border-radius:8px; padding:16px 18px}
+.hoja .co-t{font-weight:500; margin-bottom:8px; font-size:15px; line-height:1.4}
+.hoja .co-b{font-size:14px; line-height:1.6}
+.hoja .co-b p{margin:0 0 8px}
+.hoja .co-b ul{margin:0 0 8px; padding-left:18px}
+.hoja .co-b li{margin-bottom:4px}
+.hoja .co-dat{border-color:#6b3fa0} .hoja .co-dat .co-t{color:var(--dat-t)}
+.hoja .co-pwr{border-color:#1f5e8b} .hoja .co-pwr .co-t{color:var(--pwr-t)}
+.hoja .co-ok{border-color:#1e7d32} .hoja .co-ok .co-t{color:var(--ok-t)}
+.hoja .co-bad{border-color:#b3261e} .hoja .co-bad .co-t{color:var(--bad-t)}
+/* tablas */
+.hoja .tabla{overflow-x:auto; -webkit-overflow-scrolling:touch; margin:0 0 12px}
+/* sin DOCTYPE el navegador va en modo quirks y las tablas no heredan color ni letra: se fijan aquí */
+.hoja table{border-collapse:collapse; width:100%; min-width:560px; color:var(--text-primary,var(--tp));
+  font-family:inherit; font-size:13.5px; font-weight:400; line-height:1.5}
+.hoja td,.hoja th{color:inherit}
+.hoja th{text-align:left; font-weight:500; font-size:12px; letter-spacing:.05em; text-transform:uppercase;
+  color:var(--text-secondary,var(--ts)); padding:0 10px 8px 0; border-bottom:1px solid var(--border,var(--bd)); vertical-align:bottom}
+.hoja td{padding:9px 10px 9px 0; border-bottom:1px solid var(--border,var(--bd)); vertical-align:top}
+.hoja td:first-child{font-weight:500; white-space:nowrap}
+.hoja .grupo td{padding-top:16px; font-weight:500; letter-spacing:.05em; text-transform:uppercase; font-size:12px; color:var(--text-secondary,var(--ts))}
+.hoja ol,.hoja ul{margin:0 0 10px; padding-left:20px}
+.hoja li{margin-bottom:5px}
+.hoja .fuentes li{font-size:13px; line-height:1.5}
+/* agregado en las hojas por subsistema: barra de navegación */
+.hoja .nav{display:flex; flex-wrap:wrap; align-items:center; gap:4px 4px; font-size:12.5px; margin:0 0 18px; padding:0 0 10px;
+  border-bottom:1px solid var(--border,var(--bd)); color:var(--text-secondary,var(--ts))}
+.hoja .nav a{color:var(--text-secondary,var(--ts)); text-decoration:none; padding:2px 7px; border-radius:4px; border:1px solid transparent}
+.hoja .nav a:hover{border-color:var(--border,var(--bd))}
+.hoja .nav a[aria-current="page"]{color:var(--ok-t); border-color:#1e7d32; font-weight:500}
+.hoja .nav .gen{margin-left:auto}
+</style>
+
+<div class="hoja">
+
+<nav class="nav" aria-label="Hojas de cableado">
+  <a href="0-sistema.html">Sistema</a>·
+  <a href="1-alimentacion.html">Alimentación</a>·
+  <a href="2-diagnostico.html">Diagnóstico</a>·
+  <a href="3-pantalla.html">Pantalla</a>·
+  <a href="4-botones.html">Botones</a>·
+  <a href="5-direccion.html" aria-current="page">Dirección</a>
+  <a class="gen" href="../conexion.html">hoja general</a>
+</nav>
+
+<h1>¿Cómo se conecta el sensor de dirección AS5600?</h1>
+<p class="bajada">Del módulo AS5600 al header de la Raspberry Pi 5, y del imán al perno de la dirección.
+Resuelve: qué pin del módulo va a qué pin de la Pi, por qué a 3.3 V y nunca a 5 V, qué se hace con DIR, OUT y GPO,
+qué hilo del cable de red va trenzado con cuál y por qué no puede ser más largo, cómo queda el imán sobre el perno sin aflojarlo,
+y cómo se comprueba todo con <code>i2cdetect</code> antes de montarlo en la moto.</p>
+
+<div class="banda b-ok">
+  <h3>Medido contra no medido</h3>
+  <p style="margin:0">Nada de esta hoja se ha medido. El sensor nunca se ha conectado a una Pi: el repo solo se ha probado con el simulador y con un ELM327 falso.
+  Sale del datasheet de ams (v1-06), del manual de servicio de tu moto (<b>ZX636ED/FD, 2013</b>), del código del repo y de las fuentes del final.
+  La Pi es la <b>Raspberry Pi 5 de 8 GB del ISIC</b>; su ficha oficial dice «header estándar de 40 pines», así que los pines son los mismos de la hoja general.
+  Lo que depende de tu pieza o de una medición dice <span class="pend">por confirmar</span>.</p>
+</div>
+
+<div class="banda b-dat">
+  <h3>Una corrección contra la hoja general: el trenzado va al revés</h3>
+  <p style="margin:0">La hoja general trenza SCL con 3.3 V y SDA con GND. La especificación I²C (Philips v2.1, §17.3) dice lo contrario:
+  «each bus line must be twisted with a V<sub>SS</sub> return. Alternatively, the SCL line can be twisted with a V<sub>SS</sub> return, and the SDA line twisted with a V<sub>DD</sub> return».
+  Aquí va <b>SCL con GND</b> y <b>SDA con 3.3 V</b>. Los pines no cambian: solo cambia qué hilo va trenzado con cuál.</p>
+</div>
+
+<!-- ======================================================= -->
+<h2>1 · La pieza como se ve</h2>
+
+<div class="cols">
+  <div>
+    <div class="caja">
+      <h3>El módulo AS5600 genérico (MercadoLibre MLM67347505)</h3>
+      <div class="esq">
+        <svg viewBox="0 0 400 284" width="100%" style="max-width:600px" role="img" aria-label="Módulo AS5600 visto del lado del chip: placa cuadrada con cuatro barrenos; en la orilla izquierda los pads VCC, OUT y GND; en la orilla derecha DIR, SCL, SDA y GPO; el chip de 8 patas al centro">
+          <!-- placa -->
+          <rect class="box" x="105" y="40" width="190" height="190" rx="20" stroke-width="1.8"/>
+          <circle cx="129" cy="64" r="11" fill="none" stroke="currentColor" stroke-width="1.3"/>
+          <circle cx="271" cy="64" r="11" fill="none" stroke="currentColor" stroke-width="1.3"/>
+          <circle cx="129" cy="206" r="11" fill="none" stroke="currentColor" stroke-width="1.3"/>
+          <circle cx="271" cy="206" r="11" fill="none" stroke="currentColor" stroke-width="1.3"/>
+          <!-- componentes -->
+          <rect x="166" y="76" width="12" height="8" fill="none" stroke="#9e9e9e" stroke-width="1.2"/>
+          <rect x="194" y="76" width="12" height="8" fill="none" stroke="#9e9e9e" stroke-width="1.2"/>
+          <rect x="222" y="76" width="12" height="8" fill="none" stroke="#9e9e9e" stroke-width="1.2"/>
+          <text x="172" y="70" text-anchor="middle" font-size="12" class="to">C1</text>
+          <text x="200" y="70" text-anchor="middle" font-size="12" class="to">C2</text>
+          <text x="228" y="70" text-anchor="middle" font-size="12" class="to">R1</text>
+          <rect x="166" y="186" width="12" height="8" fill="none" stroke="#9e9e9e" stroke-width="1.2"/>
+          <rect x="194" y="186" width="12" height="8" fill="none" stroke="#9e9e9e" stroke-width="1.2"/>
+          <rect x="222" y="186" width="12" height="8" fill="none" stroke="#9e9e9e" stroke-width="1.2"/>
+          <text x="172" y="210" text-anchor="middle" font-size="12" class="to">R3</text>
+          <text x="200" y="210" text-anchor="middle" font-size="12" class="to">R2</text>
+          <text x="228" y="210" text-anchor="middle" font-size="12" class="to">R4</text>
+          <!-- chip -->
+          <text x="200" y="104" text-anchor="middle" font-size="12" class="s">AS5600</text>
+          <rect x="178" y="111" width="44" height="48" fill="none" stroke="currentColor" stroke-width="1.6"/>
+          <circle cx="185" cy="118" r="2.5" fill="currentColor"/>
+          <g stroke="currentColor" stroke-width="1.6">
+            <line x1="168" y1="118" x2="178" y2="118"/><line x1="168" y1="130" x2="178" y2="130"/>
+            <line x1="168" y1="142" x2="178" y2="142"/><line x1="168" y1="154" x2="178" y2="154"/>
+            <line x1="222" y1="118" x2="232" y2="118"/><line x1="222" y1="130" x2="232" y2="130"/>
+            <line x1="222" y1="142" x2="232" y2="142"/><line x1="222" y1="154" x2="232" y2="154"/>
+          </g>
+          <text x="163" y="122" text-anchor="end" font-size="12" class="s">1</text>
+          <text x="163" y="134" text-anchor="end" font-size="12" class="s">2</text>
+          <!-- pads izquierda -->
+          <rect x="133" y="104" width="14" height="14" fill="#1f5e8b"/>
+          <circle cx="140" cy="132" r="7" fill="#9e9e9e"/>
+          <circle cx="140" cy="153" r="7" fill="currentColor"/>
+          <circle class="mask" cx="140" cy="111" r="2.5"/>
+          <circle class="mask" cx="140" cy="132" r="2.5"/>
+          <circle class="mask" cx="140" cy="153" r="2.5"/>
+          <!-- pads derecha -->
+          <circle cx="260" cy="101" r="7" fill="currentColor"/>
+          <circle cx="260" cy="122" r="7" fill="#6b3fa0"/>
+          <circle cx="260" cy="143" r="7" fill="#6b3fa0"/>
+          <circle cx="260" cy="164" r="7" fill="#9e9e9e"/>
+          <circle class="mask" cx="260" cy="101" r="2.5"/>
+          <circle class="mask" cx="260" cy="122" r="2.5"/>
+          <circle class="mask" cx="260" cy="143" r="2.5"/>
+          <circle class="mask" cx="260" cy="164" r="2.5"/>
+          <!-- etiquetas izquierda -->
+          <g stroke="#9e9e9e" stroke-width="0.8">
+            <line x1="100" y1="111" x2="132" y2="111"/><line x1="100" y1="132" x2="132" y2="132"/><line x1="100" y1="153" x2="132" y2="153"/>
+            <line x1="268" y1="101" x2="300" y2="101"/><line x1="268" y1="122" x2="300" y2="122"/>
+            <line x1="268" y1="143" x2="300" y2="143"/><line x1="268" y1="164" x2="300" y2="164"/>
+          </g>
+          <text x="97" y="115" text-anchor="end" font-size="12.5" font-weight="500" class="tp">VCC → pin 1</text>
+          <text x="97" y="136" text-anchor="end" font-size="12.5" class="to">OUT · libre</text>
+          <text x="97" y="157" text-anchor="end" font-size="12.5" font-weight="500">GND → pin 9</text>
+          <!-- etiquetas derecha -->
+          <text x="303" y="105" font-size="12.5" font-weight="500">DIR → GND</text>
+          <text x="303" y="126" font-size="12.5" font-weight="500" class="td">SCL → pin 5</text>
+          <text x="303" y="147" font-size="12.5" font-weight="500" class="td">SDA → pin 3</text>
+          <text x="303" y="168" font-size="12.5" class="to">GPO · libre</text>
+          <!-- pie -->
+          <text x="200" y="254" text-anchor="middle" font-size="12" class="s">visto del lado del chip · no a escala</text>
+          <text x="200" y="274" text-anchor="middle" font-size="12" class="tb">orden de los pads: confírmalo con tu serigrafía</text>
+        </svg>
+      </div>
+      <p class="why" style="margin:8px 0 0">Es el módulo genérico más común: placa cuadrada, <b>VCC · OUT · GND</b> en una orilla y <b>DIR · SCL · SDA · GPO</b> en la de enfrente
+      (la pieza de Fritzing del foro y su foto). <span class="pend">por confirmar</span> que el tuyo sea así: no pude abrir la ficha de MercadoLibre, y hay variantes
+      (una de 33 × 33 mm trae conector PH2.0 de 4). Cablea por el nombre impreso, nunca por la posición. Las patas 1 y 2 del chip son VDD5V y VDD3V3.</p>
+    </div>
+
+    <div class="caja">
+      <h3>Tres cosas que se revisan en la placa antes de soldar</h3>
+      <ol style="margin:0">
+        <li><b>El puente de 3.3 V.</b> El datasheet pide unir VDD5V y VDD3V3 para trabajar a 3.3 V (p. 9). En los módulos genéricos ese puente es una resistencia de 0 Ω
+        (R1 en unos, R6 en otros) que se quita para usar 5 V. Mide continuidad entre las patas 1 y 2 del chip: 0 Ω quiere decir que tu módulo ya es de 3.3 V.</li>
+        <li><b>Los pull-ups de SDA y SCL.</b> Con el módulo suelto, mide resistencia de SDA a VCC y de SCL a VCC. Si marca unos kΩ, el módulo trae pull-ups hacia su VCC
+        (anota el valor). Si marca abierto, no los trae y bastan los de la Pi.</li>
+        <li><b>GPO.</b> Algunos módulos lo jalan a GND con 1 kΩ (R4 en el foro de SimpleFOC). Eso apaga la salida analógica, que no se usa. Déjalo como venga.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="lista">
+    <h3>A dónde va cada pin del módulo</h3>
+    <div class="fila"><div class="chip c-pwr"></div><div class="nom t-pwr">VCC</div>
+      <div><div class="dst">→ pin 1 · 3V3 de la Pi (hilo naranja, par A)</div>
+      <div class="why">En modo 3.3 V el chip acepta de 3.0 a 3.6 V y gasta 6.5 mA como máximo (datasheet p. 5). Nunca al pin 2 ni al 4, que son 5 V: ver la duda 1.</div></div></div>
+    <div class="fila"><div class="chip c-off"></div><div class="nom t-off">OUT</div>
+      <div><div class="dst t-off">sin conectar</div>
+      <div class="why">Salida analógica o PWM del ángulo. El software lee por I²C, así que este pad queda libre. Córtale la punta si trae pin soldado.</div></div></div>
+    <div class="fila"><div class="chip c-gnd"></div><div class="nom">GND</div>
+      <div><div class="dst">→ pin 9 · GND de la Pi (hilo café, par B)</div>
+      <div class="why">Es el retorno del sensor y la referencia contra la que la Pi lee SDA y SCL. Aquí también llega el puente de DIR.</div></div></div>
+    <div class="fila"><div class="chip c-gnd"></div><div class="nom">DIR</div>
+      <div><div class="dst">→ GND, en el mismo módulo</div>
+      <div class="why">Un puente corto por la cara de atrás, del pad DIR al pad GND (sirve un hilo azul sobrante del cable). En este módulo están en orillas opuestas,
+      así que el puente cruza la placa. Al aire, el sentido de giro no está definido: ver la duda 2.</div></div></div>
+    <div class="fila"><div class="chip c-dat"></div><div class="nom t-dat">SCL</div>
+      <div><div class="dst">→ pin 5 · GPIO3 (hilo blanco/café, par B, trenzado con GND)</div>
+      <div class="why">El reloj del bus I²C 1, a 100 kHz (valor por defecto de <code>i2c_arm</code>). Va con la tierra porque un pico en el reloj es un pulso de más
+      y corre todo el byte; en SDA solo importa justo en la orilla del reloj.</div></div></div>
+    <div class="fila"><div class="chip c-dat"></div><div class="nom t-dat">SDA</div>
+      <div><div class="dst">→ pin 3 · GPIO2 (hilo blanco/naranja, par A, trenzado con 3.3 V)</div>
+      <div class="why">El dato. Dirección 0x36. El software lee STATUS (0x0B) y el ángulo crudo (0x0C–0x0D) 25 veces por segundo, en su propio hilo.</div></div></div>
+    <div class="fila"><div class="chip c-off"></div><div class="nom t-off">GPO</div>
+      <div><div class="dst t-off">sin conectar</div>
+      <div class="why">En el datasheet se llama PGO: elige la opción de programación y trae pull-up interno (p. 3). No se programa nada en el chip.</div></div></div>
+    <p class="tiny sub" style="margin:10px 0 0">Si tu módulo trae otro pin (por ejemplo, VCC y 3V3 por separado), no lo conectes sin preguntar: manda la foto de la serigrafía.</p>
+  </div>
+</div>
+
+<!-- ======================================================= -->
+<h2>2 · El otro extremo: un Dupont 1 × 7 en el header</h2>
+
+<div class="cols">
+  <div class="lista">
+    <div class="caja">
+      <h3>Pines 1–14 del header de la Pi 5</h3>
+      <p class="why" style="margin-bottom:2px">Pi vista desde arriba, header en el borde de arriba, pin 1 a la izquierda: es la punta más lejana a los USB y al Ethernet, en la fila de adentro.</p>
+      <div class="hdrlab"><span>fila del borde (pares)</span></div>
+      <div class="hdr">
+        <div class="h-bad"><b>2</b>5V ✗</div><div class="h-bad"><b>4</b>5V ✗</div><div><b>6</b>GND</div><div><b>8</b>G14</div><div><b>10</b>G15</div><div><b>12</b>G18</div><div><b>14</b>GND</div>
+        <div class="h-pwr3"><b>1</b>3V3</div><div class="h-dat"><b>3</b>SDA</div><div class="h-dat"><b>5</b>SCL</div><div><b>7</b>vacío</div><div class="h-gnd"><b>9</b>GND</div><div class="h-sig"><b>11</b>G17 ▶</div><div class="h-sig"><b>13</b>G27 ◀</div>
+      </div>
+      <div class="hdrlab"><span>fila de adentro (impares)</span></div>
+      <p class="tiny sub" style="margin:8px 0 0">El conector va solo en la fila de adentro, del 1 al 13. Rayados: los dos pines de 5 V. Si el Dupont entra en la fila de afuera,
+      el VCC del sensor queda en 5 V (duda 4). En la hoja general el 6 y el 14 aparecen rayados porque estaban dañados en la Pi de membrane-rig;
+      esta es otra Pi y ese aviso no aplica. La tierra va al 9 de todos modos.</p>
+    </div>
+
+    <h3>A dónde va cada hueco del Dupont</h3>
+    <div class="fila"><div class="chip c-pwr"></div><div class="nom t-pwr">pin 1 · 3V3</div>
+      <div><div class="dst">→ VCC del AS5600</div>
+      <div class="why">El riel de 3.3 V de la Pi. El sensor gasta 6.5 mA como máximo; no hace falta otra fuente.</div></div></div>
+    <div class="fila"><div class="chip c-dat"></div><div class="nom t-dat">pin 3 · GPIO2</div>
+      <div><div class="dst">→ SDA del AS5600</div>
+      <div class="why">SDA1. La placa trae pull-up fijo a 3.3 V en GPIO2 y GPIO3 (documentación oficial; 1.8 kΩ según pinout.xyz). No agregues otros.</div></div></div>
+    <div class="fila"><div class="chip c-dat"></div><div class="nom t-dat">pin 5 · GPIO3</div>
+      <div><div class="dst">→ SCL del AS5600</div>
+      <div class="why">SCL1, con el mismo pull-up fijo. Se enciende con <code>dtparam=i2c_arm=on</code>.</div></div></div>
+    <div class="fila"><div class="chip c-off"></div><div class="nom t-off">pin 7 · GPIO4</div>
+      <div><div class="dst t-off">hueco vacío</div>
+      <div class="why">Se deja libre para que el conector de 7 vías no toque nada.</div></div></div>
+    <div class="fila"><div class="chip c-gnd"></div><div class="nom">pin 9 · GND</div>
+      <div><div class="dst">→ GND del AS5600 y común de los dos botones</div>
+      <div class="why">Dos hilos en un terminal. Si no caben juntos en el terminal Dupont, únelos antes con un tramo corto y termofil.</div></div></div>
+    <div class="fila"><div class="chip c-sig"></div><div class="nom t-sig">pin 11 · GPIO17</div>
+      <div><div class="dst">→ botón ▶ siguiente</div>
+      <div class="why">No es de esta hoja, pero va en el mismo conector: ver <a href="4-botones.html">Botones</a>.</div></div></div>
+    <div class="fila"><div class="chip c-sig"></div><div class="nom t-sig">pin 13 · GPIO27</div>
+      <div><div class="dst">→ botón ◀ anterior</div>
+      <div class="why">Igual: ver <a href="4-botones.html">Botones</a>.</div></div></div>
+    <div class="fila"><div class="chip c-off"></div><div class="nom t-off">el resto</div>
+      <div><div class="dst t-off">sin conectar</div>
+      <div class="why">Pines 2, 4, 6, 8, 10, 12, 14 y del 15 al 40.</div></div></div>
+  </div>
+
+  <div>
+    <div class="caja">
+      <h3>En el <code>config.txt</code> de la microSD de la moto</h3>
+<pre># I2C 1 para el sensor de direccion AS5600 (pines 3 y 5)
+dtparam=i2c_arm=on
+# Boton siguiente (flecha derecha) - pin 11
+dtoverlay=gpio-key,gpio=17,active_low=1,gpio_pull=up,keycode=106
+# Boton anterior (flecha izquierda) - pin 13
+dtoverlay=gpio-key,gpio=27,active_low=1,gpio_pull=up,keycode=105</pre>
+      <p class="why" style="margin:0">Va en <code>/boot/firmware/config.txt</code>, con cada comentario en su propia línea. Todo lo del sensor vive en la tarjeta de la moto:
+      esta línea y la calibración (<code>direccion.json</code>, junto a la base; en la USB si usas el sistema de solo lectura). Cuando la Pi regresa al ISIC con su propia microSD,
+      no se lleva nada; el sensor, el imán y el cable se quedan montados, y la calibración sigue valiendo mientras nadie mueva el soporte.</p>
+    </div>
+
+    <div class="caja">
+      <h3>Cada vez que la Pi vuelve a la caja</h3>
+      <ol style="margin:0">
+        <li>Pi apagada, con la microSD de la moto puesta.</li>
+        <li>Dupont en la fila de adentro, con la punta marcada al ras del pin 1 (la esquina lejana a los USB).</li>
+        <li>Míralo de lado: la fila del borde (pines 2 a 14) tiene que quedar descubierta. Si está tapada, el conector está en la fila equivocada.</li>
+        <li>Prende y corre <code>i2cdetect -y 1</code>: debe aparecer <code>36</code>.</li>
+      </ol>
+      <p class="why" style="margin:8px 0 0">El tercer paso tarda 5 segundos y es lo que separa un conector bien puesto de un sensor con 5 V.
+      La primera vez, con el módulo todavía a la mano, confírmalo con el multímetro (sección 6, paso 6).</p>
+    </div>
+  </div>
+</div>
+
+<!-- ======================================================= -->
+<h2>3 · El esquemático y el cable</h2>
+
+<div class="cols">
+  <div>
+    <div class="esq">
+      <svg viewBox="0 0 400 330" width="100%" style="max-width:600px" role="img" aria-label="Esquemático: pin 1 de la Pi a VCC y pin 3 a SDA, trenzados como par A; pin 5 a SCL y pin 9 a GND, trenzados como par B; pull-ups fijos de la Pi en SDA y SCL; en el módulo VDD5V y VDD3V3 unidos, DIR unido a GND, OUT y GPO sin conectar">
+        <!-- Raspberry Pi 5 -->
+        <rect class="box" x="10" y="30" width="130" height="280" rx="6" stroke-width="1.8"/>
+        <text x="75" y="50" text-anchor="middle" font-size="13" font-weight="500">Raspberry Pi 5</text>
+        <!-- 3V3 -->
+        <line x1="18" y1="80" x2="140" y2="80" stroke="#1f5e8b" stroke-width="2.4"/>
+        <text x="18" y="74" font-size="12" class="tp">pin 1 · 3V3</text>
+        <!-- SDA y su pull-up -->
+        <line x1="18" y1="110" x2="140" y2="110" stroke="#6b3fa0" stroke-width="2.4"/>
+        <text x="18" y="126" font-size="12" class="td">pin 3 · GPIO2</text>
+        <path d="M122 80 V86 l5 2 l-10 3 l10 3 l-10 3 l10 3 l-5 2 V110" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <circle cx="122" cy="80" r="3.5" fill="#1f5e8b"/>
+        <circle cx="122" cy="110" r="3.5" fill="#6b3fa0"/>
+        <text x="114" y="99" text-anchor="end" font-size="12" class="s">pull-up</text>
+        <!-- SCL y su pull-up -->
+        <line x1="18" y1="230" x2="140" y2="230" stroke="#6b3fa0" stroke-width="2.4"/>
+        <text x="18" y="224" font-size="12" class="td">pin 5 · GPIO3</text>
+        <line x1="114" y1="186" x2="130" y2="186" stroke="#1f5e8b" stroke-width="2"/>
+        <text x="108" y="190" text-anchor="end" font-size="12" class="tp">3V3</text>
+        <path d="M122 186 V192 l5 2 l-10 3 l10 3 l-10 3 l10 3 l-5 2 V230" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <circle cx="122" cy="230" r="3.5" fill="#6b3fa0"/>
+        <text x="114" y="206" text-anchor="end" font-size="12" class="s">pull-up</text>
+        <!-- GND -->
+        <line x1="40" y1="260" x2="140" y2="260" stroke="currentColor" stroke-width="2.4"/>
+        <text x="18" y="254" font-size="12">pin 9 · GND</text>
+        <line x1="40" y1="260" x2="40" y2="272" stroke="currentColor" stroke-width="2"/>
+        <line x1="28" y1="272" x2="52" y2="272" stroke="currentColor" stroke-width="2"/>
+        <line x1="32" y1="277" x2="48" y2="277" stroke="currentColor" stroke-width="2"/>
+        <line x1="36" y1="282" x2="44" y2="282" stroke="currentColor" stroke-width="2"/>
+        <text x="58" y="284" font-size="12" class="s">0 V</text>
+
+        <!-- par A trenzado: 3V3 + SDA -->
+        <text x="205" y="66" text-anchor="middle" font-size="12" class="s">par A · SDA + 3V3</text>
+        <path d="M140 80 H165 C185 80 185 110 205 110 C225 110 225 80 245 80 H270" fill="none" stroke="#1f5e8b" stroke-width="2.4"/>
+        <path d="M140 110 H165 C185 110 185 80 205 80 C225 80 225 110 245 110 H270" fill="none" stroke="#6b3fa0" stroke-width="2.4"/>
+        <!-- anotaciones -->
+        <text x="205" y="142" text-anchor="middle" font-size="12" class="tk">3.3 V ✓ (nunca 5 V)</text>
+        <text x="205" y="158" text-anchor="middle" font-size="12" class="tk">6.5 mA máx. ✓</text>
+        <text x="205" y="180" text-anchor="middle" font-size="12" class="td">SDA, SCL: 0–3.3 V</text>
+        <text x="205" y="196" text-anchor="middle" font-size="12" class="td">100 kHz · 0x36</text>
+        <!-- par B trenzado: SCL + GND -->
+        <path d="M140 230 H165 C185 230 185 260 205 260 C225 260 225 230 245 230 H270" fill="none" stroke="#6b3fa0" stroke-width="2.4"/>
+        <path d="M140 260 H165 C185 260 185 230 205 230 C225 230 225 260 245 260 H270" fill="none" stroke="currentColor" stroke-width="2.4"/>
+        <text x="196" y="280" text-anchor="middle" font-size="12" class="s">par B · SCL + GND</text>
+        <text x="196" y="302" text-anchor="middle" font-size="12" class="s">&lt; 50 cm · ~48 pF</text>
+        <text x="205" y="320" text-anchor="middle" font-size="12" class="tk">subida ~75 ns de 1000 ✓</text>
+
+        <!-- AS5600 -->
+        <rect class="box" x="270" y="30" width="120" height="280" rx="6" stroke-width="1.8"/>
+        <text x="330" y="50" text-anchor="middle" font-size="13" font-weight="500">AS5600</text>
+        <text x="330" y="66" text-anchor="middle" font-size="12" class="s">módulo</text>
+        <text x="278" y="84" font-size="12" class="tp">VCC</text>
+        <text x="278" y="114" font-size="12" class="td">SDA</text>
+        <text x="278" y="140" font-size="12" class="s">VDD5V y VDD3V3</text>
+        <text x="278" y="156" font-size="12" class="s">unidos (puente)</text>
+        <line x1="390" y1="184" x2="397" y2="184" stroke="#9e9e9e" stroke-width="1.6"/>
+        <line x1="390" y1="202" x2="397" y2="202" stroke="#9e9e9e" stroke-width="1.6"/>
+        <text x="384" y="188" text-anchor="end" font-size="12" class="to">OUT</text>
+        <text x="384" y="206" text-anchor="end" font-size="12" class="to">GPO</text>
+        <text x="384" y="222" text-anchor="end" font-size="12" class="to">sin conectar</text>
+        <text x="278" y="234" font-size="12" class="td">SCL</text>
+        <text x="278" y="264" font-size="12">GND</text>
+        <text x="278" y="294" font-size="12">DIR</text>
+        <!-- DIR a GND en el módulo -->
+        <polyline points="270,290 255,290 255,260" fill="none" stroke="currentColor" stroke-width="2"/>
+        <circle cx="255" cy="260" r="4" fill="currentColor"/>
+      </svg>
+    </div>
+    <div class="leyenda">
+      <span><i style="border-color:#1f5e8b"></i>3.3 V</span>
+      <span><i style="border-color:#6b3fa0"></i>I²C (SDA, SCL)</span>
+      <span><i style="border-color:var(--gnd)"></i>tierra</span>
+      <span><i style="border-color:#9e9e9e"></i>sin conectar</span>
+    </div>
+    <p class="tiny sub" style="margin-top:6px">Los puntos marcan nodos: el pull-up de SDA sale del mismo riel que el pin 1, y DIR se une a GND en el módulo.
+    Los ~48 pF suponen 28 pF del cable (Cat5e: menos de 5.6 nF por 100 m) más ~20 pF de pines y placas, estimado. La subida usa
+    t<sub>r</sub> = 0.8473 · R<sub>p</sub> · C<sub>b</sub> con el pull-up de 1.8 kΩ; I²C a 100 kHz permite 1000 ns y 400 pF.</p>
+  </div>
+
+  <div>
+    <h3>El cable: dos pares de tu UTP Cat5e</h3>
+    <div class="cables">
+      <div class="cable"><div class="bar c-pwr"></div><b class="t-pwr">naranja</b>par A<br>pin 1 → VCC</div>
+      <div class="cable"><div class="bar c-dat"></div><b class="t-dat">blanco/naranja</b>par A<br>pin 3 → SDA</div>
+      <div class="cable"><div class="bar c-gnd"></div><b>café</b>par B<br>pin 9 → GND</div>
+      <div class="cable"><div class="bar c-dat"></div><b class="t-dat">blanco/café</b>par B<br>pin 5 → SCL</div>
+    </div>
+    <p class="tiny sub" style="margin:0 0 12px">Los colores son una sugerencia; el repo no los fija. Los lisos llevan la energía y los rayados las señales:
+    si cruzas SDA con SCL no pasa nada, si cruzas 3.3 V con GND sí. Anótalo en la carcasa del Dupont.</p>
+    <ul>
+      <li><b>Menos de 50 cm</b> de la caja al sensor. Los dos extremos van fijos al cuadro (la caja y el soporte del sensor), así que este cable no se dobla al girar
+      y no necesita gaza, a diferencia del de los botones. Que no pase por encima de la tija, que sí gira: el manual pide que ningún cable impida que el manubrio llegue a su tope (14-12, p. 458).</li>
+      <li><b>Entra a la caja por su propio prensaestopas PG7</b> (para cable de 3 a 6 mm). Un Cat5e típico mide 5.0 mm; <span class="pend">por confirmar</span> el tuyo.</li>
+      <li><b>En el módulo, los hilos van soldados directo</b>, entrando por la cara de atrás (la que no tiene el chip). Así la cara del chip queda plana hacia el imán y nada
+      sobresale hacia el portaimán. Del lado del sensor no uses tira de pines ni Dupont: con vibración, un contacto flojo es un «sin sensor» intermitente.</li>
+      <li><b>Los pares azul y verde</b> sobran en este tramo. Un hilo azul sirve para el puente DIR → GND; los demás se cortan dentro del forro.</li>
+      <li><b>¿Hilo sólido o multifilar?</b> El cable de red de rollo suele ser de hilo sólido de 24 AWG. Con vibración, el sólido se quiebra junto a la soldadura o al terminal,
+      y los terminales Dupont están hechos para hilo multifilar. Uno de parcheo (con RJ45 de fábrica) casi siempre es multifilar. <span class="pend">por confirmar</span> cuál tienes;
+      si es sólido, termofil sobre cada soldadura y amarra el cable al soporte para que la soldadura no trabaje.</li>
+      <li><b>Desacoplo del par A.</b> La especificación pide capacitores de 3.3 V a GND en los dos extremos cuando SDA usa el positivo como retorno.
+      En la Pi los trae su propio riel; en el módulo, C1 y C2 (el datasheet pide 100 nF en VDD5V). <span class="pend">por confirmar</span> que tu módulo los traiga poblados.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ======================================================= -->
+<h2>4 · El montaje: imán en el perno, sensor fijo al cuadro</h2>
+
+<div class="cols">
+  <div>
+    <div class="esq">
+      <svg viewBox="0 0 400 346" width="100%" style="max-width:600px" role="img" aria-label="Vista lateral: un soporte fijo al cuadro sostiene el AS5600 con el chip hacia abajo; debajo, a 0.5 a 3 milímetros, el imán diametral en un portaimán impreso que va donde está el tapón del perno de la cabeza del vástago; el perno, la tija superior y el vástago giran con el manubrio">
+        <!-- eje -->
+        <line x1="270" y1="20" x2="270" y2="300" stroke="currentColor" stroke-width="1" stroke-dasharray="6 4"/>
+        <text x="296" y="298" font-size="12" class="s">eje de giro</text>
+        <!-- anclaje al cuadro -->
+        <rect x="330" y="30" width="52" height="22" fill="none" stroke="currentColor" stroke-width="1.6"/>
+        <g stroke="currentColor" stroke-width="1">
+          <line x1="334" y1="30" x2="342" y2="22"/><line x1="346" y1="30" x2="354" y2="22"/><line x1="358" y1="30" x2="366" y2="22"/><line x1="370" y1="30" x2="378" y2="22"/>
+        </g>
+        <text x="392" y="16" text-anchor="end" font-size="12" class="s">cuadro</text>
+        <!-- soporte -->
+        <rect x="212" y="52" width="170" height="10" fill="none" stroke="currentColor" stroke-width="1.6"/>
+        <!-- módulo boca abajo -->
+        <rect x="230" y="62" width="80" height="6" fill="none" stroke="#6b3fa0" stroke-width="1.6"/>
+        <rect x="260" y="68" width="20" height="6" fill="#6b3fa0"/>
+        <!-- cable -->
+        <polyline points="238,62 238,36 180,36" fill="none" stroke="#6b3fa0" stroke-width="1.6"/>
+        <!-- hueco -->
+        <g stroke="#1e7d32" stroke-width="1.4">
+          <line x1="310" y1="74" x2="310" y2="90"/><line x1="304" y1="74" x2="316" y2="74"/><line x1="304" y1="90" x2="316" y2="90"/>
+        </g>
+        <text x="322" y="86" font-size="12" class="tk">0.5–3 mm</text>
+        <text x="322" y="102" font-size="12" class="tk">AGC ≈ 64 ✓</text>
+        <!-- portaimán -->
+        <path d="M248 88 V118 H292 V88" fill="none" stroke="#9e9e9e" stroke-width="1.6"/>
+        <!-- imán diametral -->
+        <rect x="254" y="90" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <rect x="270" y="90" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <text x="262" y="102" text-anchor="middle" font-size="12">N</text>
+        <text x="278" y="102" text-anchor="middle" font-size="12">S</text>
+        <!-- cabeza del perno, tija y vástago -->
+        <rect x="244" y="118" width="52" height="18" fill="none" stroke="currentColor" stroke-width="1.6"/>
+        <rect x="214" y="136" width="171" height="26" fill="none" stroke="currentColor" stroke-width="1.6"/>
+        <rect x="250" y="162" width="40" height="128" fill="none" stroke="currentColor" stroke-width="1.6"/>
+        <rect x="258" y="136" width="24" height="64" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="3 3"/>
+        <text x="392" y="240" text-anchor="end" font-size="12" class="s">no a escala</text>
+        <!-- etiquetas -->
+        <text x="10" y="40" font-size="12" class="td">cable al frente, &lt; 50 cm</text>
+        <text x="10" y="60" font-size="12">soporte fijo al cuadro</text>
+        <line x1="152" y1="56" x2="212" y2="57" stroke="currentColor" stroke-width="0.8"/>
+        <text x="10" y="78" font-size="12" class="td">AS5600, chip hacia abajo</text>
+        <line x1="174" y1="74" x2="230" y2="67" stroke="currentColor" stroke-width="0.8"/>
+        <text x="10" y="98" font-size="12">imán diametral D42DIA</text>
+        <line x1="154" y1="94" x2="256" y2="97" stroke="currentColor" stroke-width="0.8"/>
+        <text x="10" y="112" font-size="12" class="s">6.35 × 3.18 mm · N42</text>
+        <text x="10" y="130" font-size="12" class="s">portaimán impreso</text>
+        <line x1="128" y1="126" x2="248" y2="112" stroke="#9e9e9e" stroke-width="0.8"/>
+        <text x="10" y="144" font-size="12" class="s">(en lugar del tapón)</text>
+        <text x="10" y="160" font-size="12">tija superior (gira)</text>
+        <line x1="134" y1="156" x2="214" y2="156" stroke="currentColor" stroke-width="0.8"/>
+        <text x="10" y="176" font-size="12">perno de la cabeza del vástago</text>
+        <line x1="216" y1="172" x2="258" y2="178" stroke="currentColor" stroke-width="0.8"/>
+        <text x="10" y="190" font-size="12" class="tb">78 N·m con fijador: no se toca</text>
+        <text x="10" y="222" font-size="12">vástago (gira)</text>
+        <line x1="104" y1="218" x2="250" y2="222" stroke="currentColor" stroke-width="0.8"/>
+        <text x="10" y="318" font-size="12" class="tk">eje del imán a ≤ 0.25 mm del centro del chip ✓</text>
+        <text x="10" y="336" font-size="12" class="s">giran: tija, perno e imán · fijos: soporte y sensor</text>
+      </svg>
+    </div>
+    <p class="tiny sub" style="margin-top:6px">El imán es diametral: los polos están en las caras curvas, por eso N y S quedan lado a lado. Uno axial (polos en las caras planas)
+    da el mismo campo en todos los ángulos y no hay nada que medir.</p>
+  </div>
+
+  <div>
+    <ul>
+      <li><b>El perno no se toca.</b> Lleva 78 N·m (8.0 kgf·m) con fijador no permanente (manual 14-3, p. 449).
+      Encima trae un tapón, el «steering stem head bolt plug»: se quita antes que el perno (14-11, p. 457) y se vuelve a poner al final (14-12, p. 458).
+      El portaimán va en lugar de ese tapón o encima de él. <span class="pend">por confirmar</span> la forma y medida del tapón con un vernier antes de diseñar la pieza.</li>
+      <li><b>El imán.</b> K&amp;J D42DIA del BOM: 6.35 × 3.18 mm, N42, diametral, 80 °C máximo (dato de la hoja general; hoy el sitio de K&amp;J estaba en mantenimiento).
+      Va pegado en el portaimán. Si tu módulo trae imán, pruébalo antes de pedir el otro: gíralo a mano sobre el chip y mira el ángulo crudo (sección 6). Si no cambia, es axial.</li>
+      <li><b>Centrado.</b> El eje del imán puede quedar a máximo 0.25 mm del centro del chip, con un imán de 6 mm (datasheet p. 33). El portaimán centra el imán sobre el perno
+      y el soporte centra el chip sobre el eje: los errores de las dos piezas se suman.</li>
+      <li><b>Altura.</b> El hueco típico es de 0.5 a 3 mm y depende del imán (p. 33). Se afina con el AGC: a 3.3 V va de 0 a 128 y lo robusto es la mitad, ~64 (p. 20).
+      El chip necesita entre 30 y 90 mT; abajo de 8 mT ya no detecta imán (p. 8).</li>
+      <li><b>Acero cerca.</b> El perno es de acero y deforma el campo; el portaimán de plástico separa un poco el imán del acero. Cuánto hace falta: <span class="pend">por confirmar</span> con el AGC.</li>
+      <li><b>La llave.</b> El interruptor de encendido está montado en la tija superior, la misma pieza donde va el perno (manual 16-92, p. 576). El soporte no debe tocar la llave ni el llavero en ningún ángulo.</li>
+      <li><b>La lluvia.</b> El módulo es una placa desnuda arriba de la tija. Necesita una tapa impresa o barniz; el campo pasa por el plástico sin problema,
+      pero el piso de la tapa cuenta dentro de los 0.5–3 mm. Dónde se ancla el soporte al cuadro: <span class="pend">por confirmar</span> en la moto.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ======================================================= -->
+<h2>5 · Las dudas de este cableado</h2>
+
+<div class="dudas">
+
+  <div class="co co-bad">
+    <div class="co-t">«¿Por qué a 3.3 V y no a 5 V?»</div>
+    <div class="co-b">
+      <p>Porque a 5 V, según el módulo, se quema algo o deja de leer bien. Hay tres caminos:</p>
+      <ul>
+        <li><b>El puente de 3.3 V.</b> Si tu módulo une VDD5V y VDD3V3 (lo más común), 5 V en VCC llegan directo a VDD3V3, cuyo máximo absoluto es 4.0 V (datasheet p. 4). El chip se muere.</li>
+        <li><b>Los pull-ups del módulo.</b> Si trae pull-ups en SDA y SCL, van a su VCC. A 5 V ponen 5 V en GPIO2 y GPIO3, que son entradas de 3.3 V.</li>
+        <li><b>Los niveles.</b> Aunque sobreviviera, a 5 V el chip necesita al menos 0.7 × 5 = 3.5 V para leer un «1» (p. 6), y los pull-ups de la Pi solo llegan a 3.3 V. Leería a ratos.</li>
+      </ul>
+      <p style="margin:0">A 3.3 V todo cuadra: le basta 2.31 V para un «1», gasta 6.5 mA como máximo y el pin 1 lo alimenta de sobra.
+      Lo único que cambia es el rango del AGC, de 0 a 128 en vez de 0 a 255 (p. 20); por eso el valor bueno es ~64.</p>
+    </div>
+  </div>
+
+  <div class="co co-pwr">
+    <div class="co-t">«¿Por qué DIR a tierra y no al aire?»</div>
+    <div class="co-b">
+      <p>DIR es una entrada digital y el datasheet no le da pull-up interno (al PGO sí). Al aire, el arnés de la moto le mete ruido y el chip puede cambiar
+      de sentido entre una lectura y otra: el ángulo brinca. En el foro de SimpleFOC lo reportan así: sin DIR a tierra no lograban lecturas estables.
+      El software puede invertir el signo, pero no puede arreglar un sentido que cambia solo.</p>
+      <p style="margin:0"><b>Lo que debes esperar:</b> con DIR a GND, el número sube al girar en sentido horario visto desde la cara del chip (p. 30).
+      Tu chip va boca abajo, mirando al imán. Girar a la derecha es horario visto desde el asiento, pero antihorario visto desde el chip.
+      Lo probable es que al girar a la derecha el número baje y tengas que tocar <b>Invertir</b> una vez. Es normal, no es falla: queda guardado en <code>direccion.json</code>.</p>
+    </div>
+  </div>
+
+  <div class="co co-pwr">
+    <div class="co-t">«¿Por qué el cable no puede medir un metro?»</div>
+    <div class="co-b">
+      <p><b>No es por capacidad.</b> Un metro de Cat5e suma a lo más 56 pF. El bus seguiría muy abajo de los 400 pF que permite I²C, y la subida tardaría unos 120 ns
+      de los 1000 ns permitidos a 100 kHz. En la mesa, un metro funciona.</p>
+      <p><b>Es por el ruido de la moto.</b> En alto, cada línea la sostiene solo su pull-up de kΩ, y la especificación dice que ahí es donde el bus es más sensible a la interferencia (§17.3).
+      Más cable es más antena junto al arnés y las bobinas. Un pico en SCL es un pulso de reloj de más y el byte llega corrido.
+      El AS5600 no manda suma de verificación: un ángulo corrompido se ve igual que uno real, y el tablero solo dice «sin sensor» cuando el bus se cae del todo.</p>
+      <p style="margin:0">Corto y trenzado con su retorno mantiene chico el lazo que capta ruido. Si un día la Pi tiene que ir lejos, la salida son extensores diferenciales
+      (PCA9615, en la hoja general), no más cable.</p>
+    </div>
+  </div>
+
+  <div class="co co-bad">
+    <div class="co-t">«¿Qué pasa si el Dupont entra en la otra fila?»</div>
+    <div class="co-b">
+      <p>Es el error más probable en este proyecto, porque la Pi entra y sale de la caja cada vez que regresa al ISIC. El 1 × 7 cabe igual en la fila de afuera, y ahí:</p>
+      <ul>
+        <li>El hilo de VCC cae en el pin 2 y el de SDA en el pin 4: <b>5 V al sensor</b> (duda 1).</li>
+        <li>El hilo de GND cae en el pin 10 (GPIO15), que no es tierra, y la corriente del sensor busca regresar por donde pueda.</li>
+        <li>Los botones caen en el 12 y en el 14.</li>
+      </ul>
+      <p style="margin:0">Corrido una posición dentro de la fila de adentro no hay 5 V a la mano: no funciona, pero no se quema.
+      Para que no pase: marca con pintura el lado del pin 1 en la carcasa y junto al header, y antes de prender revisa que la fila del borde quede descubierta (sección 2).</p>
+    </div>
+  </div>
+
+</div>
+
+<!-- ======================================================= -->
+<h2>6 · Antes de energizar</h2>
+
+<div class="cols">
+  <div>
+    <h3>Con la Pi apagada, con el multímetro</h3>
+    <ol>
+      <li><b>Serigrafía:</b> que tu módulo diga VCC, GND, SDA, SCL y DIR, y en qué orilla está cada uno. Si no coincide con el dibujo de la sección 1, manda una foto antes de soldar.</li>
+      <li><b>Puente de 3.3 V:</b> continuidad entre las patas 1 y 2 del chip (la 1 tiene el punto). 0 Ω = listo para 3.3 V.
+      Si marca abierto, <span class="pend">por confirmar</span>: el datasheet pide unirlas (p. 9); pregunta antes de puentearlas.</li>
+      <li><b>Pull-ups del módulo:</b> resistencia de SDA a VCC y de SCL a VCC. Anota el valor.</li>
+      <li><b>DIR:</b> 0 Ω contra GND en el módulo, ya con el puente soldado.</li>
+      <li><b>Sin corto:</b> entre VCC y GND del módulo no debe marcar 0 Ω.</li>
+      <li><b>Dupont puesto</b> (la primera vez, con el módulo a la mano): el pad VCC pita con el pin 17 (el otro 3V3) y el pad GND pita con el pin 39 (otra tierra).
+      Los dos pines quedan libres, lejos del conector. Si alguno no pita, el Dupont está corrido o en la otra fila.</li>
+    </ol>
+    <h3>Con la Pi prendida</h3>
+    <ol start="7">
+      <li><b>Voltaje en el módulo,</b> VCC contra GND: 3.3 V (entre 3.0 y 3.6 V ✓). Si ves 5 V, apaga: el Dupont está en la fila de afuera.</li>
+      <li><b>El bus,</b> con la app apagada para que no lea al mismo tiempo:</li>
+    </ol>
+<pre>sudo apt install i2c-tools
+i2cdetect -y 1                    # debe salir 36
+i2cget -y 1 0x36 0x0b             # STATUS
+i2cget -y 1 0x36 0x1a             # AGC, busca ~64
+i2ctransfer -y 1 w1@0x36 0x0c r2  # angulo crudo</pre>
+    <p class="why">STATUS se lee con la tabla de al lado. El AGC a 3.3 V va de 0 a 128. El ángulo crudo son dos bytes, de <code>0x00 0x00</code> a <code>0x0f 0xff</code>.</p>
+    <ol start="9">
+      <li><b>En la mesa:</b> gira el imán a mano sobre el chip. El ángulo crudo debe recorrer de 0x000 a 0xFFF en una vuelta. Si no cambia, el imán es axial.</li>
+      <li><b>En la moto, de tope a tope:</b> STATUS en 0x20 y AGC cerca de 64 en todo el recorrido; una hoja de papel pasa por el hueco sin atorarse; el soporte no toca la llave ni el llavero.</li>
+    </ol>
+  </div>
+
+  <div>
+    <h3>Qué quiere decir STATUS (registro 0x0B)</h3>
+    <div class="tabla">
+      <table style="min-width:360px">
+        <tr><th>Lees</th><th>Bits</th><th>Qué hacer</th></tr>
+        <tr><td>0x20</td><td>MD</td><td class="t-ok">Ve el imán y la ganancia está en rango ✓</td></tr>
+        <tr><td>0x28</td><td>MD + MH</td><td>Campo muy fuerte: imán muy cerca. Sube el sensor.</td></tr>
+        <tr><td>0x30</td><td>MD + ML</td><td>Campo muy débil: imán lejos o descentrado. Baja el sensor.</td></tr>
+        <tr><td>0x00 o 0x10</td><td>sin MD</td><td class="t-bad">No ve imán (menos de 8 mT). Revisa que el imán esté y sea diametral.</td></tr>
+      </table>
+    </div>
+    <p class="why">MD es el bit 0x20, ML el 0x10 y MH el 0x08 (datasheet p. 18 y p. 20). <b>Ojo:</b> el software (Python y C++) solo revisa el 0x20.
+    Con 0x28 o 0x30 el tablero sigue mostrando el ángulo sin avisar, aunque esté fuera del rango de campo que garantiza el ruido. Por eso estas lecturas a mano se hacen al montar.</p>
+
+    <div class="caja">
+      <h3>Calibración, en el visor web del celular</h3>
+      <ol style="margin:0">
+        <li>Moto derecha, rueda delantera recta. En la tarjeta DIRECCIÓN, <b>Fijar centro</b>: ese ángulo pasa a ser 0°.</li>
+        <li>Gira a la derecha: el número debe subir (+ = derecha). Si baja, <b>Invertir</b>. Con el chip boca abajo, lo esperable es que baje (duda 2).</li>
+        <li>Se guarda en <code>~/obd2_logs/direccion.json</code>, en la microSD de la moto (o en la USB). Repítelo si mueves el soporte o el imán.</li>
+      </ol>
+      <p class="why" style="margin:8px 0 0">El tablero dice «sin imán» si STATUS pierde el 0x20 y «sin sensor» si el I²C no contesta; en ese caso reintenta cada 2 s y lo demás sigue leyendo.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ======================================================= -->
+<h2>Pendiente de confirmar, y cómo</h2>
+<ol>
+  <li><b>El orden de los pads de tu módulo:</b> con la serigrafía, al recibirlo. La ficha de MercadoLibre no se pudo abrir.</li>
+  <li><b>El puente de 3.3 V, los pull-ups y los capacitores C1 y C2 del módulo:</b> con el multímetro (sección 6, pasos 2 y 3) y a la vista.</li>
+  <li><b>Si el módulo trae imán y si es diametral:</b> girándolo sobre el chip. Si sirve, el D42DIA ya no hace falta.</li>
+  <li><b>El tapón del perno de la cabeza del vástago:</b> forma y medida con un vernier, para diseñar el portaimán (manual 14-11, p. 457).</li>
+  <li><b>Dónde se ancla el soporte al cuadro</b> sin rozar la llave, los semimanubrios, los chicotes ni las mangueras de tope a tope.</li>
+  <li><b>La distancia real de la caja al sensor:</b> que quede abajo de 50 cm. Depende de dónde quepa la caja Hammond.</li>
+  <li><b>Tu cable Cat5e:</b> hilo sólido o multifilar, y su diámetro para el PG7.</li>
+  <li><b>El sentido del ángulo:</b> si hace falta «Invertir» (lo esperable con el chip boca abajo).</li>
+  <li><b>El pull-up de GPIO2 y GPIO3 en la Pi 5:</b> la documentación oficial dice que es fijo sin dar el valor; los 1.8 kΩ de los cálculos vienen de pinout.xyz.</li>
+</ol>
+
+<h2>Fuentes</h2>
+<ul class="fuentes">
+  <li><b>Tu manual de servicio</b>, Ninja ZX-6R / ZX-6R ABS 636 (ZX636ED/FD, 2013), <code>~/Downloads/NinjaManual.pdf</code>:
+  par del perno de la cabeza del vástago, 78 N·m con fijador no permanente, p. 449 (14-3); quitar el tapón y el perno, p. 457 (14-11);
+  apretar el perno, volver a poner el tapón y el aviso de que ningún cable impida llegar al tope, p. 458 (14-12); interruptor de encendido montado en la tija superior, p. 576 (16-92).</li>
+  <li>AS5600: <a href="https://files.seeedstudio.com/wiki/Grove-12-bit-Magnetic-Rotary-Position-Sensor-AS5600/res/Magnetic%20Rotary%20Position%20Sensor%20AS5600%20Datasheet.pdf">datasheet de ams v1-06</a>
+  (pines y PGO p. 3; máximo absoluto de VDD3V3 4.0 V p. 4; 3.0–3.6 V y 6.5 mA p. 5; V<sub>IH</sub> 0.7 × VDD p. 6; Bz 30–90 mT y 8 mT de detección p. 8;
+  VDD5V y VDD3V3 unidos a 3.3 V p. 9; 0x36 e I²C hasta 1 MHz p. 10; mapa de registros p. 18; STATUS y AGC 0–128 a 3.3 V p. 20; DIR p. 30; hueco 0.5–3 mm, 0.25 mm y pull-up opcional de 4.7 kΩ p. 33).</li>
+  <li>Módulo genérico: <a href="https://forum.fritzing.org/t/as5600-magnetic-encoder/21152">foro de Fritzing</a> (foto y pieza de vanepp: VCC, OUT, GND, DIR, SCL, SDA, GPO);
+  <a href="https://www.tinytronics.nl/shop/en/sensors/magnetic-field/as5600-magnetic-angle-sensor-encoder-module">Tinytronics</a> (3.3 V de fábrica, quitar R1 para 5 V, imán diametral incluido);
+  <a href="https://community.simplefoc.com/t/as5600-angle-sensor-support/42?page=3">SimpleFOC</a> (patas 1 y 2 unidas, GPO a GND con 1 kΩ, DIR al aire da lecturas inestables);
+  <a href="https://www.gotronik.pl/modul-magnetycznego-enkodera-as5600-bezkontaktowy-czujnik-kata-obrotu-kartapdf-12903.html">LC Technology en Gotronik</a> (variante de 33 × 33 mm con PH2.0 y R6).</li>
+  <li>Especificación I²C de Philips v2.1, <a href="http://esd.cs.ucr.edu/webres/i2c20.pdf">§17.3 «Wiring pattern of the bus lines»</a> (pares trenzados, sensibilidad en alto)
+  y tabla de modo estándar (t<sub>r</sub> ≤ 1000 ns, C<sub>b</sub> ≤ 400 pF). La versión vigente es la UM10204 de NXP.</li>
+  <li>Cat5e: <a href="https://stl.tech/wp-content/uploads/2023/03/Cat5e-UUTP.pdf">STL Cat5e U/UTP</a> (capacitancia mutua &lt; 5.6 nF/100 m, 24 AWG, 5.0 mm).</li>
+  <li>Raspberry Pi: <a href="https://datasheets.raspberrypi.com/rpi5/raspberry-pi-5-product-brief.pdf">ficha de la Pi 5</a> (header estándar de 40 pines);
+  <a href="https://github.com/raspberrypi/documentation/blob/develop/documentation/asciidoc/computers/raspberry-pi/gpio-on-raspberry-pi.adoc">GPIO</a> (GPIO2 y GPIO3 con pull-up fijo; no usar 5 V en componentes de 3.3 V);
+  <a href="https://github.com/raspberrypi/linux/blob/rpi-6.12.y/arch/arm/boot/dts/overlays/README">README de overlays</a> (<code>i2c_arm</code>, 100 kHz por defecto);
+  <a href="https://pinout.xyz/pinout/i2c">pinout.xyz</a> (pull-up de 1.8 kΩ a 3.3 V).</li>
+  <li>Imán: <a href="https://www.kjmagnetics.com/d42dia-neodymium-diametric-disc-magnet">K&amp;J D42DIA</a> (sitio en mantenimiento el 2026-10-09; medidas del BOM y 80 °C de la hoja general).</li>
+  <li>Repo: <code>python/analizador.py</code> (bus 1, 0x36, STATUS 0x0B con máscara 0x20, ángulo 0x0C–0x0D, 25 lecturas/s, reintento cada 2 s, <code>direccion.json</code>),
+  <code>cpp/src/steer.cpp</code> (lo mismo en C++), <code>web/index.html</code> (Fijar centro, Invertir), <code>BOM.csv</code> y <a href="../conexion.html">la hoja general</a>.</li>
+</ul>
+
+</div>
