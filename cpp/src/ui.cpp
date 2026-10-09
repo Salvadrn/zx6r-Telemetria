@@ -810,7 +810,7 @@ bool Dash::run(const std::atomic<bool>& quit) {
     if (views_.empty()) return false;
     SetTraceLogLevel(LOG_WARNING);
     SetConfigFlags(FLAG_WINDOW_HIGHDPI | FLAG_MSAA_4X_HINT);
-    if (cfg_.windowed) InitWindow(1280, 720, "ZX-6R — Telemetría");
+    if (cfg_.windowed) InitWindow(cfg_.win_w, cfg_.win_h, "ZX-6R — Telemetría");   // OBD2_SIZE, default 1280x720
     else InitWindow(0, 0, "ZX-6R — Telemetría");   // 0 x 0 = tamaño del monitor
     if (!IsWindowReady()) return false;
     if (!cfg_.windowed) {
