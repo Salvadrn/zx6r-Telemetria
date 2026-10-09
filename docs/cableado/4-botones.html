@@ -1,0 +1,752 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>¿Cómo se conectan los botones del manubrio a la Pi?</title>
+<style>
+html,body{margin:0}
+.hoja{
+  --tp:#1a1a1a; --ts:#5b5b5b; --s1:#ffffff; --s2:#f6f5f2; --bd:#e2dfda;
+  --pwr:#1f5e8b; --act:#7a2f2f; --sig:#8a6d00; --ok:#1e7d32; --bad:#b3261e; --dat:#6b3fa0; --off:#9e9e9e; --gnd:#1a1a1a;
+  --pwr-t:#1f5e8b; --sig-t:#8a6d00; --ok-t:#1e7d32; --bad-t:#b3261e; --dat-t:#6b3fa0;
+  color:var(--text-primary,var(--tp)); background:var(--surface-0,var(--s1));
+  font-family:var(--font-sans,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif);
+  font-size:14px; line-height:1.6; font-weight:400;
+  max-width:1180px; margin:0 auto; padding:18px 16px 56px; box-sizing:border-box;
+}
+@media (prefers-color-scheme:dark){
+  html{background:#141416}
+  .hoja{ --tp:#ececec; --ts:#a8a8a8; --s1:#141416; --s2:#1d1d20; --bd:#38383c; --gnd:#ececec;
+         --pwr-t:#6aa6d6; --sig-t:#d1b04a; --ok-t:#55b46a; --bad-t:#e5675f; --dat-t:#ad8fdc; }
+}
+.hoja *{box-sizing:border-box}
+.hoja h1{font-size:22px; font-weight:500; margin:0 0 6px; letter-spacing:-.01em; line-height:1.3}
+.hoja h2{font-size:16px; font-weight:500; margin:34px 0 12px; letter-spacing:.06em; text-transform:uppercase;
+  padding-bottom:6px; border-bottom:1px solid var(--border,var(--bd))}
+.hoja h3{font-size:14px; font-weight:500; margin:0 0 8px}
+.hoja p{margin:0 0 10px}
+.hoja a{color:var(--pwr-t)}
+.hoja .bajada{color:var(--text-secondary,var(--ts)); margin:0 0 18px; max-width:900px}
+.hoja .sub,.hoja .why{color:var(--text-secondary,var(--ts))}
+.hoja .why{font-size:13px; line-height:1.5}
+.hoja .tiny{font-size:12.5px}
+.hoja code,.hoja pre{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:12.5px}
+.hoja code{background:color-mix(in srgb,#9e9e9e 16%,transparent); padding:1px 5px; border-radius:4px}
+.hoja pre{background:var(--surface-1,var(--s2)); border:1px solid var(--border,var(--bd)); border-radius:8px;
+  padding:12px 14px; overflow-x:auto; line-height:1.5; margin:0 0 12px}
+.hoja .caja{background:var(--surface-1,var(--s2)); border:1px solid var(--border,var(--bd)); border-radius:8px; padding:16px 18px; margin-bottom:16px}
+.hoja .cols{display:grid; grid-template-columns:1fr 1fr; gap:2rem; align-items:start}
+.hoja .cols > *{min-width:0}
+@media (max-width:900px){ .hoja .cols{grid-template-columns:1fr; gap:1rem} }
+.hoja .banda{border-radius:8px; padding:14px 18px; margin:0 0 14px; border:2px solid}
+.hoja .banda h3{font-size:15px; margin:0 0 6px}
+.hoja .b-dat{border-color:#6b3fa0; background:color-mix(in srgb,#6b3fa0 9%,transparent)}
+.hoja .b-dat h3{color:var(--dat-t)}
+.hoja .b-ok{border-color:#1e7d32; background:color-mix(in srgb,#1e7d32 8%,transparent)}
+.hoja .b-ok h3{color:var(--ok-t)}
+.hoja .b-bad{border-color:#b3261e; background:color-mix(in srgb,#b3261e 8%,transparent)}
+.hoja .b-bad h3{color:var(--bad-t)}
+/* filas "a dónde va cada pin" */
+.hoja .lista h3{margin-top:4px; font-size:13px; letter-spacing:.06em; text-transform:uppercase; color:var(--text-secondary,var(--ts))}
+.hoja .fila{display:grid; grid-template-columns:24px 92px 1fr; gap:10px; align-items:start; padding:8px 0;
+  border-top:1px solid var(--border,var(--bd))}
+.hoja .fila:first-of-type{border-top:0}
+.hoja .chip{width:20px; height:20px; border-radius:3px; margin-top:2px}
+.hoja .nom{font-weight:500; font-size:13.5px; line-height:1.35}
+.hoja .dst{font-weight:500}
+.hoja .c-pwr{background:#1f5e8b} .hoja .c-sig{background:#8a6d00} .hoja .c-dat{background:#6b3fa0}
+.hoja .c-gnd{background:var(--gnd); outline:1px solid #9e9e9e} .hoja .c-off{background:#9e9e9e} .hoja .c-bad{background:#b3261e}
+.hoja .c-ok{background:#1e7d32}
+.hoja .t-pwr{color:var(--pwr-t)} .hoja .t-sig{color:var(--sig-t)} .hoja .t-dat{color:var(--dat-t)}
+.hoja .t-ok{color:var(--ok-t)} .hoja .t-bad{color:var(--bad-t)} .hoja .t-off{color:#9e9e9e}
+/* etiquetas */
+.hoja .pend{display:inline-block; font-size:12px; letter-spacing:.04em; text-transform:uppercase; line-height:1.4;
+  border:1px solid #b3261e; color:var(--bad-t); border-radius:4px; padding:0 6px; vertical-align:1px; white-space:nowrap}
+.hoja .conf{display:inline-block; font-size:12px; letter-spacing:.04em; text-transform:uppercase; line-height:1.4;
+  border:1px solid #9e9e9e; color:var(--text-secondary,var(--ts)); border-radius:4px; padding:0 6px; vertical-align:1px; white-space:nowrap}
+.hoja .okt{display:inline-block; font-size:12px; letter-spacing:.04em; text-transform:uppercase; line-height:1.4;
+  border:1px solid #1e7d32; color:var(--ok-t); border-radius:4px; padding:0 6px; vertical-align:1px; white-space:nowrap}
+/* conector KDS: 4 cables por color */
+.hoja .cables{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; margin:8px 0 6px}
+.hoja .cable{border:1px solid var(--border,var(--bd)); border-radius:6px; padding:8px 6px; text-align:center; font-size:12.5px; line-height:1.35}
+.hoja .cable .bar{height:8px; border-radius:2px; margin:0 0 6px}
+.hoja .cable b{font-weight:500; font-size:13.5px; display:block}
+/* cara OBD2 16 */
+.hoja .obd{display:grid; grid-template-columns:repeat(8,minmax(0,1fr)); gap:4px; max-width:360px; margin:8px 0 4px;
+  border:1.5px solid var(--text-primary,var(--tp)); border-radius:10px 10px 18px 18px; padding:8px 10px 10px}
+.hoja .obd div{text-align:center; font-size:12px; line-height:1.2; padding:4px 0; border-radius:3px; border:1px solid #9e9e9e; color:#9e9e9e}
+.hoja .obd .u-pwr{border-color:#1f5e8b; background:color-mix(in srgb,#1f5e8b 16%,transparent); color:var(--pwr-t); font-weight:500}
+.hoja .obd .u-gnd{border-color:var(--gnd); background:color-mix(in srgb,#9e9e9e 22%,transparent); color:var(--text-primary,var(--tp)); font-weight:500}
+.hoja .obd .u-dat{border-color:#6b3fa0; background:color-mix(in srgb,#6b3fa0 16%,transparent); color:var(--dat-t); font-weight:500}
+/* header de la Pi, pines 1-14 */
+.hoja .hdr{display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:4px; max-width:400px; margin:8px 0 2px}
+.hoja .hdr div{border:1px solid #9e9e9e; border-radius:4px; text-align:center; padding:4px 0 3px; font-size:12px; line-height:1.25; color:#9e9e9e}
+.hoja .hdr div b{display:block; font-weight:500; font-size:12.5px}
+.hoja .hdr .h-sig{border-color:#8a6d00; background:color-mix(in srgb,#8a6d00 16%,transparent); color:var(--sig-t)}
+.hoja .hdr .h-gnd{border-color:var(--gnd); background:color-mix(in srgb,#9e9e9e 24%,transparent); color:var(--text-primary,var(--tp))}
+.hoja .hdr .h-pwr3{border-color:#1f5e8b; background:color-mix(in srgb,#1f5e8b 16%,transparent); color:var(--pwr-t)}
+.hoja .hdr .h-dat{border-color:#6b3fa0; background:color-mix(in srgb,#6b3fa0 16%,transparent); color:var(--dat-t)}
+.hoja .hdr .h-bad{border-color:#b3261e; color:var(--bad-t); background:repeating-linear-gradient(135deg,transparent 0 5px,color-mix(in srgb,#b3261e 14%,transparent) 5px 8px)}
+.hoja .hdrlab{display:flex; justify-content:space-between; max-width:400px; font-size:12px; color:var(--text-secondary,var(--ts))}
+/* esquemáticos */
+.hoja .esq{overflow-x:auto; -webkit-overflow-scrolling:touch}
+/* 400 px mínimo: así el texto del esquemático nunca baja de 12 px; en el celular se desliza de lado */
+.hoja .esq svg{display:block; width:100%; min-width:400px; height:auto; color:var(--text-primary,var(--tp))}
+@media (max-width:480px){
+  .hoja{padding:14px 12px 48px}
+  .hoja .cables{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+.hoja svg text{font-family:inherit; fill:currentColor}
+.hoja svg .s{fill:var(--text-secondary,var(--ts))}
+.hoja svg .tp{fill:var(--pwr-t)} .hoja svg .tg{fill:var(--sig-t)} .hoja svg .td{fill:var(--dat-t)}
+.hoja svg .tk{fill:var(--ok-t)} .hoja svg .tb{fill:var(--bad-t)} .hoja svg .to{fill:#9e9e9e}
+.hoja svg .box{fill:var(--surface-1,var(--s2)); stroke:currentColor; stroke-width:1.3}
+.hoja svg .mask{fill:var(--surface-0,var(--s1))}
+.hoja .leyenda{display:flex; flex-wrap:wrap; gap:6px 16px; font-size:12.5px; color:var(--text-secondary,var(--ts)); margin:6px 0 0}
+.hoja .leyenda span{display:inline-flex; align-items:center; gap:6px}
+.hoja .leyenda i{display:inline-block; width:22px; height:0; border-top:3px solid}
+/* callouts */
+.hoja .dudas{display:grid; grid-template-columns:1fr 1fr; gap:1.25rem}
+@media (max-width:900px){ .hoja .dudas{grid-template-columns:1fr} }
+.hoja .co{border:2px solid; border-radius:8px; padding:16px 18px}
+.hoja .co-t{font-weight:500; margin-bottom:8px; font-size:15px; line-height:1.4}
+.hoja .co-b{font-size:14px; line-height:1.6}
+.hoja .co-b p{margin:0 0 8px}
+.hoja .co-b ul{margin:0 0 8px; padding-left:18px}
+.hoja .co-b li{margin-bottom:4px}
+.hoja .co-dat{border-color:#6b3fa0} .hoja .co-dat .co-t{color:var(--dat-t)}
+.hoja .co-pwr{border-color:#1f5e8b} .hoja .co-pwr .co-t{color:var(--pwr-t)}
+.hoja .co-ok{border-color:#1e7d32} .hoja .co-ok .co-t{color:var(--ok-t)}
+.hoja .co-bad{border-color:#b3261e} .hoja .co-bad .co-t{color:var(--bad-t)}
+/* tablas */
+.hoja .tabla{overflow-x:auto; -webkit-overflow-scrolling:touch; margin:0 0 12px}
+/* sin DOCTYPE el navegador va en modo quirks y las tablas no heredan color ni letra: se fijan aquí */
+.hoja table{border-collapse:collapse; width:100%; min-width:560px; color:var(--text-primary,var(--tp));
+  font-family:inherit; font-size:13.5px; font-weight:400; line-height:1.5}
+.hoja td,.hoja th{color:inherit}
+.hoja th{text-align:left; font-weight:500; font-size:12px; letter-spacing:.05em; text-transform:uppercase;
+  color:var(--text-secondary,var(--ts)); padding:0 10px 8px 0; border-bottom:1px solid var(--border,var(--bd)); vertical-align:bottom}
+.hoja td{padding:9px 10px 9px 0; border-bottom:1px solid var(--border,var(--bd)); vertical-align:top}
+.hoja td:first-child{font-weight:500; white-space:nowrap}
+.hoja .grupo td{padding-top:16px; font-weight:500; letter-spacing:.05em; text-transform:uppercase; font-size:12px; color:var(--text-secondary,var(--ts))}
+.hoja ol,.hoja ul{margin:0 0 10px; padding-left:20px}
+.hoja li{margin-bottom:5px}
+.hoja .fuentes li{font-size:13px; line-height:1.5}
+/* agregado en las hojas por subsistema: navegación entre hojas */
+.hoja .nav{display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 14px; font-size:12.5px; line-height:1.5;
+  margin:0 0 16px; padding:0 0 8px; border-bottom:1px solid var(--border,var(--bd)); color:var(--text-secondary,var(--ts))}
+.hoja .nav a{text-decoration:none}
+.hoja .nav a:hover{text-decoration:underline}
+.hoja .nav .act{color:var(--text-primary,var(--tp)); font-weight:500; border-bottom:2px solid currentColor}
+.hoja .nav .gen{margin-left:auto}
+/* agregado: listas cortas de datos junto a un dibujo */
+.hoja .datos{margin:8px 0 0; padding-left:18px; font-size:13px; line-height:1.5}
+.hoja .datos li{margin-bottom:3px}
+</style>
+
+<div class="hoja">
+
+<nav class="nav" aria-label="Hojas de cableado">
+  <a href="0-sistema.html">Sistema</a>
+  <a href="1-alimentacion.html">Alimentación</a>
+  <a href="2-diagnostico.html">Diagnóstico</a>
+  <a href="3-pantalla.html">Pantalla</a>
+  <span class="act" aria-current="page">Botones</span>
+  <a href="5-direccion.html">Dirección</a>
+  <a class="gen" href="../conexion.html">hoja general</a>
+</nav>
+
+<h1>¿Cómo se conectan los botones del manubrio a la Pi?</h1>
+<p class="bajada">Dos botones Schurter en el manubrio → un par trenzado por botón → prensaestopas PG7 → conector Dupont 1 × 7 en la Raspberry Pi 5 (pines 9, 11 y 13).
+Resuelve: cuál de las tres lengüetas del botón va a dónde, si los botones llevan resistencia o se alimentan, qué cable usar y cuánto dejarle para el giro,
+si sirven los interruptores originales de la moto, qué pasa si un cable se pela, y cómo probarlos sin abrir la app.</p>
+
+<div class="banda b-ok">
+  <h3>Medido contra no medido</h3>
+  <p style="margin:0">Nada de esta hoja se ha medido en la moto ni en la Pi. Los botones solo se probaron con teclas del teclado y con un <code>gpiozero</code> simulado (README).
+  Los datos salen del datasheet de Schurter, de la documentación de Raspberry Pi, de tu manual de servicio (<b>ZX636ED/FD, 2013</b>) y del código del repo.
+  La computadora es la <b>Raspberry Pi 5 de 8 GB del ISIC</b>: de ella se ha medido corriente y temperatura para ese proyecto, nada de sus GPIO.
+  Lo que falta medir dice <span class="pend">por confirmar</span>.</p>
+</div>
+
+<div class="banda b-bad">
+  <h3>Lo que cambia el plan: el 3-145-122 es IP67 solo por el frente</h3>
+  <p style="margin:0 0 6px">Schurter da «IP66 and IP67 Front Side» para toda la serie, pero en su tabla de variantes el <b>3-145-122</b> trae el microinterruptor de atrás en <b>IP40</b>
+  (columna «IP specification backside»). IP40 no protege contra el agua. En el manubrio, la lluvia y el agua del lavado llegan por detrás, justo a las lengüetas,
+  y una película de agua entre el NO y el COM se lee igual que un dedo apretando.</p>
+  <ul style="margin:0">
+    <li><b>Lo limpio:</b> el <b>3-145-275</b>, la misma medida (16 mm, 100 mA, SPDT, contacto de oro) con el microinterruptor IP67.
+    A carga máxima dura 50 000 operaciones en vez de 200 000. <span class="pend">por confirmar</span> precio y existencia en Mouser.</li>
+    <li><b>Si ya compraste el 122:</b> que la abrazadera impresa cierre por detrás, con termofil en cada lengüeta y el cable saliendo hacia abajo para que el agua escurra.</li>
+    <li><b>En los dos casos</b> conviene el pull-up externo de 4.7 kΩ (duda 4): la línea queda de 7 a 15 veces más difícil de jalar a tierra
+    (si el pull-up interno se parece al de la Pi 4), y el agua o el ruido tienen que empujar mucho más para fingir un toque.</li>
+  </ul>
+</div>
+
+<!-- ======================================================= -->
+<h2>1 · El botón, el header y a dónde va cada punta</h2>
+
+<div class="cols">
+  <div class="lista">
+    <div class="caja">
+      <h3>La pieza como se ve: Schurter MSM II 16 (3-145-122), por detrás</h3>
+      <p class="why" style="margin-bottom:6px">Botón momentáneo de acero inoxidable con un microinterruptor de tres lengüetas atornillado atrás. No trae LED, así que no hay terminales de luz.</p>
+      <div class="esq">
+        <svg viewBox="0 0 400 336" role="img" aria-label="Dibujo del botón Schurter: de lado en corte, actuador, bisel con O-ring, pared de la abrazadera, tuerca de 19 milímetros, microinterruptor y tres lengüetas de 2.8 milímetros; abajo, vista por detrás con las tres lengüetas en fila numeradas 1, 2 y 3">
+          <defs>
+            <pattern id="b4-rayas" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+              <line x1="0" y1="0" x2="0" y2="6" stroke="#9e9e9e" stroke-width="1.2"/>
+            </pattern>
+          </defs>
+          <text x="10" y="16" font-size="12" font-weight="500">De lado, en corte</text>
+          <!-- actuador y bisel -->
+          <rect class="box" x="44.4" y="30" width="51.2" height="7" rx="1.5"/>
+          <rect class="box" x="30" y="37" width="80" height="8" rx="2"/>
+          <rect x="36" y="45" width="68" height="2" fill="currentColor"/>
+          <!-- pared de la abrazadera -->
+          <rect x="14" y="47" width="24" height="18" fill="url(#b4-rayas)" stroke="#9e9e9e" stroke-width="1"/>
+          <rect x="102" y="47" width="16" height="18" fill="url(#b4-rayas)" stroke="#9e9e9e" stroke-width="1"/>
+          <!-- cuerpo roscado, tuerca, portador y microinterruptor -->
+          <rect class="box" x="38" y="47" width="64" height="36"/>
+          <rect class="box" x="32" y="65" width="76" height="10" rx="1"/>
+          <rect class="box" x="48" y="83" width="44" height="25"/>
+          <rect class="box" x="30" y="108" width="80" height="39" rx="2" stroke-width="1.6"/>
+          <rect x="36" y="147" width="2.4" height="32" fill="currentColor"/>
+          <rect x="70" y="147" width="2.4" height="32" fill="currentColor"/>
+          <rect x="100" y="147" width="2.4" height="32" fill="currentColor"/>
+          <!-- cota -->
+          <line x1="126" y1="45" x2="126" y2="179" stroke="#9e9e9e" stroke-width="1"/>
+          <line x1="121" y1="45" x2="131" y2="45" stroke="#9e9e9e" stroke-width="1"/>
+          <line x1="121" y1="179" x2="131" y2="179" stroke="#9e9e9e" stroke-width="1"/>
+          <text x="126" y="195" text-anchor="middle" font-size="12" class="s">33.5 mm</text>
+          <!-- etiquetas -->
+          <line x1="180" y1="32" x2="96" y2="33" stroke="currentColor" stroke-width="0.8"/>
+          <text x="184" y="36" font-size="12">actuador Ø12.8 · 4.5 N</text>
+          <line x1="180" y1="50" x2="110" y2="42" stroke="currentColor" stroke-width="0.8"/>
+          <text x="184" y="54" font-size="12">bisel Ø20 + O-ring: IP67</text>
+          <line x1="180" y1="68" x2="118" y2="58" stroke="currentColor" stroke-width="0.8"/>
+          <text x="184" y="72" font-size="12" class="s">pared de la abrazadera</text>
+          <line x1="180" y1="86" x2="108" y2="72" stroke="currentColor" stroke-width="0.8"/>
+          <text x="184" y="90" font-size="12">tuerca M16, llave de 19 mm</text>
+          <text x="184" y="106" font-size="12" class="s">máx. 2 N·m: es de plástico</text>
+          <line x1="180" y1="124" x2="110" y2="126" stroke="currentColor" stroke-width="0.8"/>
+          <text x="184" y="128" font-size="12">microinterruptor (viene suelto)</text>
+          <text x="184" y="144" font-size="12" class="tb">IP40 por detrás ✗</text>
+          <line x1="180" y1="164" x2="103" y2="166" stroke="currentColor" stroke-width="0.8"/>
+          <text x="184" y="168" font-size="12">3 lengüetas de 2.8 × 0.5 mm</text>
+          <!-- vista por detrás -->
+          <text x="10" y="216" font-size="12" font-weight="500">Por detrás (aprox.)</text>
+          <circle cx="80" cy="272" r="40" fill="none" stroke="#9e9e9e" stroke-width="1.2" stroke-dasharray="4 3"/>
+          <polygon points="123.9,272 101.9,310 58.1,310 36.1,272 58.1,234 101.9,234" fill="none" stroke="currentColor" stroke-width="1.3"/>
+          <rect class="box" x="40" y="254" width="80" height="36" rx="2" stroke-width="1.6"/>
+          <rect x="45.7" y="266.5" width="3" height="11" fill="currentColor"/>
+          <rect x="79.7" y="266.5" width="3" height="11" fill="currentColor"/>
+          <rect x="109.7" y="266.5" width="3" height="11" fill="currentColor"/>
+          <text x="47.2" y="328" text-anchor="middle" font-size="12">1</text>
+          <text x="81.2" y="328" text-anchor="middle" font-size="12">2</text>
+          <text x="111.2" y="328" text-anchor="middle" font-size="12">3</text>
+          <text x="150" y="242" font-size="12">1 · 2 · 3: lengüetas en fila</text>
+          <text x="150" y="260" font-size="12" class="s">una es COM, otra NO, otra NC</text>
+          <text x="150" y="278" font-size="12" class="s">el datasheet no dice cuál</text>
+          <text x="150" y="296" font-size="12" class="tb">márcalas con el multímetro</text>
+          <text x="150" y="316" font-size="12" class="s">sin LED: no hay más terminales</text>
+        </svg>
+      </div>
+      <ul class="datos">
+        <li>Contacto <b>SPDT</b> (COM, NO y NC), de <b>oro</b>: máx. 30 V CC y 0.1 A, menos de 50 mΩ cerrado, rebote menor a 5 ms.</li>
+        <li>Agujero de <b>Ø16.1 (+0.1) mm</b> sin muesca antigiro (el modelo sin luz no la trae); rosca M16 × 1. Imprime el agujero un poco más grande y prueba el ajuste.</li>
+        <li>Tuerca de plástico (PA) de 19 mm entre caras, <b>máx. 2 N·m</b>. Schurter vende aparte una de acero inoxidable (0098.9260), por si la vibración la afloja.</li>
+        <li>El microinterruptor (20 mm de ancho) no pasa por el agujero de 16: viene suelto en la caja y se encaja <b>después</b> de apretar la tuerca.</li>
+        <li>Detrás de la pared ocupa 33.5 mm hasta la punta de las lengüetas, más la zapata y la curva del cable. Trabaja de −30 a 85 °C.</li>
+      </ul>
+    </div>
+
+    <div class="caja">
+      <h3>Del lado de la Pi: pines 1–14 del header</h3>
+      <p class="why" style="margin-bottom:2px">Pi vista desde arriba, con el header en el borde de arriba y el pin 1 a la izquierda. La Pi 5 tiene el mismo header de 40 pines que la Pi 4
+      (documentación oficial); el comando <code>pinout</code> lo dibuja en la terminal para que lo compares.</p>
+      <div class="hdrlab"><span>fila del borde (pares)</span></div>
+      <div class="hdr">
+        <div><b>2</b>5V</div><div><b>4</b>5V</div><div><b>6</b>GND</div><div><b>8</b>G14</div><div><b>10</b>G15</div><div><b>12</b>G18</div><div><b>14</b>GND</div>
+        <div class="h-pwr3"><b>1</b>3V3</div><div class="h-dat"><b>3</b>SDA</div><div class="h-dat"><b>5</b>SCL</div><div><b>7</b>vacío</div><div class="h-gnd"><b>9</b>GND</div><div class="h-sig"><b>11</b>▶ G17</div><div class="h-sig"><b>13</b>◀ G27</div>
+      </div>
+      <div class="hdrlab"><span>fila de adentro (impares)</span></div>
+      <p class="tiny sub" style="margin:8px 0 0">Un solo Dupont 1 × 7 cubre la fila de adentro del 1 al 13: 3V3 · SDA · SCL · (vacío) · GND · ▶ · ◀.
+      De esta hoja son el <b>9</b>, el <b>11</b> y el <b>13</b>; el 1, el 3 y el 5 son del sensor de dirección. Como la Pi entra y sale de la caja,
+      marca con pintura la posición del pin 1 en la carcasa del Dupont.</p>
+    </div>
+
+    <h3>A dónde va cada lengüeta del botón ▶</h3>
+    <div class="fila"><div class="chip c-gnd"></div><div class="nom">COM</div>
+      <div><div class="dst">→ hilo blanco/verde → pin 9 · GND</div>
+      <div class="why">El común. Suelto no hace nada; al apretar se une con el NO y lleva el GPIO a tierra.
+      Regresa a la Pi por su propio hilo, trenzado con la señal, no por el manubrio ni por el cuadro.</div></div></div>
+    <div class="fila"><div class="chip c-sig"></div><div class="nom t-sig">NO</div>
+      <div><div class="dst">→ hilo verde → pin 11 · GPIO17 (siguiente)</div>
+      <div class="why">Normalmente abierto. Suelto, el pull-up deja la línea en 3.3 V; apretado, 0 V. Con el NO, un cable que se corta se lee «suelto» y no dispara nada.</div></div></div>
+    <div class="fila"><div class="chip c-off"></div><div class="nom t-off">NC</div>
+      <div><div class="dst t-off">sin conectar</div>
+      <div class="why">Normalmente cerrado: está unido al COM mientras el botón está suelto. Si lo usas por error, la Pi lee «apretado» todo el tiempo.
+      Cúbrelo con termofil para que no toque la abrazadera ni otra lengüeta.</div></div></div>
+    <div class="fila"><div class="chip c-sig"></div><div class="nom t-sig">botón ◀</div>
+      <div><div class="dst">→ igual, con el par azul: NO → pin 13 · GPIO27</div>
+      <div class="why">COM al blanco/azul (tierra) y NC sin conectar. Cada botón con su par: así no se confunden ni comparten regreso en el manubrio.</div></div></div>
+
+    <h3 style="margin-top:16px">A dónde va cada pin del Dupont 1 × 7</h3>
+    <div class="fila"><div class="chip c-pwr"></div><div class="nom t-pwr">pin 1 · 3V3</div>
+      <div><div class="dst">→ VCC del AS5600 (hoja Dirección)</div>
+      <div class="why">No es de los botones. Solo si pones los pull-ups externos de 4.7 kΩ (duda 4), salen de aquí, del lado de la Pi.</div></div></div>
+    <div class="fila"><div class="chip c-dat"></div><div class="nom t-dat">pin 3 · GPIO2</div>
+      <div><div class="dst">→ SDA del AS5600</div>
+      <div class="why">Bus I²C 1. Esta hoja no lo toca.</div></div></div>
+    <div class="fila"><div class="chip c-dat"></div><div class="nom t-dat">pin 5 · GPIO3</div>
+      <div><div class="dst">→ SCL del AS5600</div>
+      <div class="why">Bus I²C 1. Esta hoja no lo toca.</div></div></div>
+    <div class="fila"><div class="chip c-off"></div><div class="nom t-off">pin 7 · GPIO4</div>
+      <div><div class="dst t-off">hueco vacío del Dupont</div>
+      <div class="why">Se deja libre para que el conector de 7 vías no toque nada.</div></div></div>
+    <div class="fila"><div class="chip c-gnd"></div><div class="nom">pin 9 · GND</div>
+      <div><div class="dst">→ las dos tierras de los botones, empalmadas, y el GND del AS5600</div>
+      <div class="why">Es la referencia contra la que la Pi lee el 0 V del botón. Une los dos hilos blancos con soldadura y termofil en un solo hilo corto;
+      ese hilo comparte el terminal con el GND del AS5600, como pide la hoja general. Si no caben dos hilos en el terminal, empalma también el del AS5600.</div></div></div>
+    <div class="fila"><div class="chip c-sig"></div><div class="nom t-sig">pin 11 · GPIO17</div>
+      <div><div class="dst">→ NO del botón ▶ (hilo verde)</div>
+      <div class="why">El overlay lo vuelve la tecla → (keycode 106). Python la recibe como <code>Right</code> y C++ como <code>KEY_RIGHT</code>: siguiente vista.</div></div></div>
+    <div class="fila"><div class="chip c-sig"></div><div class="nom t-sig">pin 13 · GPIO27</div>
+      <div><div class="dst">→ NO del botón ◀ (hilo azul)</div>
+      <div class="why">La tecla ← (keycode 105): vista anterior. En la otra fila, junto a él, está el pin 14 (GND): el Dupont va solo en la fila de adentro.</div></div></div>
+    <div class="fila"><div class="chip c-off"></div><div class="nom t-off">el resto</div>
+      <div><div class="dst t-off">sin conectar</div>
+      <div class="why">2 y 4 (5 V): la Pi se alimenta por USB-C, no por aquí. 6 y 14 (GND) quedan libres; el daño que marca la hoja general era de la Pi 4 de membrane-rig,
+      y en la Pi 5 del ISIC no hay daño reportado.</div></div></div>
+  </div>
+
+  <div>
+    <div class="esq">
+      <svg viewBox="0 0 400 424" role="img" aria-label="Esquemático de un botón: pull-up interno del RP1 a 3.3 volts, GPIO17 en el pin 11, en punteado 100 nanofaradios a tierra, 1 kiloohm en serie y 4.7 kiloohms a 3.3 volts del pin 1; el par trenzado pasa por el prensaestopas PG7 hasta el botón, NO a la señal, COM a la tierra, NC sin conectar; la tierra regresa al pin 9">
+        <!-- Pi -->
+        <rect x="10" y="14" width="118" height="292" rx="8" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="5 4"/>
+        <text x="18" y="32" font-size="12" font-weight="500">Raspberry Pi 5</text>
+        <text x="18" y="47" font-size="12" class="s">entrada del RP1</text>
+        <line x1="34" y1="66" x2="66" y2="66" stroke="#1f5e8b" stroke-width="2"/>
+        <text x="72" y="70" font-size="12" class="tp">3.3 V</text>
+        <line x1="50" y1="66" x2="50" y2="78" stroke="#1f5e8b" stroke-width="2"/>
+        <polyline points="50,78 57,82 43,88 57,94 43,100 57,106 43,112 50,116" fill="none" stroke="currentColor" stroke-width="1.6"/>
+        <text x="64" y="92" font-size="12" class="s">pull-up</text>
+        <text x="64" y="107" font-size="12" class="s">interno</text>
+        <text x="64" y="122" font-size="12" class="tb">¿kΩ?</text>
+        <line x1="50" y1="116" x2="50" y2="140" stroke="#8a6d00" stroke-width="2"/>
+        <circle cx="50" cy="140" r="4" fill="#8a6d00"/>
+        <text x="18" y="168" font-size="12" class="tg">pin 11 · GPIO17</text>
+        <text x="18" y="204" font-size="12" class="tg">suelto 3.3 V</text>
+        <text x="18" y="220" font-size="12" class="tk">apretado 0 V ✓</text>
+        <line x1="50" y1="140" x2="158" y2="140" stroke="#8a6d00" stroke-width="2"/>
+        <!-- 100 nF opcional -->
+        <circle cx="158" cy="140" r="3.4" fill="#8a6d00"/>
+        <line x1="158" y1="140" x2="158" y2="196" stroke="currentColor" stroke-width="1.4" stroke-dasharray="4 3"/>
+        <line x1="146" y1="196" x2="170" y2="196" stroke="currentColor" stroke-width="2"/>
+        <line x1="146" y1="203" x2="170" y2="203" stroke="currentColor" stroke-width="2"/>
+        <line x1="158" y1="203" x2="158" y2="272" stroke="currentColor" stroke-width="1.4" stroke-dasharray="4 3"/>
+        <text x="176" y="204" font-size="12" class="s">100 nF</text>
+        <!-- 1 k en serie opcional -->
+        <line x1="158" y1="140" x2="178" y2="140" stroke="#8a6d00" stroke-width="2"/>
+        <polyline points="178,140 182,133 188,147 194,133 200,147 206,133 212,147 216,140" fill="none" stroke="currentColor" stroke-width="1.6" stroke-dasharray="3 2"/>
+        <text x="182" y="166" font-size="12" class="s">1 kΩ</text>
+        <line x1="216" y1="140" x2="244" y2="140" stroke="#8a6d00" stroke-width="2"/>
+        <circle cx="244" cy="140" r="3.4" fill="#8a6d00"/>
+        <!-- 4.7 k a 3.3 V opcional -->
+        <line x1="244" y1="140" x2="244" y2="118" stroke="currentColor" stroke-width="1.4" stroke-dasharray="3 2"/>
+        <polyline points="244,118 251,114 237,108 251,102 237,96 251,90 244,86" fill="none" stroke="currentColor" stroke-width="1.6" stroke-dasharray="3 2"/>
+        <line x1="244" y1="86" x2="244" y2="66" stroke="#1f5e8b" stroke-width="1.4" stroke-dasharray="3 2"/>
+        <line x1="234" y1="66" x2="254" y2="66" stroke="#1f5e8b" stroke-width="2"/>
+        <text x="258" y="70" font-size="12" class="tp">3.3 V · pin 1</text>
+        <text x="230" y="106" text-anchor="end" font-size="12" class="s">4.7 kΩ</text>
+        <!-- pared de la caja y PG7 -->
+        <line x1="266" y1="126" x2="266" y2="236" stroke="#9e9e9e" stroke-width="1.4" stroke-dasharray="6 4"/>
+        <rect x="260" y="128" width="12" height="70" rx="2" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <text x="278" y="120" font-size="12" class="s">PG7</text>
+        <line x1="244" y1="140" x2="276" y2="140" stroke="#8a6d00" stroke-width="2"/>
+        <!-- par trenzado -->
+        <polyline points="276,140 286,186 296,140 306,186 316,140" fill="none" stroke="#8a6d00" stroke-width="2"/>
+        <polyline points="276,186 286,140 296,186 306,140 316,186" fill="none" stroke="currentColor" stroke-width="2"/>
+        <text x="262" y="252" font-size="12" class="s">par trenzado del UTP</text>
+        <text x="262" y="268" font-size="12" class="tb">largo: por confirmar</text>
+        <!-- botón SPDT -->
+        <text x="316" y="120" font-size="12" font-weight="500">botón ▶</text>
+        <polyline points="316,140 360,140 360,163.4" fill="none" stroke="#8a6d00" stroke-width="2"/>
+        <circle cx="360" cy="166" r="2.6" fill="none" stroke="currentColor" stroke-width="1.6"/>
+        <text x="366" y="170" font-size="12">NO</text>
+        <line x1="316" y1="186" x2="319.4" y2="186" stroke="currentColor" stroke-width="2"/>
+        <circle cx="322" cy="186" r="2.6" fill="none" stroke="currentColor" stroke-width="1.6"/>
+        <text x="300" y="206" font-size="12">COM</text>
+        <line x1="324.4" y1="187.3" x2="357.6" y2="205" stroke="currentColor" stroke-width="2"/>
+        <circle cx="360" cy="206" r="2.6" fill="none" stroke="#9e9e9e" stroke-width="1.6"/>
+        <line x1="362.6" y1="206" x2="380" y2="206" stroke="#9e9e9e" stroke-width="1.6"/>
+        <line x1="380" y1="201" x2="390" y2="211" stroke="#9e9e9e" stroke-width="1.4"/>
+        <line x1="380" y1="211" x2="390" y2="201" stroke="#9e9e9e" stroke-width="1.4"/>
+        <text x="366" y="198" font-size="12" class="to">NC</text>
+        <line x1="340" y1="196" x2="340" y2="226" stroke="currentColor" stroke-width="1.4" stroke-dasharray="3 2"/>
+        <line x1="330" y1="226" x2="350" y2="226" stroke="currentColor" stroke-width="2"/>
+        <!-- regreso a tierra -->
+        <polyline points="276,186 252,186 252,272 50,272" fill="none" stroke="currentColor" stroke-width="2"/>
+        <circle cx="158" cy="272" r="3.4" fill="currentColor"/>
+        <circle cx="50" cy="272" r="4" fill="currentColor"/>
+        <text x="18" y="262" font-size="12">pin 9 · GND</text>
+        <text x="182" y="266" font-size="12" class="s">0 V</text>
+        <line x1="50" y1="272" x2="50" y2="286" stroke="currentColor" stroke-width="2"/>
+        <line x1="40" y1="286" x2="60" y2="286" stroke="currentColor" stroke-width="2"/>
+        <line x1="44" y1="291" x2="56" y2="291" stroke="currentColor" stroke-width="2"/>
+        <line x1="48" y1="296" x2="52" y2="296" stroke="currentColor" stroke-width="2"/>
+        <text x="64" y="294" font-size="12" class="s">= chasis</text>
+        <!-- notas -->
+        <text x="10" y="330" font-size="12" class="s">Punteado: opcional, no viene en el BOM (duda 4).</text>
+        <text x="10" y="346" font-size="12" class="s">Gris punteado: pared de la caja, con su PG7.</text>
+        <text x="10" y="362" font-size="12" class="s">El ◀ es igual: pin 13 · GPIO27, con su propio par.</text>
+        <text x="10" y="378" font-size="12" class="tk">Al apretar: 3.3 V ÷ pull-up; con 4.7 kΩ, 0.7 mA ✓</text>
+        <text x="10" y="394" font-size="12" class="tk">Contacto de oro: aguanta 30 V CC y 100 mA ✓</text>
+        <text x="10" y="412" font-size="12" class="tb">✗ Ningún hilo de botón va a 5 V ni a 12 V.</text>
+      </svg>
+    </div>
+    <div class="leyenda">
+      <span><i style="border-color:#8a6d00"></i>señal del botón</span>
+      <span><i style="border-color:#1f5e8b"></i>3.3 V</span>
+      <span><i style="border-color:var(--gnd)"></i>tierra</span>
+      <span><i style="border-color:#9e9e9e; border-top-style:dashed"></i>sin conectar / pared</span>
+    </div>
+    <p class="tiny sub" style="margin-top:6px">La tierra de la Pi es el chasis: el negativo del convertidor va al negativo de la batería (hoja Alimentación).
+    Por eso un hilo de botón pelado que toca el cuadro se lee «apretado» (duda 3).</p>
+
+    <div class="caja" style="margin-top:14px">
+      <h3>¿Cabe? Los números</h3>
+      <div class="tabla">
+        <table style="min-width:440px">
+          <tr><th>Qué</th><th>Valor</th><th>Contra qué</th></tr>
+          <tr><td>Suelto</td><td>3.3 V, sin corriente</td><td class="t-ok">entrada de 3.3 V ✓</td></tr>
+          <tr><td>Apretado</td><td>≈ 0 V: contacto &lt; 50 mΩ y 2 m de 24 AWG ≈ 0.17 Ω, por 1 mA o menos</td><td class="t-ok">muy abajo de cualquier umbral de «bajo» ✓</td></tr>
+          <tr><td>Corriente, solo pull-up interno</td><td>3.3 V ÷ pull-up del RP1 <span class="pend">por confirmar</span> (con los 33–73 kΩ de la Pi 4 serían 45–100 µA)</td><td class="t-ok">máx. del contacto: 100 mA ✓</td></tr>
+          <tr><td>Corriente, con 4.7 kΩ</td><td>3.3 V ÷ 4.7 kΩ = 0.70 mA</td><td class="t-ok">100 mA ✓</td></tr>
+          <tr><td>Voltaje sobre el contacto</td><td>3.3 V</td><td class="t-ok">máx. 30 V CC ✓</td></tr>
+          <tr><td>Rebote</td><td>&lt; 5 ms (Schurter)</td><td class="t-ok">antirrebote del driver: 5 ms ✓, justo</td></tr>
+          <tr><td>Corriente mínima</td><td>Schurter no la publica</td><td>el oro no forma óxido; Schurter lo pone justo en la versión de 100 mA, la de señales</td></tr>
+        </table>
+      </div>
+      <p class="why" style="margin:0">Raspberry Pi no publica ni el valor del pull-up ni el umbral de «bajo» del RP1: su tabla de GPIO llega hasta la Pi 4 y el datasheet del RP1 no los trae.
+      Con el botón apretado la línea está en 0 V, así que el umbral exacto no cambia nada. El pull-up se mide en el paso 7 de «Antes de energizar».</p>
+    </div>
+  </div>
+</div>
+
+<!-- ======================================================= -->
+<h2>2 · El cable: un par trenzado por botón</h2>
+
+<div class="cols">
+  <div>
+    <h3>Por qué un par del UTP por botón y no un cable de 3 hilos</h3>
+    <ul>
+      <li><b>Ya lo tienes:</b> el UTP Cat5e del inventario. El cable de 3 hilos habría que comprarlo.</li>
+      <li><b>Cada señal viaja trenzada con su propia tierra.</b> El lazo que forman los dos hilos casi no encierra área, así que el campo de las bobinas de encendido
+      y del faro casi no le induce nada. Con 3 hilos, el ▶ y el ◀ compartirían un solo regreso y uno de los dos quedaría sin pareja.</li>
+      <li><b>El forro es una segunda capa de aislamiento</b> contra el roce en los topes del manubrio, que es lo que evita el caso del 12 V (duda 3).</li>
+      <li><b>Ojo con el BOM:</b> dice «uno [par] para los botones». Un par son dos hilos y dos botones necesitan al menos tres. Usa dos pares.</li>
+    </ul>
+    <div class="tabla">
+      <table style="min-width:440px">
+        <tr><th>Par</th><th>Hilo</th><th>En el botón</th><th>En el Dupont</th></tr>
+        <tr><td>verde</td><td>verde</td><td>NO del ▶</td><td>pin 11 · GPIO17</td></tr>
+        <tr><td>verde</td><td>blanco/verde</td><td>COM del ▶</td><td>pin 9 · GND (empalme)</td></tr>
+        <tr><td>azul</td><td>azul</td><td>NO del ◀</td><td>pin 13 · GPIO27</td></tr>
+        <tr><td>azul</td><td>blanco/azul</td><td>COM del ◀</td><td>pin 9 · GND (empalme)</td></tr>
+        <tr><td class="t-off">naranja y café</td><td class="t-off">los cuatro</td><td class="t-off">sin conectar</td><td class="t-off">sin conectar</td></tr>
+      </table>
+    </div>
+    <p class="why">Los colores son los de la norma del Cat5e (pares naranja, verde, azul y café). <b>Verde y azul, y no naranja</b>, a propósito: el cable del sensor usa los pares naranja y café
+    (hoja Dirección), y su naranja va al pin 1 (3.3 V). Si los dos cables trajeran un naranja, al armar el Dupont podrías cruzarlos, y un botón en el pin 1 pone el 3.3 V en corto cada vez que lo aprietas.
+    Así, entre los hilos que llegan al Dupont cada color aparece una sola vez. Los pares naranja y café de este cable no se cortan: dóblalos hacia atrás con termofil en las puntas,
+    lejos del Dupont, y te sirven de repuesto o para un tercer botón.</p>
+
+    <h3>Antes de cortar, revisa dos cosas del cable</h3>
+    <ul>
+      <li><b>Que sea multifilar, no sólido.</b> Pela una punta: si cada hilo es un solo alambre, es cable de instalación y se rompe por fatiga con el giro del manubrio.
+      Los cables de parcheo (los que ya traen conector) suelen ser multifilares. <span class="pend">por confirmar</span></li>
+      <li><b>Que entre en el PG7.</b> El prensaestopas sella cables de 3 a 6 mm (BOM) y un Cat5e suele andar por 5–6 mm: mídelo con el vernier. <span class="pend">por confirmar</span></li>
+    </ul>
+
+    <h3>Las puntas</h3>
+    <ul>
+      <li><b>En el botón:</b> las lengüetas son «quick connect» de 2.8 × 0.5 mm. Llevan zapatas hembra de 2.8 mm aisladas, de las de cable delgado (26–22 AWG).
+      El hilo del UTP es de 24 o 26 AWG: si la zapata no lo muerde bien, dobla la punta pelada para engrosarla, o suelda rápido para no calentar el microinterruptor.</li>
+      <li><b>En la caja:</b> los dos pares entran juntos, dentro de su forro, por un PG7 propio. Adentro, el verde y el azul van a sus terminales Dupont;
+      los dos blancos se empalman en un solo hilo al pin 9.</li>
+    </ul>
+
+    <div class="caja" style="margin-top:12px">
+      <h3 class="t-bad">Para armarlo falta, y no viene en el BOM</h3>
+      <ul style="margin:0">
+        <li>4 zapatas hembra aisladas de 2.8 × 0.5 mm, para cable de 26–22 AWG (más repuestos).</li>
+        <li>La carcasa Dupont 1 × 7 y sus terminales hembra (los comparte con el sensor de dirección), o cables Dupont hembra ya armados.</li>
+        <li>Opcional, lo punteado: 2 resistencias de 1 kΩ, 2 de 4.7 kΩ (¼ W) y 2 capacitores cerámicos de 100 nF (X7R, 50 V), más una tirita de placa perforada.</li>
+        <li>Opcional, contra un toque al 12 V: 4 diodos Schottky BAT85, dos por botón (duda 3).</li>
+      </ul>
+    </div>
+  </div>
+
+  <div>
+    <div class="esq">
+      <svg viewBox="0 0 400 328" role="img" aria-label="Vista desde arriba del frente de la moto: caja de la Pi fija detrás del tablero, columna de dirección con las tijas y la horquilla, semimanubrios; los botones en el semimanubrio izquierdo, el cable va por dentro de la horquilla izquierda y por arriba de la columna, hace un lazo de holgura y entra a la caja por el PG7">
+        <text x="10" y="18" font-size="12" font-weight="500">Vista desde arriba</text>
+        <text x="390" y="18" text-anchor="end" font-size="12" class="s">↑ frente de la moto</text>
+        <!-- caja fija -->
+        <rect class="box" x="120" y="32" width="160" height="44" rx="6" stroke-width="1.8"/>
+        <text x="200" y="51" text-anchor="middle" font-size="13.5" font-weight="500">caja de la Pi</text>
+        <text x="200" y="68" text-anchor="middle" font-size="12" class="s">fija, detrás del tablero</text>
+        <rect x="166" y="76" width="14" height="8" rx="2" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <text x="186" y="94" font-size="12" class="s">PG7</text>
+        <!-- tija, horquilla y columna -->
+        <rect x="104" y="156" width="192" height="30" rx="15" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <circle class="box" cx="122" cy="171" r="12"/>
+        <circle class="box" cx="278" cy="171" r="12"/>
+        <circle cx="200" cy="171" r="9" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <line x1="194" y1="171" x2="206" y2="171" stroke="currentColor" stroke-width="1"/>
+        <line x1="200" y1="165" x2="200" y2="177" stroke="currentColor" stroke-width="1"/>
+        <text x="200" y="206" text-anchor="middle" font-size="12" class="s">columna (eje del giro)</text>
+        <!-- semimanubrios -->
+        <line x1="110" y1="188" x2="24" y2="214" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+        <line x1="290" y1="188" x2="376" y2="214" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+        <rect class="box" x="46" y="195" width="20" height="18" rx="3" transform="rotate(-17 56 204)"/>
+        <circle class="box" cx="80" cy="206" r="5"/>
+        <circle class="box" cx="94" cy="202" r="5"/>
+        <text x="10" y="244" font-size="12">botones ▶ ◀</text>
+        <line x1="78" y1="234" x2="86" y2="211" stroke="currentColor" stroke-width="0.8"/>
+        <text x="10" y="260" font-size="12" class="tb">lado: por confirmar</text>
+        <text x="300" y="236" font-size="12" class="s">acelerador</text>
+        <!-- ruta del cable -->
+        <path d="M 90 202 L 140 187 L 152 152 L 160 124 A 9 9 0 1 1 178 124 A 9 9 0 1 1 160 124 L 166 100 L 173 84" fill="none" stroke="#8a6d00" stroke-width="2.6" stroke-linejoin="round"/>
+        <text x="192" y="128" font-size="12" class="tg">lazo de holgura</text>
+        <text x="10" y="92" font-size="12">por dentro de</text>
+        <text x="10" y="106" font-size="12">la horquilla y</text>
+        <text x="10" y="120" font-size="12">por arriba de</text>
+        <text x="10" y="134" font-size="12">la columna,</text>
+        <text x="10" y="148" font-size="12" class="s">como el cable</text>
+        <text x="10" y="162" font-size="12" class="s">de los mandos</text>
+        <text x="10" y="176" font-size="12" class="s">(p. 683)</text>
+        <!-- notas -->
+        <text x="10" y="284" font-size="12" class="s">Línea dorada: el UTP de los botones.</text>
+        <text x="10" y="300" font-size="12" class="s">Giran: manubrio, horquilla y tijas. Fijos: caja y tablero.</text>
+        <text x="10" y="318" font-size="12">De tope a tope, el cable no se estira ni se pellizca.</text>
+      </svg>
+    </div>
+    <p class="tiny sub" style="margin-top:6px">Esquema, no a escala. La caja va fija al frente, así que el cable cruza el eje del giro: el lazo junto a la columna es lo que absorbe la vuelta.</p>
+
+    <h3 style="margin-top:14px">Largo, ruta y holgura</h3>
+    <ol>
+      <li>Con la moto en su soporte, lleva un cordón desde el botón hasta la caja por la ruta del cable de los mandos del lado izquierdo:
+      por dentro de la horquilla y por arriba de la columna (manual p. 683).</li>
+      <li>Gira el manubrio todo a la izquierda y todo a la derecha. Marca el largo en el tope que más lo estira y agrega el lazo de holgura junto a la columna.</li>
+      <li>Amarra el UTP al cable original con cinchos, sin apretarlo contra los mandos ni contra el portaimán del sensor.
+      Kawasaki advierte que un cable mal ruteado que no deje llegar la dirección a su tope puede causar un accidente (p. 458).</li>
+    </ol>
+    <p class="why">El largo queda <span class="pend">por confirmar</span>: la hoja general dibuja ~1.5 m, pero lo que manda es el cordón.
+    El lado también: a la izquierda los alcanza el pulgar sin soltar el acelerador. <span class="pend">por confirmar</span> el diámetro del semimanubrio con un vernier
+    (22 mm esperado) para diseñar la abrazadera.</p>
+  </div>
+</div>
+
+<!-- ======================================================= -->
+<h2>3 · La configuración y cómo probarlo sin la app</h2>
+
+<div class="cols">
+  <div>
+    <div class="caja">
+      <h3>En <code>/boot/firmware/config.txt</code> de la microSD de la moto</h3>
+<pre># Boton siguiente (flecha derecha) - pin 11
+dtoverlay=gpio-key,gpio=17,active_low=1,gpio_pull=up,keycode=106
+# Boton anterior (flecha izquierda) - pin 13
+dtoverlay=gpio-key,gpio=27,active_low=1,gpio_pull=up,keycode=105</pre>
+      <p class="why" style="margin:0">Con los comentarios en su propia línea, como pide la documentación oficial de <code>config.txt</code>.
+      La línea <code>dtparam=i2c_arm=on</code> del sensor también va en este archivo (hoja Dirección). Se reinicia para que tome efecto.</p>
+    </div>
+    <ul>
+      <li><b>Funciona igual en la Pi 5.</b> En su device tree, la etiqueta <code>gpio</code> que usa el overlay apunta al RP1 (<code>gpio: &amp;rp1_gpio</code>), y el driver del RP1 acepta
+      los mismos <code>brcm,pins</code> y <code>brcm,pull</code> del overlay. Los números de GPIO del header son los mismos que en la Pi 4.</li>
+      <li><b>Vive en la microSD de la moto.</b> La del ISIC no lo trae: cuando la Pi regresa al ISIC, el 17 y el 27 quedan como entradas comunes y el arnés se quedó en la caja de la moto.</li>
+      <li><b>No tiene parámetro de antirrebote:</b> usa los 5 ms por defecto del driver <code>gpio-keys</code>. Tampoco le pide al kernel repetir la tecla,
+      pero el entorno gráfico sí puede repetir una tecla que se queda abajo (duda 3).</li>
+      <li><b>Uno u otro, no los dos:</b> con el overlay puesto, no definas <code>BTN_NEXT_GPIO</code> ni <code>BTN_PREV_GPIO</code>. El kernel ya tiene esos pines, y <code>gpiozero</code> los pediría otra vez.
+      Si algún día usas la opción de <code>gpiozero</code>, en la Pi 5 dentro de un venv también necesita <code>lgpio</code>.</li>
+    </ul>
+  </div>
+
+  <div>
+    <h3>Probarlo sin la app</h3>
+<pre># 1. ¿El overlay prendió el pull-up? (botones sueltos)
+pinctrl get 17,27
+#  17: ip    pu | hi // GPIO17 = input
+#  27: ip    pu | hi // GPIO27 = input
+
+# 2. Ver el cambio en vivo mientras aprietas (Ctrl+C para salir)
+pinctrl poll 17,27
+#  17: lo // GPIO17      al apretar ▶
+#  17: hi // GPIO17      al soltar
+
+# 3. Ver la tecla que recibe el sistema
+sudo apt install evtest
+sudo evtest
+#  elige el dispositivo del botón y aprieta ▶:
+#  ... type 1 (EV_KEY), code 106 (KEY_RIGHT), value 1
+#  ... type 1 (EV_KEY), code 106 (KEY_RIGHT), value 0
+#  con ◀: code 105 (KEY_LEFT)</pre>
+    <p class="why"><code>ip</code> = entrada, <code>pu</code> = pull-up prendido, <code>hi</code>/<code>lo</code> = lo que lee la Pi. Si <code>pinctrl</code> dice que no tiene permiso, ponle <code>sudo</code> adelante.
+    En <code>evtest</code> aparece un dispositivo por botón; <span class="pend">por confirmar</span> el nombre exacto con el que salen en tu Pi.</p>
+    <div class="tabla">
+      <table style="min-width:420px">
+        <tr><th>Si ves…</th><th>Quiere decir</th></tr>
+        <tr><td><code>pu | hi</code> suelto, <code>lo</code> apretado</td><td class="t-ok">Cableado y overlay bien ✓</td></tr>
+        <tr><td><code>pd</code> o <code>pn</code> en vez de <code>pu</code></td><td>El overlay no cargó: revisa la línea de <code>config.txt</code> y reinicia.</td></tr>
+        <tr><td><code>lo</code> siempre, aun suelto</td><td class="t-bad">Hilo pelado contra el cuadro, NC en vez de NO, o agua en las lengüetas.</td></tr>
+        <tr><td><code>hi</code> siempre, aun apretado</td><td>Cable cortado, zapata floja o el NO y el COM al revés de lo que crees: repite el paso 1.</td></tr>
+        <tr><td>en <code>evtest</code>, dos <code>value 1</code> por toque</td><td>Rebote más largo que 5 ms: el filtro de la duda 4 no lo arregla.</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ======================================================= -->
+<h2>Dudas</h2>
+
+<div class="dudas">
+
+  <div class="co co-ok">
+    <div class="co-t">«¿Los botones llevan resistencia o se alimentan?»</div>
+    <div class="co-b">
+      <p><b>No se alimentan.</b> Un botón es pasivo: dos piezas de metal que se tocan cuando lo aprietas. No tiene pin de corriente ni polaridad;
+      lo único que hace es unir el GPIO con la tierra.</p>
+      <p><b>Para funcionar, no llevan resistencia.</b> La resistencia ya está dentro de la Pi: el overlay prende el pull-up del RP1 (<code>gpio_pull=up</code>),
+      que jala la línea a 3.3 V mientras el botón está suelto. Al apretar, el botón la lleva a 0 V y el kernel manda la tecla.</p>
+      <p><b>Nunca a 3.3 V, 5 V ni 12 V.</b> Entre el GPIO y 3.3 V, el botón nunca se leería apretado, porque la línea ya está arriba.
+      Entre el GPIO y 5 V, cada toque metería 5 V a una entrada de 3.3 V.</p>
+      <p style="margin:0">Lo punteado del esquemático (1 kΩ, 100 nF y 4.7 kΩ) no es para que funcione: es para que aguante la moto (duda 4).</p>
+    </div>
+  </div>
+
+  <div class="co co-bad">
+    <div class="co-t">«¿Puedo usar los interruptores originales del manubrio?»</div>
+    <div class="co-b">
+      <p><b>No.</b> Son parte de los circuitos de 12 V de la moto, no contactos sueltos. Según la tabla «Left Switch Housing Connections» de tu manual (p. 500):</p>
+      <ul>
+        <li>El del <b>claxon</b> une BK/W con BK/Y, y el de <b>pasar luces</b> une R/Y con R/BK, del circuito del faro.</li>
+        <li>El de <b>modo</b> (P, BK/BL, Y) le avisa al tablero.</li>
+        <li>Del lado derecho, el de <b>arranque</b> (R/BK) y el de <b>paro</b> (R) son entradas de la ECU, pines 34 y 56 (p. 105).</li>
+      </ul>
+      <p style="margin:0">Colgar un GPIO de cualquiera de ellos mete hasta 14.7 V a un pin de 3.3 V, o le cambia la señal a la ECU o al tablero.
+      Leerlos sin quitarles su función pediría un optoacoplador por interruptor, y eso no está en el plan. Los Schurter van aparte y no tocan nada de la moto.</p>
+    </div>
+  </div>
+
+  <div class="co co-bad">
+    <div class="co-t">«¿Qué pasa si un cable se pela y toca el chasis o el 12 V?»</div>
+    <div class="co-b">
+      <ul>
+        <li><b>Toca el chasis:</b> la tierra de la Pi es el chasis, así que la línea se queda en 0 V y se lee «apretado» todo el tiempo. No se daña nada.
+        Lo más probable es que en Python la vista avance sola por la repetición de tecla del entorno gráfico; en C++ no, porque raylib usa <code>IsKeyPressed</code>. Se arregla aislando el hilo.</li>
+        <li><b>Se corta:</b> el pull-up deja la línea en 3.3 V y se lee «suelto». Ese botón deja de servir y nada más. Por eso va al NO y no al NC.</li>
+        <li><b>Toca el 12 V:</b> entran 12–14.7 V a un pin de 3.3 V. Lo más que dice el datasheet del RP1 es que casi no entra corriente al pin mientras esté abajo de 3.63 V;
+        arriba de eso no promete nada.
+        En la Pi 5, el RP1 también maneja los USB, el Ethernet y las cámaras, así que el daño puede pasar del GPIO, y es la Pi del ISIC.
+        El 1 kΩ en serie limita la corriente a unos 10 mA, pero Raspberry Pi no publica cuánto aguanta la entrada: <b>no es garantía</b>.</li>
+        <li><b>Lo que sí evita ese caso:</b> el forro del UTP como segunda capa, termofil en cada lengüeta, el cable lejos de bornes y conectores de 12 V, y que nada roce de tope a tope.
+        Si quieres blindarlo: dos diodos Schottky (BAT85) del lado de la Pi del 1 kΩ, uno con la banda hacia el 3.3 V y otro con la banda hacia la línea y la otra pata a GND.
+        Mandan esa corriente al riel de 3.3 V en vez de al RP1. Van con el pull-up de 4.7 kΩ puesto, para que su fuga no cuente. No vienen en el BOM.</li>
+        <li><b>Le entra agua por detrás:</b> con el 3-145-122 (IP40 atrás), el agua entre lengüetas puede verse como un toque. Ver el recuadro rojo de arriba.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="co co-pwr">
+    <div class="co-t">«¿Cuándo vale la pena lo punteado?»</div>
+    <div class="co-b">
+      <p><b>En la mesa, nunca:</b> el botón funciona solo con el pull-up interno. <b>En la moto, sí</b>, y en este orden:</p>
+      <ul>
+        <li><b>4.7 kΩ a 3.3 V (pin 1), del lado del cable.</b> Es lo que más ayuda: la línea queda de 7 a 15 veces más difícil de jalar a tierra
+        (si el interno se parece a los 33–73 kΩ de la Pi 4), y el ruido o el agua tienen que empujar mucho más para fingir un toque. Pasan 0.7 mA por el contacto al apretar.</li>
+        <li><b>100 nF a GND junto a la Pi, con el 1 kΩ en serie.</b> Forman un filtro: 1 kΩ × 100 nF = 0.1 ms al apretar y unos 0.6 ms al soltar (se carga por 4.7 kΩ + 1 kΩ).
+        Se come las espigas de microsegundos de las bujías y los inyectores que se cuelan por 1–2 m de cable.</li>
+        <li><b>Lo que el filtro no hace:</b> quitar rebotes. El contacto rebota menos de 5 ms y el driver ya espera 5 ms; 0.1–0.6 ms no cambian eso.
+        Si un toque cuenta doble, habría que subir el antirrebote, y este overlay no tiene ese parámetro.</li>
+      </ul>
+      <p style="margin:0"><b>Dónde van:</b> dentro de la caja, junto al Dupont, en una tirita de placa perforada, o en línea, soldadas y con termofil. Ninguna viene en el BOM.</p>
+    </div>
+  </div>
+
+</div>
+
+<!-- ======================================================= -->
+<h2>Antes de energizar</h2>
+
+<div class="cols">
+  <div>
+    <h3>Sin la Pi, solo con el multímetro</h3>
+    <ol>
+      <li><b>Identifica las lengüetas de cada botón</b> en continuidad: el par que se cierra al apretar es COM–NO; el que se abre al apretar es COM–NC.
+      La que aparece en los dos pares es el COM. Márcalas con plumón.</li>
+      <li><b>Arma el cable y mide en el Dupont, sin conectarlo a la Pi:</b> entre las posiciones de los pines 11 y 9, abierto suelto y ~0 Ω con ▶ apretado;
+      entre 13 y 9, lo mismo con ◀. Al apretar ▶, el 13 no cambia: no hay hilos cruzados.</li>
+      <li><b>Aislamiento:</b> las posiciones 9, 11 y 13 contra el cuadro de la moto y contra el + de la batería: abierto en todas. Si pita, algo está pelado.</li>
+      <li><b>De tope a tope:</b> en continuidad entre 11 y 9, gira el manubrio de lado a lado con el botón suelto: nunca debe pitar. Repite apretado: nunca debe cortarse.</li>
+    </ol>
+  </div>
+  <div>
+    <h3>Con la Pi, antes de enchufar los botones</h3>
+    <ol start="5">
+      <li><b>Overlay cargado:</b> <code>pinctrl get 17,27</code> debe decir <code>ip    pu | hi</code> en los dos.</li>
+      <li><b>Voltaje:</b> del pin 11 al pin 9, ~3.3 V; igual del 13 al 9.</li>
+      <li><b>Mide el pull-up del RP1</b>, el dato que falta: el multímetro en µA entre el pin 11 y el pin 9 equivale a apretar el botón y no daña nada.
+      Pull-up = 3.3 V ÷ esa corriente. <b>Nunca</b> pongas el multímetro en corriente entre el pin 1 y GND: eso es un corto.</li>
+    </ol>
+    <h3>Con todo conectado</h3>
+    <ol start="8">
+      <li>Pi apagada, Dupont en la fila de adentro, con su pin 1 sobre el pin 1. Luego prende.</li>
+      <li><code>pinctrl poll 17,27</code> y aprieta cada botón: <code>hi</code> → <code>lo</code> → <code>hi</code>.</li>
+      <li><code>sudo evtest</code>: 106 (KEY_RIGHT) con ▶ y 105 (KEY_LEFT) con ◀, <code>value 1</code> al apretar y <code>value 0</code> al soltar, una vez por toque.</li>
+      <li>En la app (Python o C++): un toque, una vista.</li>
+    </ol>
+  </div>
+</div>
+
+<h2>Pendiente de confirmar, y cómo</h2>
+<ol>
+  <li><b>Cuál lengüeta es COM, NO y NC</b> en tu microinterruptor: paso 1. El datasheet solo da el diagrama, no la posición.</li>
+  <li><b>El valor del pull-up interno del RP1:</b> paso 7. Raspberry Pi no lo publica.</li>
+  <li><b>El umbral de «bajo» del RP1:</b> tampoco está publicado. Con 0 V al apretar no cambia nada.</li>
+  <li><b>3-145-275 o sellar el 122:</b> precio y existencia del de IP67 por detrás.</li>
+  <li><b>El largo del cable:</b> con el cordón, de tope a tope, más el lazo.</li>
+  <li><b>Tu UTP:</b> que sea multifilar y mida de 3 a 6 mm para el PG7.</li>
+  <li><b>El lado y el diámetro del semimanubrio</b> (22 mm esperado), y el espesor de la pared de la abrazadera: la rosca M16 tiene que atravesarla y dejar lugar a la tuerca. Pruébalo con el botón en la mano.</li>
+  <li><b>Que el O-ring selle sobre la pieza impresa:</b> la cara donde asienta el bisel tiene que quedar lisa y plana (imprímela contra la cama).</li>
+  <li><b>Que el Dupont 1 × 7 entre en la fila de adentro con el ventilador de la Pi 5 puesto.</b></li>
+  <li><b>El nombre de los botones en <code>evtest</code>.</b></li>
+</ol>
+
+<h2>Fuentes</h2>
+<ul class="fuentes">
+  <li>Schurter, <a href="https://www.schurter.com/en/datasheet/typ_MSM_II_MO_SPDT.pdf">datasheet MSM II MO SPDT</a> y <a href="https://www.schurter.com/en/datasheet/3-145-122">página del 3-145-122</a>:
+  IP66/IP67 al frente; tabla de variantes con «IP specification backside» (3-145-122 = 16 mm, 100 mA, SPDT, IP40; 3-145-275 = lo mismo en IP67); microinterruptor SPDT con COM, NO y NC y lengüetas quick connect de 2.8 × 0.5 mm;
+  contacto de oro, máx. 30 V CC y 0.1 A, &lt; 50 mΩ, rebote &lt; 5 ms, 0.2 / 0.05 millones de operaciones (IP40 / IP67); 4.5 N y 1 mm de carrera; −30 a 85 °C;
+  tuerca de plástico M16 máx. 2 N·m, 19 mm entre caras; agujero Ø16.1 +0.1 sin antigiro en los no iluminados; 33.5 mm de fondo; tuerca y microinterruptor sueltos en la caja; tuerca de acero 0098.9260.</li>
+  <li><b>Tu manual de servicio</b> (ZX636ED/FD, 2013), <code>~/Downloads/NinjaManual.pdf</code>: tabla «Left Switch Housing Connections» p. 500 (16-16);
+  arranque R/BK y paro R en los pines 34 y 56 de la ECU p. 105; ruta del cable de los mandos izquierdos por dentro de la horquilla y por arriba de la columna p. 683 (18-3);
+  advertencia de cables que no dejan llegar la dirección al tope p. 458 (14-12).</li>
+  <li>Raspberry Pi: <a href="https://github.com/raspberrypi/documentation/blob/master/documentation/asciidoc/computers/raspberry-pi/gpio-on-raspberry-pi.adoc">GPIO y header de 40 pines</a>
+  (mismo header en todas las placas actuales; tablas de voltaje y pull-up solo hasta BCM2711);
+  <a href="https://datasheets.raspberrypi.com/rp1/rp1-peripherals.pdf">datasheet del RP1</a> (sección 3.1.3: casi no entra corriente al pin bajo 3.63 V con IOVDD en 0 V; no trae valor de pull-up ni umbrales; el RP1 también lleva USB, Ethernet y MIPI);
+  <a href="https://github.com/raspberrypi/linux/blob/rpi-6.18.y/arch/arm64/boot/dts/broadcom/bcm2712-rpi-5-b.dts">bcm2712-rpi-5-b.dts</a> (<code>gpio: &amp;rp1_gpio</code>) y
+  <a href="https://github.com/raspberrypi/linux/blob/rpi-6.18.y/drivers/pinctrl/pinctrl-rp1.c">pinctrl-rp1.c</a> (acepta <code>brcm,pins</code>, <code>brcm,function</code> y <code>brcm,pull</code>);
+  <a href="https://github.com/raspberrypi/linux/blob/rpi-6.18.y/arch/arm/boot/dts/overlays/README">README de overlays</a> y
+  <a href="https://github.com/raspberrypi/linux/blob/rpi-6.18.y/arch/arm/boot/dts/overlays/gpio-key-overlay.dts">gpio-key-overlay.dts</a> (parámetros; autorepeat apagado si no se pide);
+  <a href="https://github.com/raspberrypi/utils/tree/master/pinctrl">pinctrl</a> (<code>get</code>, <code>poll</code>, formato de salida en <code>pinctrl.c</code>);
+  <a href="https://github.com/raspberrypi/documentation/blob/master/documentation/asciidoc/computers/config_txt/what_is_config_txt.adoc">formato de config.txt</a>.</li>
+  <li>Linux: <a href="https://github.com/torvalds/linux/blob/master/Documentation/devicetree/bindings/input/gpio-keys.yaml">gpio-keys.yaml</a> (antirrebote de 5 ms por defecto);
+  <a href="https://github.com/torvalds/linux/blob/master/include/uapi/linux/input-event-codes.h">input-event-codes.h</a> (KEY_LEFT = 105, KEY_RIGHT = 106).
+  <a href="https://gpiozero.readthedocs.io/en/stable/installing.html">gpiozero</a> (en venv necesita lgpio). <a href="https://pinout.xyz/pinout/gpio">pinout.xyz</a> (tampoco tiene las cifras del RP1).</li>
+  <li>Repo: <code>python/analizador.py</code> (<code>NEXT_KEYS</code> / <code>PREV_KEYS</code>, <code>BTN_*_GPIO</code> con gpiozero), <code>cpp/src/ui.cpp</code> (<code>IsKeyPressed</code> con KEY_RIGHT / KEY_LEFT),
+  <code>README.md</code> (botones probados solo con teclas y gpiozero simulado), <code>BOM.csv</code> (botón, PG7 de 3–6 mm, UTP, termofil) y <a href="../conexion.html">la hoja general</a>.</li>
+</ul>
+
+</div>
