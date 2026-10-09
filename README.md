@@ -77,15 +77,17 @@ Para ver cómo se ve cada resultado sin la moto: `python3 tools/pretest.py --dem
 
 ## Qué comprar
 
-La lista completa está en **[`BOM.xlsx`](BOM.xlsx)** (Excel) y en [`BOM.csv`](BOM.csv), con el precio que muestra cada tienda (en dólares para Mouser, Pololu y K&J), su equivalente en pesos y la liga de cada pieza. Los precios se revisaron abriendo cada liga el 2026-10-06; en MercadoLibre cambian seguido. El Excel calcula los totales solo y tiene una columna de estado (Pendiente / Pedido / Llegó) para ir marcando lo que compras. Va en fases:
+La lista completa está en **[`BOM.xlsx`](BOM.xlsx)** (Excel) y en [`BOM.csv`](BOM.csv), con el precio que muestra cada tienda (en dólares para Mouser, Pololu y K&J), su equivalente en pesos y la liga de cada pieza. Los precios se revisaron abriendo cada liga el 2026-10-06 (el ventilador, el 2026-10-09); en MercadoLibre cambian seguido. El Excel calcula los totales solo y tiene una columna de estado (Pendiente / Pedido / Llegó) para ir marcando lo que compras. Va en fases:
 
 | Fase | Qué | Aprox. |
 |---|---|---|
 | 1 · Prueba | Solo el cable adaptador KDS → OBD2, para ver si tu Steren habla con la moto | $616 |
-| 2 · Montaje | Pi 4, microSD, energía, pantalla, caja, botones, sensor de dirección y cableado | ~$9,270 + envíos |
+| 2 · Montaje | microSD, ventilador de la Pi 5, energía, pantalla, caja, botones, sensor de dirección y cableado | ~$6,070 + envíos |
 | 3 · Condicional | OBDLink EX, solo si el Steren no pasa la prueba | $1,719 |
 
-Los envíos no están incluidos: Pololu, Newhaven y K&J mandan desde EE. UU. En Mouser el envío es gratis desde US$100, y lo que va de Mouser suma ~US$87.
+La computadora no se compra: es la Raspberry Pi 5 de 8 GB del proyecto ISIC (ver abajo).
+
+Los envíos no están incluidos: Pololu, Newhaven y K&J mandan desde EE. UU., y 330ohms desde México. En Mouser el envío es gratis desde US$100, y lo que va de Mouser suma ~US$87.
 
 ## Conexión en la moto
 
@@ -95,6 +97,7 @@ La hoja completa, pin por pin, está en **[`docs/conexion.html`](docs/conexion.h
 - **Ese conector da 12 V solo con la llave puesta.** El cable BR/W sale del relevador principal de la ECU (manual 3-42), así que el ELM327 se apaga con la moto y no descarga la batería. No alimentes la Pi de ahí.
 - **El protocolo probablemente es KDS:** KWP2000 por línea K, con la ECU en la dirección 0x11 y el servicio `21 xx`, no el modo `01` de OBD2. Si la prueba de la hoja confirma que no contesta el modo 01, hay que agregar el modo KDS a la app.
 - **El WiFi del ELM327 acepta una sola app a la vez.** Esa conexión la usa la Pi.
+- **La computadora es la Raspberry Pi 5 del proyecto ISIC**, nunca los dos a la vez. Cada proyecto tiene su microSD y se cambia con la Pi apagada; el cableado se queda en la moto y la Pi entra y sale de su caja. El header de 40 pines es igual al de la Pi 4, así que los pines no cambian. El convertidor no negocia USB-PD: la Pi 5 supone una fuente de 3 A y deja 600 mA para sus USB. Si algo se alimenta de esos USB, el `config.txt` de la microSD de la moto lleva `usb_max_current_enable=1` (sube el límite a 1.6 A). No uses `PSU_MAX_CURRENT` en la EEPROM: esa configuración viaja con la placa cuando regresa al ISIC.
 
 ## Sensores
 
@@ -117,7 +120,7 @@ Si la ECU no responde un PID, ese valor muestra `N/D` y los demás siguen funcio
 
 Usa un encoder magnético: un imán en el eje de la dirección y el sensor fijo al cuadro, a 0.5–3 mm, sin tocarse. No se usó un servo como encoder: sus engranes acoplados a la dirección se pueden trabar, y su juego (~1°) es grande para los pocos grados que se gira a velocidad.
 
-| AS5600 | Raspberry Pi 4 |
+| AS5600 | Raspberry Pi 5 |
 |---|---|
 | VCC | pin 1 (3.3 V) |
 | GND | pin 9 |
