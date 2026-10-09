@@ -12,6 +12,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <cctype>
 #include <chrono>
 #include <csignal>
 #include <cstdio>
@@ -44,6 +45,22 @@ int env_int(const char* key, int def) {
 
 bool env_flag(const char* key) { return env(key) == "1"; }
 
+// "1024x600" -> 1024 y 600 (cada lado de 100 a 99999 px); false si está mal escrito
+bool parse_size(const std::string& s, int& w, int& h) {
+    const std::size_t x = s.find_first_of("xX");
+    if (x == std::string::npos) return false;
+    const std::string a = s.substr(0, x), b = s.substr(x + 1);
+    auto digits = [](const std::string& t) {
+        return !t.empty() && t.size() <= 5 && std::all_of(t.begin(), t.end(), [](unsigned char c) { return std::isdigit(c); });
+    };
+    if (!digits(a) || !digits(b)) return false;
+    const int ww = std::stoi(a), hh = std::stoi(b);
+    if (ww < 100 || hh < 100) return false;
+    w = ww;
+    h = hh;
+    return true;
+}
+
 std::string home_dir() {
     const char* h = std::getenv("HOME");
     if (h && *h) return h;
@@ -61,6 +78,9 @@ Config load_config() {
     c.obd_ip = env("OBD2_IP", "192.168.0.10");
     c.obd_port = env_int("OBD2_PORT", 35000);
     c.windowed = env_flag("OBD2_WINDOWED");
+    const std::string size = env("OBD2_SIZE");
+    if (!size.empty() && !parse_size(size, c.win_w, c.win_h))
+        std::printf("[UI] OBD2_SIZE=%s no es ANCHOxALTO (p. ej. 1024x600); uso %dx%d\n", size.c_str(), c.win_w, c.win_h);
     c.headless = env_flag("OBD2_HEADLESS");
     c.fps = std::clamp(env_int("OBD2_FPS", 30), 1, 240);
     c.db_path = expand_home(env("OBD2_DB", home_dir() + "/obd2_logs/telemetria.db"));
