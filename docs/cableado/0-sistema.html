@@ -174,6 +174,7 @@ cuánta corriente pide todo contra el convertidor y el fusible, en qué orden ar
 <div class="banda b-ok">
   <h3>Medido contra no medido</h3>
   <p style="margin:0">Nada de esto se ha medido en tu moto. El software solo se ha probado con el simulador y con un ELM327 falso en la red local.
+  Lo único medido en esta Pi 5 fue en la mesa, con otra fuente y no con el Pololu: 4.88 V mínimo y 49 °C máximo compilando, sin avisos de bajo voltaje (README, 2026-10-09).
   Las ubicaciones y colores de cable salen de tu manual de servicio (<b>Ninja ZX-6R 636, ZX636ED/FD, 2013</b>); los voltajes y corrientes, de los datasheets citados al final.
   Lo que depende de medir o de una decisión que no se ha tomado dice <span class="pend">por confirmar</span>.</p>
 </div>
@@ -181,7 +182,7 @@ cuánta corriente pide todo contra el convertidor y el fusible, en qué orden ar
 <div class="banda b-dat">
   <h3>Cinco cosas que salieron al juntar todo y no estaban en la hoja general</h3>
   <ol style="margin:0">
-    <li><b>Margen de bajo voltaje de la Pi 5:</b> avisa y frena el CPU abajo de 4.63 V ±5 % (hasta 4.86 V). El Pololu da 5.0 V ±4 % (desde 4.80 V).
+    <li><b>Margen de bajo voltaje de la Pi 5:</b> anota bajo voltaje abajo de 4.63 V ±5 % (hasta 4.86 V). El Pololu da 5.0 V ±4 % (desde 4.80 V).
     Típico sobra ~0.3 V; en el peor caso no hay margen. Hay que medirlo (sección «Antes de energizar»).</li>
     <li><b>La pantalla no se alimenta por el HDMI ni por su USB:</b> lleva su propio jack de barril y pide de <b>5.0 a 7.0 V</b> (datasheet Newhaven).
     Con 4.8–5.2 V del Pololu queda en la orilla de abajo. Su plug y su cable no están en el BOM.</li>
@@ -221,7 +222,7 @@ cuánta corriente pide todo contra el convertidor y el fusible, en qué orden ar
     <path d="M456 132 C 430 62 300 52 238 96" fill="none" stroke="#6b3fa0" stroke-width="2" stroke-dasharray="6 5"/>
     <text x="352" y="64" font-size="12" class="td">WiFi</text>
     <path d="M532 52 C 450 22 300 24 228 96" fill="none" stroke="#6b3fa0" stroke-width="2" stroke-dasharray="6 5"/>
-    <text x="410" y="30" font-size="12" class="td">WiFi · :8080</text>
+    <text x="410" y="24" font-size="12" class="td">WiFi · :8080</text>
 
     <!-- cables cortos del frente -->
     <!-- E: HDMI y D: 5 V a la pantalla -->
@@ -382,7 +383,7 @@ cuánta corriente pide todo contra el convertidor y el fusible, en qué orden ar
         <rect class="box" x="16" y="160" width="200" height="270" rx="6" stroke-width="2"/>
         <text x="26" y="180" font-size="13" font-weight="500">Raspberry Pi 5</text>
         <text x="26" y="196" font-size="12" class="s">8 GB · microSD de la moto</text>
-        <text x="210" y="216" text-anchor="end" font-size="12">USB-C</text>
+        <text x="210" y="180" text-anchor="end" font-size="12">USB-C</text>
         <text x="210" y="272" text-anchor="end" font-size="12">HDMI0</text>
         <text x="26" y="236" font-size="12" class="s">Active Cooler</text>
         <text x="26" y="252" font-size="12" class="s">en su conector</text>
@@ -392,9 +393,10 @@ cuánta corriente pide todo contra el convertidor y el fusible, en qué orden ar
         <text x="40" y="416" text-anchor="middle" font-size="12" class="tp">1</text>
         <text x="64" y="416" text-anchor="middle" font-size="12" class="td">3</text>
         <text x="88" y="416" text-anchor="middle" font-size="12" class="td">5</text>
-        <text x="112" y="416" text-anchor="middle" font-size="12">9</text>
+        <text x="112" y="416" text-anchor="middle" font-size="12" class="to">7</text>
+        <text x="136" y="416" text-anchor="middle" font-size="12">9</text>
         <text x="160" y="416" text-anchor="middle" font-size="12" class="tg">11</text>
-        <text x="186" y="416" text-anchor="middle" font-size="12" class="tg">13</text>
+        <text x="184" y="416" text-anchor="middle" font-size="12" class="tg">13</text>
         <!-- ELM -->
         <rect class="box" x="272" y="296" width="120" height="58" rx="6"/>
         <text x="332" y="313" text-anchor="middle" font-size="12.5" font-weight="500">ELM327 Steren</text>
@@ -418,11 +420,11 @@ cuánta corriente pide todo contra el convertidor y el fusible, en qué orden ar
         <line x1="40" y1="430" x2="40" y2="474" stroke="#1f5e8b" stroke-width="2.2"/>
         <line x1="64" y1="430" x2="64" y2="474" stroke="#6b3fa0" stroke-width="2.2"/>
         <line x1="88" y1="430" x2="88" y2="474" stroke="#6b3fa0" stroke-width="2.2"/>
-        <line x1="112" y1="430" x2="112" y2="474" stroke="currentColor" stroke-width="2.2"/>
-        <polyline points="112,452 148,452 148,474" fill="none" stroke="currentColor" stroke-width="2.2"/>
-        <circle cx="112" cy="452" r="4" fill="currentColor"/>
+        <line x1="136" y1="430" x2="136" y2="452" stroke="currentColor" stroke-width="2.2"/>
+        <polyline points="120,474 120,452 148,452 148,474" fill="none" stroke="currentColor" stroke-width="2.2"/>
+        <circle cx="136" cy="452" r="4" fill="currentColor"/>
         <line x1="160" y1="430" x2="160" y2="474" stroke="#8a6d00" stroke-width="2.2"/>
-        <line x1="186" y1="430" x2="186" y2="474" stroke="#8a6d00" stroke-width="2.2"/>
+        <line x1="184" y1="430" x2="184" y2="474" stroke="#8a6d00" stroke-width="2.2"/>
         <!-- AS5600 -->
         <rect class="box" x="16" y="474" width="110" height="58" rx="6"/>
         <text x="71" y="494" text-anchor="middle" font-size="12.5" font-weight="500">G · AS5600</text>
@@ -465,7 +467,8 @@ cuánta corriente pide todo contra el convertidor y el fusible, en qué orden ar
     <div class="tabla">
       <table style="min-width:420px">
         <tr><th>Carga</th><th>A 5 V</th><th>De dónde sale</th></tr>
-        <tr><td>Raspberry Pi 5</td><td>3.0 A máx.</td><td>Sin USB-PD supone una fuente de 3 A, ya con 600 mA para USB y ventilador (Raspberry Pi). Encendida y sin nada conectado ronda 0.8 A.</td></tr>
+        <tr><td>Raspberry Pi 5</td><td>3.0 A máx.</td><td>Sin USB-PD supone una fuente de 3 A, ya con 600 mA para USB y ventilador (Raspberry Pi). Encendida y sin nada conectado ronda 0.8 A.
+          De sus USB solo cuelgan la memoria USB de la base y el ventilador (cuánto piden: <span class="pend">por confirmar</span>).</td></tr>
         <tr><td>Pantalla NHD-5.0</td><td>0.59 A máx.</td><td>0.56 A típ. a 5 V (datasheet Newhaven).</td></tr>
         <tr><td>AS5600</td><td>0.0065 A</td><td>6.5 mA máx., sale del 3.3 V de la Pi (datasheet ams).</td></tr>
         <tr class="total"><td>Total a 5 V</td><td>3.6 A</td><td class="t-ok">de 5.5 A del Pololu ✓ (65 %). Su 5.5 A es a 36 V de entrada; a 12 V su gráfica da ~8 A.</td></tr>
@@ -473,12 +476,13 @@ cuánta corriente pide todo contra el convertidor y el fusible, en qué orden ar
       </table>
     </div>
     <p class="why">El 90 % es conservador: la gráfica de Pololu da ~95 % con 12 V de entrada y 3–4 A de salida. Con el motor andando (14.3–14.7 V, p. 494) baja a ~1.4 A.
-    Esa corriente se suma a lo que ya pasa por el alimentador de la caja de fusibles que elijas.</p>
+    Esa corriente se suma a lo que ya pasa por el alimentador de la caja de fusibles que elijas.
+    Con <code>usb_max_current_enable=1</code> (sección 4), el peor caso de papel sería la Pi a 5 A con sus USB llenos: 5.6 A en total, que el Pololu sí da con 12–14.7 V de entrada (~8 A en su gráfica) ✓ y ≈ 2.7 A a 12 V contra el fusible de 5 A ✓.</p>
 
     <div class="caja" style="margin-top:14px">
       <h3>El voltaje que sí importa: el que llega a la Pi y a la pantalla</h3>
       <ul style="margin:0">
-        <li><b>Pi 5:</b> registra bajo voltaje y frena el CPU si su entrada baja de <b>4.63 V ±5 %</b> (documentación oficial), o sea, en algún punto entre 4.40 y 4.86 V según la placa.
+        <li><b>Pi 5:</b> anota bajo voltaje en el registro del kernel y en <code>get_throttled</code> si su entrada baja de <b>4.63 V ±5 %</b> (documentación oficial), o sea, en algún punto entre 4.40 y 4.86 V según la placa.
         El Pololu da 4.80–5.20 V y el tramo C (30 cm de 18 AWG, ida y vuelta) le quita ~0.04 V a 3 A, más los contactos de las clemas y del USB-C.
         Con un Pololu típico (5.0 V) quedan ~0.3 V de margen ✓; con uno en la orilla baja, ninguno ✗. Se sabe midiendo <code>EXT5V_V</code> (sección «Antes de energizar»).</li>
         <li><b>Pantalla:</b> su datasheet pide <b>5.0 V mínimo</b> en su jack y adentro trae un diodo en serie. Con el mismo Pololu queda justo en la orilla, o abajo.
@@ -624,18 +628,20 @@ Lo que entra a la caja tiene que pasar <b>pelado</b> por el prensaestopas; los c
       <div class="why">Incluye las otras tierras (6 y 14): el regreso va todo por el 9.</div></div></div>
     <div class="fila"><div class="chip c-pwr"></div><div class="nom t-pwr">USB-C</div>
       <div><div class="dst">→ 5 V del Pololu por el adaptador a clemas (C)</div>
-      <div class="why">El Pololu no negocia USB-PD: la Pi 5 supone 3 A y limita sus USB a 600 mA en total (Raspberry Pi). Arranca sola al recibir energía.</div></div></div>
+      <div class="why">El Pololu no negocia USB-PD: la Pi 5 supone 3 A y limita sus USB a 600 mA en total; con <code>usb_max_current_enable=1</code> sube a 1.6 A (Raspberry Pi). Arranca sola al recibir energía.</div></div></div>
     <div class="fila"><div class="chip c-dat"></div><div class="nom t-dat">micro-HDMI 0</div>
       <div><div class="dst">→ pantalla (E)</div>
       <div class="why">El que dice HDMI0 en la serigrafía; en el software es HDMI-A-1 (Raspberry Pi). Etiquétalo para no cambiarlo de puerto al regresar la Pi.</div></div></div>
     <div class="fila"><div class="chip c-off"></div><div class="nom t-off">micro-HDMI 1</div>
       <div><div class="dst t-off">sin conectar</div><div class="why">Solo hay una pantalla.</div></div></div>
-    <div class="fila"><div class="chip c-off"></div><div class="nom t-off">USB-A (2× USB 3.0, 2× USB 2.0)</div>
-      <div><div class="dst t-off">sin conectar · plan B: OBDLink EX en uno (I)</div>
-      <div class="why">El OBDLink se alimenta del KDS; lo que pida por USB debería caber en los 600 mA, <span class="pend">por confirmar</span> su consumo.</div></div></div>
+    <div class="fila"><div class="chip c-dat"></div><div class="nom t-dat">USB-A (2× USB 3.0, 2× USB 2.0)</div>
+      <div><div class="dst">→ la memoria USB de la base (BOM, «ya tienes») · plan B: además el OBDLink EX en otro (I)</div>
+      <div class="why">Con la raíz de solo lectura, la base y <code>direccion.json</code> viven en esa memoria (hoja general, apagado sin comprar): es de la moto y se queda con su microSD.
+      La memoria y el ventilador comparten el límite de los USB; el OBDLink se alimenta del KDS. Lo que pide cada uno: <span class="pend">por confirmar</span>.
+      Los otros dos puertos, sin conectar.</div></div></div>
     <div class="fila"><div class="chip c-pwr"></div><div class="nom t-pwr">ventilador (JST-SH 4)</div>
       <div><div class="dst">→ Active Cooler, que se queda puesto en la Pi</div>
-      <div class="why">Viaja con la Pi al ISIC con su conector puesto. Comparte el límite de 600 mA con los USB (Raspberry Pi). <span class="pend">por confirmar</span> si tu Pi 5 ya lo trae.</div></div></div>
+      <div class="why">Viaja con la Pi al ISIC con su conector puesto. Comparte con los USB el límite de 600 mA, o de 1.6 A con <code>usb_max_current_enable=1</code> (Raspberry Pi). <span class="pend">por confirmar</span> si tu Pi 5 ya lo trae.</div></div></div>
     <div class="fila"><div class="chip c-off"></div><div class="nom t-off">J5 · BAT (reloj)</div>
       <div><div class="dst t-off">opcional: pila recargable oficial del RTC</div>
       <div class="why">Sin ella, la hora se pierde cada vez que quitas la llave y en la moto no hay internet para recuperarla. No está en el BOM.</div></div></div>
@@ -658,19 +664,21 @@ dtparam=i2c_arm=on
 dtoverlay=gpio-key,gpio=17,active_low=1,gpio_pull=up,keycode=106
 # Boton anterior (flecha izquierda) - pin 13
 dtoverlay=gpio-key,gpio=27,active_low=1,gpio_pull=up,keycode=105
-# Opcional: solo si algo se alimenta de los USB de la Pi
-#usb_max_current_enable=1
+# El Pololu da 5.5 A pero no negocia USB-PD:
+# sube el limite de los USB y el ventilador de 600 mA a 1.6 A
+usb_max_current_enable=1
 # Opcional: solo con la pila oficial del RTC puesta en J5
 #dtparam=rtc_bbat_vchg=3000000</pre>
-      <p class="why" style="margin:0">Los comentarios van en su propia línea. Las dos opcionales van comentadas: en el plan A nada se alimenta de los USB,
-      y en el plan B el OBDLink toma su energía del KDS.</p>
+      <p class="why" style="margin:0">Los comentarios van en su propia línea. <code>usb_max_current_enable=1</code> va activo: la memoria USB de la base y el Active Cooler comparten el límite de 600 mA,
+      y si lo rebasan, el limitador de corriente de la Pi actúa sobre los USB con la base a media escritura. Es el caso que describe Raspberry Pi: una fuente que sí da 5 A pero no habla PD.
+      Se comprueba con <code>vcgencmd get_config usb_max_current_enable</code>. La del RTC va comentada: solo sirve con la pila puesta.</p>
     </div>
 
     <div class="caja">
       <h3>¿Por qué en <code>config.txt</code> y no en la EEPROM?</h3>
       <p>La Pi 5 tiene dos lugares de configuración. <b>La EEPROM es un chip soldado en la placa</b>: lo que guardes ahí viaja con la Pi al ISIC.
       <b><code>config.txt</code> vive en la microSD</b>: se queda con la tarjeta de la moto.</p>
-      <p style="margin:0">Por eso <code>usb_max_current_enable=1</code>, si algún día hace falta, va en el <code>config.txt</code> de la moto y no como <code>PSU_MAX_CURRENT</code> en la EEPROM.
+      <p style="margin:0">Por eso <code>usb_max_current_enable=1</code> va en el <code>config.txt</code> de la moto y no como <code>PSU_MAX_CURRENT</code> en la EEPROM.
       <code>PSU_MAX_CURRENT</code> hace que la Pi se brinque la negociación USB-PD y crea lo que diga ese número con cualquier fuente: en el ISIC, con otra fuente, la Pi creería algo falso
       (<code>3000</code> la limitaría de más; <code>5000</code> le pediría a una fuente de 3 A más de lo que da). Lo mismo con <code>BOOT_ORDER</code> o <code>POWER_OFF_ON_HALT</code>: si los cambias para un proyecto, cambian en los dos.</p>
     </div>
@@ -678,7 +686,7 @@ dtoverlay=gpio-key,gpio=27,active_low=1,gpio_pull=up,keycode=105
     <div class="caja">
       <h3>Lo que cambia contra la Pi 4 de la hoja general</h3>
       <ul style="margin:0">
-        <li><b>Pide más:</b> 5 V 5 A con USB-PD. Con el Pololu (sin PD) supone 3 A y deja 600 mA para USB y ventilador. Funciona bien así si nada pesado cuelga de los USB (white paper de Raspberry Pi).</li>
+        <li><b>Pide más:</b> 5 V 5 A con USB-PD. Con el Pololu (sin PD) supone 3 A y deja 600 mA para USB y ventilador, 1.6 A con la línea del <code>config.txt</code>. Funciona bien así si nada pesado cuelga de los USB (white paper de Raspberry Pi).</li>
         <li><b>Mismo header, mismos pines:</b> 1, 3, 5, 9, 11 y 13 no cambian.</li>
         <li><b>Aguanta más calor:</b> 0–70 °C según su ficha (la Pi 4: 0–50 °C), pero pide un lugar ventilado. En una caja IP68 el aire no sale: el Active Cooler mueve el aire de adentro y el calor sale por las paredes.
         Mide <code>vcgencmd measure_temp</code> con la caja cerrada un día de calor.</li>
@@ -721,7 +729,7 @@ dtoverlay=gpio-key,gpio=27,active_low=1,gpio_pull=up,keycode=105
       <p><b>En el plan A, no.</b> Solo se hablan por radio, y un enlace de radio no necesita una referencia común. Cada uno mide sus señales contra su propia tierra:
       el ELM contra el BK/Y del KDS (tierra de la ECU) y la Pi contra el negativo del Pololu, que regresa por B. De todos modos, las dos terminan en el negativo de la batería.</p>
       <p><b>Lo que sí comparte tierra con la Pi</b> es todo lo que tiene cable hacia ella: la pantalla (D), el AS5600 y los botones (pin 9). Esos regresan por su hilo a la caja, no por el chasis.</p>
-      <p style="margin:0"><b>En el plan B, el cable USB las une solo.</b> Por eso B va directo al negativo de la batería, el mismo punto donde acaba la tierra de la ECU.
+      <p style="margin:0"><b>En el plan B, el cable USB las une solo.</b> Por eso B va directo al negativo de la batería, adonde regresan, por las tierras del cuadro y del motor, todas las de la moto, incluida la de la ECU (p. 131).
       <span class="t-bad">Y nunca dejes el OBDLink conectado con B suelto: la corriente de la Pi buscaría regresar por el hilo de tierra del USB, el OBDLink y el KDS, que no están hechos para eso.</span></p>
     </div>
   </div>
@@ -746,13 +754,13 @@ dtoverlay=gpio-key,gpio=27,active_low=1,gpio_pull=up,keycode=105
     <div class="co-t">«¿Cómo saco la Pi para usarla en el ISIC y la regreso?»</div>
     <div class="co-b">
       <ul>
-        <li><b>Apágala primero con su botón</b> y espera a que se apague el LED; luego la llave en OFF. Con la llave en OFF el tramo A está muerto y nada de lo que desconectes lleva corriente.
+        <li><b>Apágala primero con su botón</b> y espera a que su LED pase de verde a rojo (rojo = sistema apagado, en espera); luego la llave en OFF. Con la llave en OFF el tramo A está muerto y nada de lo que desconectes lleva corriente.
         Raspberry Pi pide quitar la alimentación antes de conectar una HAT al header, porque puede reiniciar su controlador de energía; con el Dupont aplica lo mismo.</li>
-        <li><b>Desconecta:</b> el USB-C (C), el micro-HDMI 0 (E), el Dupont 1 × 7 y, en el plan B, el USB del OBDLink (I). El Active Cooler se queda en la Pi con su conector.</li>
+        <li><b>Desconecta:</b> el USB-C (C), el micro-HDMI 0 (E), el Dupont 1 × 7, la memoria USB de la base y, en el plan B, el USB del OBDLink (I). El Active Cooler se queda en la Pi con su conector.</li>
         <li><b>Márcalo antes de la primera vez:</b> un punto de pintura en la posición 1 del Dupont y junto al pin 1 del header. Corrido a la fila de afuera,
-        el VCC del AS5600 cae en el pin 2 (5 V) y se quema el chip (máximo 4.0 V); si además va al revés, apretar ◀ pone en corto el 5 V del pin 2 con la tierra del pin 6.
+        el VCC del AS5600 cae en el pin 2 (5 V) y se quema el chip (máximo 4.0 V); si además va al revés, apretar cualquiera de los dos botones pone en corto un 5 V (◀ el pin 2, ▶ el pin 4) con la tierra del pin 6.
         Etiqueta también el micro-HDMI: «HDMI0».</li>
-        <li><b>Cambia la microSD:</b> saca la de la moto (etiquétala «MOTO») y guárdala seca; pon la del ISIC. Al regresar, al revés, y antes de cerrar revisa que el hilo de 3V3 esté en el pin 1.</li>
+        <li><b>Cambia la microSD:</b> saca la de la moto (etiquétala «MOTO») y guárdala seca junto con la memoria USB; pon la del ISIC. Al regresar, al revés, y antes de cerrar revisa que el hilo de 3V3 esté en el pin 1.</li>
         <li><b>Mientras la Pi no está:</b> quita el fusible de 5 A de la toma y cubre el Dupont con cinta, para que nada vivo quede suelto en la caja.</li>
         <li><b>No toques la EEPROM para la moto:</b> todo va en el <code>config.txt</code> de su microSD (ver sección 4).</li>
       </ul>
@@ -772,6 +780,7 @@ dtoverlay=gpio-key,gpio=27,active_low=1,gpio_pull=up,keycode=105
   <li><b>La Pi encendida, con la app corriendo:</b>
 <pre>vcgencmd get_throttled                # throttled=0x0: nunca hubo bajo voltaje
 vcgencmd pmic_read_adc | grep EXT5V   # el voltaje que de verdad le llega a la Pi
+vcgencmd get_config usb_max_current_enable   # debe dar 1
 vcgencmd measure_temp                 # con la caja cerrada; la ficha dice 0-70 °C</pre></li>
   <li><b>AS5600:</b>
 <pre>i2cdetect -y 1                  # debe aparecer 36
@@ -794,6 +803,7 @@ i2cget -y 1 0x36 0x1a           # AGC: busca ~64 (a 3.3 V va de 0 a 128)</pre></
   <li>Si los Schurter 3-145-122 quedan con la parte de atrás protegida del agua, o si conviene la 3-145-275.</li>
   <li>Si se agrega la pila del RTC, y qué temperatura aguanta adentro de la caja.</li>
   <li>Plan B: el largo del cable USB del OBDLink y cuánto pide por USB.</li>
+  <li>Cuánto piden de los USB la memoria de la base y el Active Cooler.</li>
 </ol>
 
 <h2>Fuentes</h2>
@@ -808,6 +818,7 @@ i2cget -y 1 0x36 0x1a           # AGC: busca ~64 (a 3.3 V va de 0 a 128)</pre></
   <a href="https://github.com/raspberrypi/documentation/blob/master/documentation/asciidoc/computers/raspberry-pi/eeprom-bootloader.adoc">configuración de la EEPROM</a>;
   <a href="https://github.com/raspberrypi/documentation/blob/master/documentation/asciidoc/computers/raspberry-pi/gpio-on-raspberry-pi.adoc">GPIO y header de 40 pines</a>;
   <a href="https://github.com/raspberrypi/documentation/blob/master/documentation/asciidoc/computers/raspberry-pi/power-button.adoc">botón de encendido</a>;
+  <a href="https://github.com/raspberrypi/documentation/blob/master/documentation/asciidoc/computers/configuration/led_blink_warnings.adoc">LED de la Pi 5</a> (rojo al apagarse);
   <a href="https://github.com/raspberrypi/documentation/blob/master/documentation/asciidoc/computers/raspberry-pi/rtc.adoc">RTC y su pila</a>;
   <a href="https://github.com/raspberrypi/documentation/blob/master/documentation/asciidoc/computers/raspberry-pi/frequency-management.adoc">ventilador de la Pi 5</a>;
   <a href="https://datasheets.raspberrypi.com/rpi5/raspberry-pi-5-product-brief.pdf">ficha de la Pi 5</a> (0–70 °C, lugar ventilado).</li>
