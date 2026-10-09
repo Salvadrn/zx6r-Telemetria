@@ -11,7 +11,7 @@ Hay dos versiones con el mismo diseño, la misma base de datos y el mismo visor 
 | CPU en simulador¹ | 18.6 % de un núcleo, a 12 cuadros/s | 8.7 % de un núcleo, a 30 cuadros/s |
 | Memoria¹ | 144 MB | 108 MB |
 
-<sub>¹ Medido en una Mac con Apple Silicon, ventana de 1280×720, vista RESUMEN, con el simulador. En la Raspberry Pi no se ha medido.</sub>
+<sub>¹ Medido en una Mac con Apple Silicon, ventana de 1280×720, vista RESUMEN, con el simulador. En la Raspberry Pi 5 (2026-10-09, ventana de 1280×720 con el simulador), las dos versiones usan ~4 % de CPU: Python 40 MB y C++ 84 MB. En C++ se compila en 92 s con 2 núcleos.</sub>
 
 > **Estado:** las dos versiones están probadas con el simulador y con un ELM327 falso en la red local (lectura, reconexión, base de datos, visor web y calibración de la dirección). **No se han probado en la moto.** Según el manual de servicio, la ECU se diagnostica con el sistema propio de Kawasaki (KDS) y es probable que no conteste los PIDs OBD2 estándar que usa la app. Antes de comprar nada, haz la prueba de 5 minutos de la [hoja de conexión](docs/conexion.html).
 
@@ -164,7 +164,7 @@ sudo apt install build-essential cmake libsqlite3-dev libx11-dev libxrandr-dev l
 
 ```bash
 cmake -S cpp -B cpp/build -DCMAKE_BUILD_TYPE=Release
-cmake --build cpp/build -j
+cmake --build cpp/build -j2   # en la Pi, 2 núcleos: con 4 y una fuente débil la Pi 5 se apaga por bajo voltaje
 OBD2_SIM=1 OBD2_WINDOWED=1 ./cpp/build/zx6r   # simulador en una ventana
 ./cpp/build/zx6r                               # moto real, pantalla completa
 ```
