@@ -1,0 +1,844 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>¿Cómo llega la corriente de la batería a la Pi?</title>
+<style>
+html,body{margin:0}
+.hoja{
+  --tp:#1a1a1a; --ts:#5b5b5b; --s1:#ffffff; --s2:#f6f5f2; --bd:#e2dfda;
+  --pwr:#1f5e8b; --act:#7a2f2f; --sig:#8a6d00; --ok:#1e7d32; --bad:#b3261e; --dat:#6b3fa0; --off:#9e9e9e; --gnd:#1a1a1a;
+  --pwr-t:#1f5e8b; --sig-t:#8a6d00; --ok-t:#1e7d32; --bad-t:#b3261e; --dat-t:#6b3fa0;
+  color:var(--text-primary,var(--tp)); background:var(--surface-0,var(--s1));
+  font-family:var(--font-sans,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif);
+  font-size:14px; line-height:1.6; font-weight:400;
+  max-width:1180px; margin:0 auto; padding:18px 16px 56px; box-sizing:border-box;
+}
+@media (prefers-color-scheme:dark){
+  html{background:#141416}
+  .hoja{ --tp:#ececec; --ts:#a8a8a8; --s1:#141416; --s2:#1d1d20; --bd:#38383c; --gnd:#ececec;
+         --pwr-t:#6aa6d6; --sig-t:#d1b04a; --ok-t:#55b46a; --bad-t:#e5675f; --dat-t:#ad8fdc; }
+}
+.hoja *{box-sizing:border-box}
+.hoja h1{font-size:22px; font-weight:500; margin:0 0 6px; letter-spacing:-.01em; line-height:1.3}
+.hoja h2{font-size:16px; font-weight:500; margin:34px 0 12px; letter-spacing:.06em; text-transform:uppercase;
+  padding-bottom:6px; border-bottom:1px solid var(--border,var(--bd))}
+.hoja h3{font-size:14px; font-weight:500; margin:0 0 8px}
+.hoja p{margin:0 0 10px}
+.hoja a{color:var(--pwr-t)}
+.hoja .bajada{color:var(--text-secondary,var(--ts)); margin:0 0 18px; max-width:900px}
+.hoja .sub,.hoja .why{color:var(--text-secondary,var(--ts))}
+.hoja .why{font-size:13px; line-height:1.5}
+.hoja .tiny{font-size:12.5px}
+.hoja code,.hoja pre{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:12.5px}
+.hoja code{background:color-mix(in srgb,#9e9e9e 16%,transparent); padding:1px 5px; border-radius:4px}
+.hoja pre{background:var(--surface-1,var(--s2)); border:1px solid var(--border,var(--bd)); border-radius:8px;
+  padding:12px 14px; overflow-x:auto; line-height:1.5; margin:0 0 12px}
+.hoja .caja{background:var(--surface-1,var(--s2)); border:1px solid var(--border,var(--bd)); border-radius:8px; padding:16px 18px; margin-bottom:16px}
+.hoja .cols{display:grid; grid-template-columns:1fr 1fr; gap:2rem; align-items:start}
+.hoja .cols > *{min-width:0}
+@media (max-width:900px){ .hoja .cols{grid-template-columns:1fr; gap:1rem} }
+.hoja .banda{border-radius:8px; padding:14px 18px; margin:0 0 14px; border:2px solid}
+.hoja .banda h3{font-size:15px; margin:0 0 6px}
+.hoja .b-dat{border-color:#6b3fa0; background:color-mix(in srgb,#6b3fa0 9%,transparent)}
+.hoja .b-dat h3{color:var(--dat-t)}
+.hoja .b-ok{border-color:#1e7d32; background:color-mix(in srgb,#1e7d32 8%,transparent)}
+.hoja .b-ok h3{color:var(--ok-t)}
+.hoja .b-bad{border-color:#b3261e; background:color-mix(in srgb,#b3261e 8%,transparent)}
+.hoja .b-bad h3{color:var(--bad-t)}
+/* filas "a dónde va cada pin" */
+.hoja .lista h3{margin-top:4px; font-size:13px; letter-spacing:.06em; text-transform:uppercase; color:var(--text-secondary,var(--ts))}
+.hoja .fila{display:grid; grid-template-columns:24px 92px 1fr; gap:10px; align-items:start; padding:8px 0;
+  border-top:1px solid var(--border,var(--bd))}
+.hoja .fila:first-of-type{border-top:0}
+.hoja .chip{width:20px; height:20px; border-radius:3px; margin-top:2px}
+.hoja .nom{font-weight:500; font-size:13.5px; line-height:1.35}
+.hoja .dst{font-weight:500}
+.hoja .c-pwr{background:#1f5e8b} .hoja .c-sig{background:#8a6d00} .hoja .c-dat{background:#6b3fa0}
+.hoja .c-gnd{background:var(--gnd); outline:1px solid #9e9e9e} .hoja .c-off{background:#9e9e9e} .hoja .c-bad{background:#b3261e}
+.hoja .c-ok{background:#1e7d32}
+.hoja .t-pwr{color:var(--pwr-t)} .hoja .t-sig{color:var(--sig-t)} .hoja .t-dat{color:var(--dat-t)}
+.hoja .t-ok{color:var(--ok-t)} .hoja .t-bad{color:var(--bad-t)} .hoja .t-off{color:#9e9e9e}
+/* etiquetas */
+.hoja .pend{display:inline-block; font-size:12px; letter-spacing:.04em; text-transform:uppercase; line-height:1.4;
+  border:1px solid #b3261e; color:var(--bad-t); border-radius:4px; padding:0 6px; vertical-align:1px; white-space:nowrap}
+.hoja .conf{display:inline-block; font-size:12px; letter-spacing:.04em; text-transform:uppercase; line-height:1.4;
+  border:1px solid #9e9e9e; color:var(--text-secondary,var(--ts)); border-radius:4px; padding:0 6px; vertical-align:1px; white-space:nowrap}
+.hoja .okt{display:inline-block; font-size:12px; letter-spacing:.04em; text-transform:uppercase; line-height:1.4;
+  border:1px solid #1e7d32; color:var(--ok-t); border-radius:4px; padding:0 6px; vertical-align:1px; white-space:nowrap}
+/* conector KDS: 4 cables por color */
+.hoja .cables{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; margin:8px 0 6px}
+.hoja .cable{border:1px solid var(--border,var(--bd)); border-radius:6px; padding:8px 6px; text-align:center; font-size:12.5px; line-height:1.35}
+.hoja .cable .bar{height:8px; border-radius:2px; margin:0 0 6px}
+.hoja .cable b{font-weight:500; font-size:13.5px; display:block}
+/* cara OBD2 16 */
+.hoja .obd{display:grid; grid-template-columns:repeat(8,minmax(0,1fr)); gap:4px; max-width:360px; margin:8px 0 4px;
+  border:1.5px solid var(--text-primary,var(--tp)); border-radius:10px 10px 18px 18px; padding:8px 10px 10px}
+.hoja .obd div{text-align:center; font-size:12px; line-height:1.2; padding:4px 0; border-radius:3px; border:1px solid #9e9e9e; color:#9e9e9e}
+.hoja .obd .u-pwr{border-color:#1f5e8b; background:color-mix(in srgb,#1f5e8b 16%,transparent); color:var(--pwr-t); font-weight:500}
+.hoja .obd .u-gnd{border-color:var(--gnd); background:color-mix(in srgb,#9e9e9e 22%,transparent); color:var(--text-primary,var(--tp)); font-weight:500}
+.hoja .obd .u-dat{border-color:#6b3fa0; background:color-mix(in srgb,#6b3fa0 16%,transparent); color:var(--dat-t); font-weight:500}
+/* header de la Pi, pines 1-14 */
+.hoja .hdr{display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:4px; max-width:400px; margin:8px 0 2px}
+.hoja .hdr div{border:1px solid #9e9e9e; border-radius:4px; text-align:center; padding:4px 0 3px; font-size:12px; line-height:1.25; color:#9e9e9e}
+.hoja .hdr div b{display:block; font-weight:500; font-size:12.5px}
+.hoja .hdr .h-sig{border-color:#8a6d00; background:color-mix(in srgb,#8a6d00 16%,transparent); color:var(--sig-t)}
+.hoja .hdr .h-gnd{border-color:var(--gnd); background:color-mix(in srgb,#9e9e9e 24%,transparent); color:var(--text-primary,var(--tp))}
+.hoja .hdr .h-pwr3{border-color:#1f5e8b; background:color-mix(in srgb,#1f5e8b 16%,transparent); color:var(--pwr-t)}
+.hoja .hdr .h-dat{border-color:#6b3fa0; background:color-mix(in srgb,#6b3fa0 16%,transparent); color:var(--dat-t)}
+.hoja .hdr .h-bad{border-color:#b3261e; color:var(--bad-t); background:repeating-linear-gradient(135deg,transparent 0 5px,color-mix(in srgb,#b3261e 14%,transparent) 5px 8px)}
+.hoja .hdrlab{display:flex; justify-content:space-between; max-width:400px; font-size:12px; color:var(--text-secondary,var(--ts))}
+/* esquemáticos */
+.hoja .esq{overflow-x:auto; -webkit-overflow-scrolling:touch}
+/* 400 px mínimo: así el texto del esquemático nunca baja de 12 px; en el celular se desliza de lado */
+.hoja .esq svg{display:block; width:100%; min-width:400px; height:auto; color:var(--text-primary,var(--tp))}
+@media (max-width:480px){
+  .hoja{padding:14px 12px 48px}
+  .hoja .cables{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+.hoja svg text{font-family:inherit; fill:currentColor}
+.hoja svg .s{fill:var(--text-secondary,var(--ts))}
+.hoja svg .tp{fill:var(--pwr-t)} .hoja svg .tg{fill:var(--sig-t)} .hoja svg .td{fill:var(--dat-t)}
+.hoja svg .tk{fill:var(--ok-t)} .hoja svg .tb{fill:var(--bad-t)} .hoja svg .to{fill:#9e9e9e}
+.hoja svg .box{fill:var(--surface-1,var(--s2)); stroke:currentColor; stroke-width:1.3}
+.hoja svg .mask{fill:var(--surface-0,var(--s1))}
+.hoja .leyenda{display:flex; flex-wrap:wrap; gap:6px 16px; font-size:12.5px; color:var(--text-secondary,var(--ts)); margin:6px 0 0}
+.hoja .leyenda span{display:inline-flex; align-items:center; gap:6px}
+.hoja .leyenda i{display:inline-block; width:22px; height:0; border-top:3px solid}
+/* callouts */
+.hoja .dudas{display:grid; grid-template-columns:1fr 1fr; gap:1.25rem}
+@media (max-width:900px){ .hoja .dudas{grid-template-columns:1fr} }
+.hoja .co{border:2px solid; border-radius:8px; padding:16px 18px}
+.hoja .co-t{font-weight:500; margin-bottom:8px; font-size:15px; line-height:1.4}
+.hoja .co-b{font-size:14px; line-height:1.6}
+.hoja .co-b p{margin:0 0 8px}
+.hoja .co-b ul{margin:0 0 8px; padding-left:18px}
+.hoja .co-b li{margin-bottom:4px}
+.hoja .co-dat{border-color:#6b3fa0} .hoja .co-dat .co-t{color:var(--dat-t)}
+.hoja .co-pwr{border-color:#1f5e8b} .hoja .co-pwr .co-t{color:var(--pwr-t)}
+.hoja .co-ok{border-color:#1e7d32} .hoja .co-ok .co-t{color:var(--ok-t)}
+.hoja .co-bad{border-color:#b3261e} .hoja .co-bad .co-t{color:var(--bad-t)}
+/* tablas */
+.hoja .tabla{overflow-x:auto; -webkit-overflow-scrolling:touch; margin:0 0 12px}
+/* sin DOCTYPE el navegador va en modo quirks y las tablas no heredan color ni letra: se fijan aquí */
+.hoja table{border-collapse:collapse; width:100%; min-width:560px; color:var(--text-primary,var(--tp));
+  font-family:inherit; font-size:13.5px; font-weight:400; line-height:1.5}
+.hoja td,.hoja th{color:inherit}
+.hoja th{text-align:left; font-weight:500; font-size:12px; letter-spacing:.05em; text-transform:uppercase;
+  color:var(--text-secondary,var(--ts)); padding:0 10px 8px 0; border-bottom:1px solid var(--border,var(--bd)); vertical-align:bottom}
+.hoja td{padding:9px 10px 9px 0; border-bottom:1px solid var(--border,var(--bd)); vertical-align:top}
+.hoja td:first-child{font-weight:500; white-space:nowrap}
+.hoja .grupo td{padding-top:16px; font-weight:500; letter-spacing:.05em; text-transform:uppercase; font-size:12px; color:var(--text-secondary,var(--ts))}
+.hoja ol,.hoja ul{margin:0 0 10px; padding-left:20px}
+.hoja li{margin-bottom:5px}
+.hoja .fuentes li{font-size:13px; line-height:1.5}
+/* agregado en las hojas por subsistema: navegación entre hojas hermanas */
+.hoja .nav{display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 14px; font-size:12.5px; line-height:1.5; margin:0 0 16px; padding:0 0 8px;
+  border-bottom:1px solid var(--border,var(--bd)); color:var(--text-secondary,var(--ts))}
+.hoja .nav a{text-decoration:none}
+.hoja .nav .act{color:var(--text-primary,var(--tp)); font-weight:500; border-bottom:2px solid #1f5e8b}
+.hoja .nav .gen{margin-left:auto}
+/* tira del Pololu: 2 filas × 6 posiciones, reusa los estilos de .hdr */
+.hoja .hdr.pol{grid-template-columns:repeat(6,minmax(0,1fr)); max-width:380px}
+.hoja .hdrlab.pol{max-width:380px}
+</style>
+
+<div class="hoja">
+
+<nav class="nav" aria-label="Hojas de cableado">
+  <a href="0-sistema.html">Sistema</a>
+  <span class="act" aria-current="page">Alimentación</span>
+  <a href="2-diagnostico.html">Diagnóstico</a>
+  <a href="3-pantalla.html">Pantalla</a>
+  <a href="4-botones.html">Botones</a>
+  <a href="5-direccion.html">Dirección</a>
+  <a class="gen" href="../conexion.html">hoja general</a>
+</nav>
+
+<h1>¿Cómo llega la corriente de la batería a la Pi?</h1>
+<p class="bajada">Batería → caja de fusibles → toma de fusible de 5 A → cable de 18 AWG → TVS → convertidor Pololu → adaptador USB-C → Raspberry Pi 5.
+Resuelve: en qué ranura va la toma y hacia qué lado, dónde se conecta la tierra, hacia dónde va la banda del TVS, qué hacer con EN, PG y VRP del Pololu,
+si la Pi 5 arranca con una fuente que no negocia USB-PD y si los 5.0 V del Pololu alcanzan para que la Pi no marque bajo voltaje.</p>
+
+<div class="banda b-ok">
+  <h3>Medido contra no medido</h3>
+  <p style="margin:0">Nada de esta hoja se ha medido en tu moto ni en la mesa. Hasta hoy solo se probó el software, con un simulador y un ELM327 falso.
+  Los datos salen de tu manual de servicio (<b>ZX636ED/FD, 2013</b>), de las hojas de Pololu, Littelfuse, Newhaven y Raspberry Pi, y del BOM revisado el 2026-10-06.
+  Lo que depende de una medición dice <span class="pend">por confirmar</span>.
+  Esta hoja ya es para la <b>Raspberry Pi 5 de 8 GB del ISIC</b>; el BOM, el README y la hoja general todavía pueden decir Pi 4 en algunos lugares.</p>
+</div>
+
+<div class="banda b-bad">
+  <h3>Tres cosas que no estaban en la hoja general</h3>
+  <ul style="margin:0">
+    <li><b>No todas las ranuras se apagan con la llave.</b> Según el diagrama eléctrico (p. 502), en la caja 1 los fusibles FAN 15 A y METER 7.5 A
+    se alimentan del cable W, directo de la batería: tienen corriente con la llave en OFF. El de las direccionales (caja 2) se alimenta del BL, que también tiene corriente con la llave en P.
+    Con la toma en cualquiera de esos tres, la Pi nunca se apaga y te deja sin batería. Solo HEAD 15 A y BRAKE/HORN 7.5 A sirven (sección 2).</li>
+    <li><b>En el peor caso de tolerancias no hay margen de voltaje.</b> El Pololu da 5.0 V ±4 % (puede bajar hasta 4.80 V) y la Pi avisa bajo voltaje
+    abajo de 4.63 V ±5 % (el umbral puede estar hasta en 4.86 V). En lo típico sobran 0.33 V. Hay que medirlo con la Pi andando (sección 4).</li>
+    <li><b>La pantalla pide de 5.0 a 7.0 V</b> por su propio conector de barril, no por el USB (hoja de Newhaven). Si se alimenta de este Pololu, queda justo en su mínimo.</li>
+  </ul>
+</div>
+
+<!-- ======================================================= -->
+<h2>1 · La cadena completa</h2>
+
+<div class="cols">
+  <div>
+    <div class="esq">
+      <svg viewBox="0 0 400 812" role="img" aria-label="Esquemático de alimentación: batería de 12 V; el positivo pasa por el fusible principal de 30 A y el interruptor de encendido al bus BR de la caja de fusibles 1; de ahí una toma de fusible con 5 A, cable rojo de 18 AWG y un prensaestopas a la caja Hammond; dentro, un TVS SMBJ24A de positivo a tierra, el convertidor Pololu D36V50F5, menos de 30 cm de cable, el adaptador USB-C a clemas y la Raspberry Pi 5. La tierra va en cable negro de 18 AWG del negativo de la batería al GND del Pololu.">
+        <!-- batería -->
+        <line x1="194" y1="20" x2="194" y2="48" stroke="#1f5e8b" stroke-width="2.6"/>
+        <line x1="204" y1="27" x2="204" y2="41" stroke="currentColor" stroke-width="2.6"/>
+        <text x="186" y="18" text-anchor="end" font-size="12" class="tp">+</text>
+        <text x="212" y="18" font-size="12">−</text>
+        <line x1="194" y1="34" x2="60" y2="34" stroke="#1f5e8b" stroke-width="2.4"/>
+        <line x1="204" y1="34" x2="370" y2="34" stroke="currentColor" stroke-width="2.4"/>
+        <text x="160" y="64" text-anchor="middle" font-size="12.5" font-weight="500">batería 12 V 8 Ah</text>
+        <text x="160" y="80" text-anchor="middle" font-size="12" class="s">bajo el asiento · p. 510</text>
+        <!-- tierra de la moto en el negativo -->
+        <circle cx="300" cy="34" r="4" fill="currentColor"/>
+        <line x1="300" y1="34" x2="300" y2="88" stroke="currentColor" stroke-width="2"/>
+        <line x1="288" y1="88" x2="312" y2="88" stroke="currentColor" stroke-width="2"/>
+        <line x1="292" y1="93" x2="308" y2="93" stroke="currentColor" stroke-width="2"/>
+        <line x1="296" y1="98" x2="304" y2="98" stroke="currentColor" stroke-width="2"/>
+        <text x="316" y="96" font-size="12" class="s">chasis</text>
+        <!-- principal, llave y bus BR -->
+        <line x1="60" y1="34" x2="60" y2="118" stroke="#1f5e8b" stroke-width="2.4"/>
+        <rect class="box" x="20" y="118" width="230" height="46" rx="5"/>
+        <text x="135" y="137" text-anchor="middle" font-size="12.5">30 A principal → llave en ON</text>
+        <text x="135" y="155" text-anchor="middle" font-size="12" class="s">sale el bus BR (café) · p. 502</text>
+        <line x1="60" y1="164" x2="60" y2="188" stroke="#1f5e8b" stroke-width="2.4"/>
+        <rect class="box" x="20" y="188" width="230" height="46" rx="5"/>
+        <text x="135" y="207" text-anchor="middle" font-size="12.5">caja de fusibles 1 · con llave</text>
+        <text x="135" y="225" text-anchor="middle" font-size="12" class="s">cubierta interior izq. · p. 587</text>
+        <!-- toma de fusible -->
+        <line x1="60" y1="234" x2="60" y2="252" stroke="#1f5e8b" stroke-width="2.4"/>
+        <rect x="52" y="252" width="16" height="34" rx="3" fill="none" stroke="currentColor" stroke-width="1.6"/>
+        <line x1="60" y1="252" x2="60" y2="286" stroke="currentColor" stroke-width="1.2"/>
+        <text x="78" y="266" font-size="12.5" font-weight="500">toma de fusible · 5 A</text>
+        <text x="78" y="282" font-size="12" class="s">pata común al lado vivo</text>
+        <!-- tramo de 12 V -->
+        <line x1="60" y1="286" x2="60" y2="508" stroke="#1f5e8b" stroke-width="2.4"/>
+        <line x1="370" y1="34" x2="370" y2="508" stroke="currentColor" stroke-width="2.4"/>
+        <text x="78" y="300" font-size="12" class="tp">0 V · llave en OFF</text>
+        <text x="78" y="316" font-size="12" class="tp">12.5–12.8 V · llave en ON</text>
+        <text x="78" y="332" font-size="12" class="tp">14.3–14.7 V · motor (p. 494)</text>
+        <text x="78" y="348" font-size="12" class="tk">rojo 18 AWG · ≤ 2.8 A &lt; 5 A ✓</text>
+        <text x="360" y="300" text-anchor="end" font-size="12" class="s">negro 18 AWG</text>
+        <!-- caja Hammond y prensaestopas -->
+        <rect x="10" y="373" width="380" height="425" rx="8" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="5 4"/>
+        <rect class="box" x="53" y="368" width="14" height="10" rx="2"/>
+        <rect class="box" x="363" y="368" width="14" height="10" rx="2"/>
+        <text x="215" y="366" text-anchor="middle" font-size="12" class="s">prensaestopas PG7</text>
+        <!-- TVS -->
+        <circle cx="60" cy="412" r="4" fill="#1f5e8b"/>
+        <line x1="60" y1="412" x2="320" y2="412" stroke="#1f5e8b" stroke-width="2"/>
+        <line x1="320" y1="412" x2="320" y2="426" stroke="#1f5e8b" stroke-width="2"/>
+        <polyline points="306,430 310,426 330,426 334,422" fill="none" stroke="currentColor" stroke-width="1.6"/>
+        <polygon points="310,444 330,444 320,426" fill="none" stroke="currentColor" stroke-width="1.6"/>
+        <line x1="320" y1="444" x2="320" y2="476" stroke="currentColor" stroke-width="2"/>
+        <line x1="320" y1="476" x2="370" y2="476" stroke="currentColor" stroke-width="2"/>
+        <circle cx="370" cy="476" r="4" fill="currentColor"/>
+        <text x="300" y="436" text-anchor="end" font-size="12.5" font-weight="500">TVS SMBJ24A</text>
+        <text x="300" y="452" text-anchor="end" font-size="12" class="s">banda (cátodo) al +</text>
+        <text x="300" y="468" text-anchor="end" font-size="12" class="tk">pico recortado a ≤ 38.9 V ✓</text>
+        <text x="300" y="484" text-anchor="end" font-size="12" class="tk">a 14.7 V no conduce (24 V) ✓</text>
+        <!-- Pololu -->
+        <rect class="box" x="30" y="508" width="350" height="100" rx="6" stroke-width="1.8"/>
+        <text x="40" y="527" font-size="12" font-weight="500">VIN</text>
+        <text x="372" y="527" text-anchor="end" font-size="12" font-weight="500">GND</text>
+        <text x="205" y="534" text-anchor="middle" font-size="13" font-weight="500">Pololu D36V50F5</text>
+        <text x="205" y="552" text-anchor="middle" font-size="12" class="tk">38.9 V &lt; 50 V de entrada máx. ✓</text>
+        <text x="205" y="570" text-anchor="middle" font-size="12" class="to">EN · PG · VRP: sin conectar</text>
+        <text x="40" y="598" font-size="12" font-weight="500">VOUT</text>
+        <text x="372" y="598" text-anchor="end" font-size="12" font-weight="500">GND</text>
+        <!-- tramo de 5 V -->
+        <line x1="60" y1="608" x2="60" y2="664" stroke="#1f5e8b" stroke-width="2.4"/>
+        <line x1="370" y1="608" x2="370" y2="664" stroke="currentColor" stroke-width="2.4"/>
+        <text x="72" y="628" font-size="12" class="tp">5.0 V ±4 % → 4.80–5.20 V</text>
+        <text x="72" y="644" font-size="12" class="tk">≤ 30 cm de 18 AWG: −38 mV a 3 A ✓</text>
+        <!-- clemas, USB-C y Pi -->
+        <rect class="box" x="30" y="664" width="350" height="38" rx="5"/>
+        <text x="40" y="688" font-size="12" class="tp">+ VBUS</text>
+        <text x="205" y="688" text-anchor="middle" font-size="12">adaptador USB-C a clemas</text>
+        <text x="372" y="688" text-anchor="end" font-size="12">− GND</text>
+        <rect class="box" x="192" y="702" width="26" height="18" rx="5"/>
+        <text x="226" y="716" font-size="12" class="s">USB-C</text>
+        <rect class="box" x="30" y="720" width="350" height="54" rx="6" stroke-width="2"/>
+        <text x="205" y="742" text-anchor="middle" font-size="13" font-weight="500">Raspberry Pi 5 · 8 GB (la del ISIC)</text>
+        <text x="205" y="762" text-anchor="middle" font-size="12" class="s">avisa bajo voltaje abajo de 4.63 V ±5 %</text>
+        <text x="205" y="790" text-anchor="middle" font-size="12" class="s">caja Hammond IP68 · al frente</text>
+      </svg>
+    </div>
+    <div class="leyenda">
+      <span><i style="border-color:#1f5e8b"></i>potencia (+12 V y +5 V)</span>
+      <span><i style="border-color:var(--gnd)"></i>tierra</span>
+      <span><i style="border-color:currentColor; border-top-style:dashed; border-top-width:2px"></i>pared de la caja</span>
+    </div>
+    <p class="tiny sub" style="margin-top:6px">El punto del + marca el nodo donde se cuelga el TVS: pegado a la entrada del Pololu, adentro de la caja.
+    El punto de la tierra en el TVS une su ánodo con el negro que regresa a la batería. No hay otra tierra: la Pi, la pantalla, el sensor y los botones regresan por ese mismo negro.</p>
+  </div>
+
+  <div>
+    <h3>Voltaje en cada tramo, para el multímetro</h3>
+    <div class="tabla">
+      <table style="min-width:440px">
+        <tr><th>Tramo</th><th>Llave OFF</th><th>Llave ON</th><th>Motor andando</th></tr>
+        <tr><td>Bornes de la batería</td><td>12.8 V o más</td><td>12.5–12.8 V</td><td>14.3–14.7 V</td></tr>
+        <tr><td>Lado vivo de la ranura</td><td class="t-ok">0 V ✓</td><td>≈ batería</td><td>14.3–14.7 V</td></tr>
+        <tr><td>VIN–GND del Pololu</td><td>0 V</td><td>≈ batería</td><td>14.3–14.7 V</td></tr>
+        <tr><td>VOUT–GND del Pololu</td><td>0 V</td><td>4.80–5.20 V</td><td>4.80–5.20 V</td></tr>
+        <tr><td>Clemas del USB-C</td><td>0 V</td><td>VOUT − 0.04 V</td><td>VOUT − 0.04 V</td></tr>
+      </table>
+    </div>
+    <p class="why">Batería YTX9-BS: «12.8 V o más» en reposo y carga del regulador de 14.3–14.7 V (manual p. 494). Con la llave en ON y el motor apagado baja un poco por las luces, la ECU y la bomba.
+    El 0 V con llave en OFF es lo que prueba que la ranura sirve. Con la Pi conectada, el voltaje que ella ve se lee con <code>vcgencmd pmic_read_adc EXT5V_V</code>.</p>
+
+    <div class="caja" style="margin-top:14px">
+      <h3>Corriente a 12 V de toda la carga, y por qué alcanzan 5 A y 18 AWG</h3>
+      <ul style="margin:0">
+        <li><b>Uso normal:</b> la Pi 5 gasta unos 0.8 A a 5 V (consumo típico de la placa, documentación oficial) y la pantalla 0.56 A típ., 0.59 A máx. (Newhaven),
+        si va colgada del mismo Pololu <span class="pend">por confirmar</span>. Son 1.36 A × 5.0 V = 6.8 W; con ~92 % de eficiencia, 7.4 W de entrada:
+        <b>0.6 A a 12.5 V</b>.</li>
+        <li><b>Lo más que el Pololu puede entregar:</b> 5.5 A × 5.2 V = 28.6 W → ~31 W de entrada → <b>2.8 A a 11 V</b> (batería baja). Aun así, el fusible de 5 A no se funde por carga <span class="okt">✓</span></li>
+        <li><b>Cable de 18 AWG:</b> ~21 mΩ por metro. A 2.8 A se calienta 0.16 W por metro y a 5 A, justo antes de que se funda el fusible, 0.53 W por metro: queda tibio a lo mucho <span class="okt">✓</span>.
+        Así el fusible protege al cable, no al revés.</li>
+        <li><b>Caída en el lado de 12 V:</b> unos 3 m de ida y vuelta a 2.8 A son 0.18 V. Al Pololu no le importa: a 3 A le basta con unos 5.9 V de entrada (gráfica de caída de Pololu).</li>
+        <li><b>Caída en el lado de 5 V:</b> 30 cm de ida y 30 de vuelta en 18 AWG son 13 mΩ: <b>38 mV a 3 A</b> <span class="okt">✓</span> (con 20 AWG serían 60 mV). Aquí sí importa cada milivolt (sección 4).</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ======================================================= -->
+<h2>2 · La caja de fusibles: qué ranura y hacia qué lado</h2>
+
+<div class="cols">
+  <div>
+    <div class="esq">
+      <svg viewBox="0 0 400 392" role="img" aria-label="Diagrama de las cajas de fusibles según el manual: el cable W viene de la batería tras el fusible principal. La llave en ON alimenta el bus BR, que lleva los fusibles 1 IG 15 A, 2 HEAD 15 A y 3 BRAKE/HORN 7.5 A. El W alimenta directo los fusibles 4 FAN 15 A y 5 METER 7.5 A. La llave en ON o en P alimenta el cable BL, que lleva el fusible TURN 7.5 A de la caja 2. Los candidatos son HEAD y BRAKE/HORN.">
+        <text x="14" y="26" font-size="12" class="tp">W · batería, tras el principal 30 A</text>
+        <line x1="24" y1="34" x2="24" y2="275" stroke="#1f5e8b" stroke-width="2.4"/>
+        <!-- llave: BR solo en ON -->
+        <circle cx="24" cy="105" r="3.6" fill="#1f5e8b"/>
+        <line x1="24" y1="105" x2="46" y2="105" stroke="#1f5e8b" stroke-width="2.4"/>
+        <circle cx="48" cy="105" r="2.6" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <line x1="50" y1="103" x2="78" y2="92" stroke="currentColor" stroke-width="1.8"/>
+        <circle cx="80" cy="105" r="2.6" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <line x1="83" y1="105" x2="130" y2="105" stroke="#1f5e8b" stroke-width="2.4"/>
+        <text x="40" y="86" font-size="12" class="s">llave</text>
+        <text x="88" y="99" font-size="12" font-weight="500" class="tp">BR</text>
+        <text x="30" y="124" font-size="12" class="s">solo en ON</text>
+        <!-- W directo -->
+        <circle cx="24" cy="202" r="3.6" fill="#1f5e8b"/>
+        <line x1="24" y1="202" x2="130" y2="202" stroke="#1f5e8b" stroke-width="2.4"/>
+        <text x="34" y="196" font-size="12" class="tp">W · siempre</text>
+        <!-- llave: BL en ON y en P -->
+        <line x1="24" y1="275" x2="46" y2="275" stroke="#1f5e8b" stroke-width="2.4"/>
+        <circle cx="48" cy="275" r="2.6" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <line x1="50" y1="273" x2="78" y2="262" stroke="currentColor" stroke-width="1.8"/>
+        <circle cx="80" cy="275" r="2.6" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <line x1="83" y1="275" x2="130" y2="275" stroke="#1f5e8b" stroke-width="2.4"/>
+        <text x="40" y="256" font-size="12" class="s">llave</text>
+        <text x="88" y="269" font-size="12" font-weight="500" class="tp">BL</text>
+        <text x="30" y="294" font-size="12" class="s">en ON y en P</text>
+        <!-- buses -->
+        <line x1="130" y1="70" x2="130" y2="140" stroke="#1f5e8b" stroke-width="2.4"/>
+        <circle cx="130" cy="105" r="3.6" fill="#1f5e8b"/>
+        <line x1="130" y1="185" x2="130" y2="220" stroke="#1f5e8b" stroke-width="2.4"/>
+        <circle cx="130" cy="202" r="3.6" fill="#1f5e8b"/>
+        <!-- cajas -->
+        <rect x="122" y="54" width="56" height="190" rx="4" fill="none" stroke="currentColor" stroke-width="1.1" stroke-dasharray="5 4"/>
+        <text x="122" y="46" font-size="12" font-weight="500">caja de fusibles 1 · p. 587</text>
+        <rect x="122" y="258" width="56" height="34" rx="4" fill="none" stroke="currentColor" stroke-width="1.1" stroke-dasharray="5 4"/>
+        <text x="122" y="310" font-size="12" font-weight="500">caja de fusibles 2</text>
+        <!-- fila 1: IG -->
+        <line x1="130" y1="70" x2="140" y2="70" stroke="#1f5e8b" stroke-width="2"/>
+        <rect x="140" y="63" width="34" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <line x1="140" y1="70" x2="174" y2="70" stroke="currentColor" stroke-width="1"/>
+        <line x1="174" y1="70" x2="216" y2="70" stroke="#9e9e9e" stroke-width="2"/>
+        <text x="184" y="65" font-size="12" class="s">BR/W</text>
+        <text x="224" y="68" font-size="12" font-weight="500">1 · IG 15 A</text>
+        <text x="224" y="83" font-size="12" class="tb">encendido, ECU y KDS ✗</text>
+        <!-- fila 2: HEAD -->
+        <line x1="130" y1="105" x2="140" y2="105" stroke="#1f5e8b" stroke-width="2"/>
+        <rect x="140" y="98" width="34" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <line x1="140" y1="105" x2="174" y2="105" stroke="currentColor" stroke-width="1"/>
+        <line x1="174" y1="105" x2="216" y2="105" stroke="#1e7d32" stroke-width="2"/>
+        <text x="184" y="100" font-size="12" class="s">GY</text>
+        <text x="224" y="103" font-size="12" font-weight="500">2 · HEAD 15 A</text>
+        <text x="224" y="118" font-size="12" class="tk">candidato A ✓ (medir)</text>
+        <!-- fila 3: BRAKE/HORN -->
+        <line x1="130" y1="140" x2="140" y2="140" stroke="#1f5e8b" stroke-width="2"/>
+        <rect x="140" y="133" width="34" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <line x1="140" y1="140" x2="174" y2="140" stroke="currentColor" stroke-width="1"/>
+        <line x1="174" y1="140" x2="216" y2="140" stroke="#1e7d32" stroke-width="2"/>
+        <text x="184" y="135" font-size="12" class="s">R</text>
+        <text x="224" y="138" font-size="12" font-weight="500">3 · BRAKE/HORN 7.5 A</text>
+        <text x="224" y="153" font-size="12" class="tk">candidato B ✓ (medir)</text>
+        <!-- fila 4: FAN -->
+        <line x1="130" y1="185" x2="140" y2="185" stroke="#1f5e8b" stroke-width="2"/>
+        <rect x="140" y="178" width="34" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <line x1="140" y1="185" x2="174" y2="185" stroke="currentColor" stroke-width="1"/>
+        <line x1="174" y1="185" x2="216" y2="185" stroke="#9e9e9e" stroke-width="2"/>
+        <text x="184" y="180" font-size="12" class="s">G</text>
+        <text x="224" y="183" font-size="12" font-weight="500">4 · FAN 15 A</text>
+        <text x="224" y="198" font-size="12" class="tb">vivo con llave OFF ✗</text>
+        <!-- fila 5: METER -->
+        <line x1="130" y1="220" x2="140" y2="220" stroke="#1f5e8b" stroke-width="2"/>
+        <rect x="140" y="213" width="34" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <line x1="140" y1="220" x2="174" y2="220" stroke="currentColor" stroke-width="1"/>
+        <line x1="174" y1="220" x2="216" y2="220" stroke="#9e9e9e" stroke-width="2"/>
+        <text x="184" y="215" font-size="12" class="s">O</text>
+        <text x="224" y="218" font-size="12" font-weight="500">5 · METER 7.5 A</text>
+        <text x="224" y="233" font-size="12" class="tb">vivo con llave OFF ✗</text>
+        <!-- caja 2: TURN -->
+        <line x1="130" y1="275" x2="140" y2="275" stroke="#1f5e8b" stroke-width="2"/>
+        <rect x="140" y="268" width="34" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <line x1="140" y1="275" x2="174" y2="275" stroke="currentColor" stroke-width="1"/>
+        <line x1="174" y1="275" x2="216" y2="275" stroke="#9e9e9e" stroke-width="2"/>
+        <text x="184" y="270" font-size="12" class="s">BR/Y</text>
+        <text x="224" y="273" font-size="12" font-weight="500">TURN 7.5 A</text>
+        <text x="224" y="288" font-size="12" class="tb">vivo también en P ✗</text>
+        <!-- notas -->
+        <text x="10" y="338" font-size="12" class="s">Lado vivo de cada ranura = el que da al bus.</text>
+        <text x="10" y="354" font-size="12" class="s">ECU 15 A y principal 30 A: en el relevador de</text>
+        <text x="10" y="370" font-size="12" class="s">arranque, bajo el tanque (p. 587).</text>
+        <text x="10" y="386" font-size="12" class="s">Diagrama eléctrico del manual, p. 502.</text>
+      </svg>
+    </div>
+    <p class="tiny sub" style="margin-top:6px">Los nombres son los de la tapa de la caja 1 (foto de la p. 587: 15A IG, 15A HEAD, 7.5A BRAKE/HORN, 15A FAN, 7.5A METER) y la leyenda del diagrama de la p. 502.
+    La tabla del interruptor (p. 502) dice qué une cada posición: en ON, W con BR y con BL; en P (PARK), W solo con BL; en OFF, nada.
+    Los circuitos de las pp. 540, 544, 547 y 556 dibujan lo mismo para cada fusible.
+    <span class="pend">por confirmar</span> la posición física de cada ranura: ábrela y compara con la tapa.</p>
+  </div>
+
+  <div class="lista">
+    <div class="caja">
+      <h3>La pieza como se ve: portafusible con derivación (toma de fusible)</h3>
+      <p class="why" style="margin-bottom:4px">El del BOM es genérico de MercadoLibre, en versión estándar, mini o micro: compra la que coincida con los fusibles de tu caja <span class="pend">por confirmar</span>.</p>
+      <div class="esq">
+        <svg viewBox="0 0 400 204" role="img" aria-label="Toma de fusible vista de frente: cuerpo con dos ranuras, arriba el fusible nuevo de 5 amperes y abajo el original; dos patas, A y B, abajo; un cable de salida a un lado">
+          <rect class="box" x="130" y="16" width="110" height="112" rx="6"/>
+          <rect x="148" y="30" width="74" height="28" rx="4" fill="none" stroke="currentColor" stroke-width="1.4"/>
+          <text x="185" y="49" text-anchor="middle" font-size="12">5 A · nuevo</text>
+          <rect x="148" y="74" width="74" height="28" rx="4" fill="none" stroke="currentColor" stroke-width="1.4"/>
+          <text x="185" y="93" text-anchor="middle" font-size="12">original</text>
+          <rect x="150" y="128" width="12" height="40" fill="none" stroke="currentColor" stroke-width="1.6"/>
+          <rect x="208" y="128" width="12" height="40" fill="none" stroke="currentColor" stroke-width="1.6"/>
+          <text x="156" y="186" text-anchor="middle" font-size="12" font-weight="500">A</text>
+          <text x="214" y="186" text-anchor="middle" font-size="12" font-weight="500">B</text>
+          <text x="140" y="146" text-anchor="end" font-size="12" class="s">la pata común</text>
+          <text x="140" y="162" text-anchor="end" font-size="12" class="tp">→ lado vivo</text>
+          <text x="230" y="146" font-size="12" class="s">la otra</text>
+          <text x="230" y="162" font-size="12">→ lado carga</text>
+          <line x1="240" y1="44" x2="330" y2="44" stroke="#1f5e8b" stroke-width="2.4"/>
+          <text x="246" y="36" font-size="12" class="s">cable de salida</text>
+          <text x="246" y="62" font-size="12" class="tp">→ rojo 18 AWG</text>
+          <text x="10" y="200" font-size="12" class="s">Cuál de las dos es la común depende de tu toma: mídela.</text>
+        </svg>
+      </div>
+    </div>
+
+    <h3>A dónde va cada terminal de la toma</h3>
+    <div class="fila"><div class="chip c-pwr"></div><div class="nom t-pwr">pata común</div>
+      <div><div class="dst">→ lado vivo de la ranura (el del bus BR)</div>
+      <div class="why">Es la pata que alimenta a los dos fusibles. Ahí la corriente entra a la toma y se reparte: el original sigue protegiendo su circuito y el de 5 A protege solo tu cable.
+      Con solo el fusible de 5 A puesto, es la pata que tiene continuidad con el cable de salida.</div></div></div>
+    <div class="fila"><div class="chip c-pwr"></div><div class="nom t-pwr">la otra pata</div>
+      <div><div class="dst">→ lado carga de la ranura</div>
+      <div class="why">Por ahí sale la corriente del circuito original (faro o luces y claxon), a través del fusible de abajo.</div></div></div>
+    <div class="fila"><div class="chip c-off"></div><div class="nom">ranura de abajo</div>
+      <div><div class="dst">→ el fusible que traía esa ranura</div>
+      <div class="why">Mismo amperaje: 15 A si es HEAD, 7.5 A si es BRAKE/HORN. Que el de abajo sea el original es lo común en estas tomas; la prueba de continuidad lo confirma.</div></div></div>
+    <div class="fila"><div class="chip c-ok"></div><div class="nom t-ok">ranura de arriba</div>
+      <div><div class="dst">→ fusible de 5 A (del juego del BOM)</div>
+      <div class="why">La carga normal es de 0.6 A y el máximo posible, 2.8 A a 11 V: 5 A no se funde por uso, sí por un corto.</div></div></div>
+    <div class="fila"><div class="chip c-pwr"></div><div class="nom t-pwr">cable de salida</div>
+      <div><div class="dst">→ rojo 18 AWG → prensaestopas PG7 → VIN del Pololu</div>
+      <div class="why">Únelo con un conector a tope engargolado y termofil encima. El conector no está en el BOM. Pasa el cable lejos del escape y de las bobinas.</div></div></div>
+    <div class="fila"><div class="chip c-gnd"></div><div class="nom">negativo de la batería</div>
+      <div><div class="dst">→ negro 18 AWG → prensaestopas → GND del Pololu</div>
+      <div class="why">Es el punto al que regresan la tierra del motor y la del cuadro (p. 131). Las tierras del cuadro que muestra el manual están bajo el tanque y junto a la batería (pp. 691, 693 y 722), no al frente,
+      y un tornillo del cuadro depende de que no se afloje. Con un terminal de ojillo bajo el tornillo del borne, que el manual pide quitar primero (p. 510).
+      El ojillo no está en el BOM; el tamaño del tornillo, <span class="pend">por confirmar</span>.</div></div></div>
+  </div>
+</div>
+
+<!-- ======================================================= -->
+<h2>3 · TVS y convertidor, adentro de la caja</h2>
+
+<div class="cols">
+  <div class="lista">
+    <div class="caja">
+      <h3>La pieza como se ve: Pololu D36V50F5 (#4091), vista de abajo</h3>
+      <p class="why" style="margin-bottom:2px">La cara con letras (VRP, VIN, GND, VOUT, PG, EN), con la orilla de los agujeros hacia ti. Doce agujeros a 0.1″ en dos filas;
+      los de potencia están repetidos. Los grises no se conectan.</p>
+      <div class="hdrlab pol"><span>fila de adentro</span></div>
+      <div class="hdr pol">
+        <div><b>PG</b>libre</div><div><b>VRP</b>libre</div><div class="h-pwr3"><b>VIN</b>12 V</div><div class="h-gnd"><b>GND</b>0 V</div><div class="h-gnd"><b>GND</b>0 V</div><div class="h-pwr3"><b>VOUT</b>5 V</div>
+        <div><b>EN</b>libre</div><div><b>VRP</b>libre</div><div class="h-pwr3"><b>VIN</b>12 V</div><div class="h-gnd"><b>GND</b>0 V</div><div class="h-gnd"><b>GND</b>0 V</div><div class="h-pwr3"><b>VOUT</b>5 V</div>
+      </div>
+      <div class="hdrlab pol"><span>orilla de la placa</span></div>
+      <p class="tiny sub" style="margin:8px 0 0">De la cara de arriba (la del inductor) el orden se ve al revés: VOUT, GND, GND, VIN, VRP, EN.
+      PG es el único que no está en la orilla. Cada pin de header aguanta 3 A, así que los cables van soldados directo a la placa, sin pines.
+      <span class="pend">por confirmar</span> que el 18 AWG entre en el agujero; si no, estaña la punta y suéldala encima del par.</p>
+    </div>
+
+    <h3>A dónde va cada agujero del Pololu</h3>
+    <div class="fila"><div class="chip c-pwr"></div><div class="nom t-pwr">VIN (×2)</div>
+      <div><div class="dst">→ rojo 18 AWG de la toma, y la banda del TVS</div>
+      <div class="why">Acepta de 5.5 a 50 V y aguanta hasta 40 V invertidos. Le llegan 12.5–14.7 V y, en un pico, lo que deje pasar el TVS: ≤ 38.9 V.</div></div></div>
+    <div class="fila"><div class="chip c-gnd"></div><div class="nom">GND (×4)</div>
+      <div><div class="dst">→ negro a la batería y el ánodo del TVS (un par); − de las clemas (el otro par)</div>
+      <div class="why">Los cuatro están unidos en la placa. Es el único retorno de toda la caja: la Pi, la pantalla, el sensor y los botones regresan por aquí, sin tocar el chasis.</div></div></div>
+    <div class="fila"><div class="chip c-pwr"></div><div class="nom t-pwr">VOUT (×2)</div>
+      <div><div class="dst">→ + de las clemas, con ≤ 30 cm de rojo 18 AWG</div>
+      <div class="why">5.0 V ±4 %. A 12 V de entrada da unos 8 A continuos en la mesa (gráfica de Pololu); la Pi y la pantalla juntas piden ≤ 3.6 A.
+      El otro agujero puede ir a la pantalla si se alimenta de aquí <span class="pend">por confirmar</span>.</div></div></div>
+    <div class="fila"><div class="chip c-off"></div><div class="nom t-off">EN</div>
+      <div><div class="dst t-off">sin conectar</div>
+      <div class="why">Trae una resistencia de 100 kΩ a VIN, así que suelto deja el convertidor prendido. Abajo de 1.2 V lo apaga: nunca lo pongas a tierra.</div></div></div>
+    <div class="fila"><div class="chip c-off"></div><div class="nom t-off">PG</div>
+      <div><div class="dst t-off">sin conectar</div>
+      <div class="why">Avisa si la salida se sale de −10 % o +20 %. Es de drenaje abierto: sin resistencia externa no hace nada. Está junto a EN, en la otra fila: que la soldadura no los una.</div></div></div>
+    <div class="fila"><div class="chip c-off"></div><div class="nom t-off">VRP (×2)</div>
+      <div><div class="dst t-off">sin conectar</div>
+      <div class="why">Es la entrada ya pasada por la protección contra polaridad invertida. Si metes los 12 V aquí en vez de en VIN, te saltas esa protección.</div></div></div>
+
+    <div class="caja" style="margin-top:14px">
+      <h3>La pieza como se ve: TVS Littelfuse SMBJ24A</h3>
+      <div class="esq">
+        <svg viewBox="0 0 400 104" role="img" aria-label="Diodo TVS en encapsulado SMB visto de arriba: la banda marca el cátodo, que va a VIN; la otra terminal es el ánodo, que va a GND">
+          <text x="200" y="16" text-anchor="middle" font-size="12" class="s">encapsulado SMB (DO-214AA), visto de arriba</text>
+          <rect x="132" y="44" width="20" height="22" fill="none" stroke="currentColor" stroke-width="1.4"/>
+          <rect x="248" y="44" width="20" height="22" fill="none" stroke="currentColor" stroke-width="1.4"/>
+          <rect class="box" x="150" y="32" width="100" height="46" rx="3"/>
+          <rect x="150" y="32" width="16" height="46" fill="currentColor" fill-opacity="0.75"/>
+          <text x="124" y="52" text-anchor="end" font-size="12" font-weight="500">cátodo (banda)</text>
+          <text x="124" y="68" text-anchor="end" font-size="12" class="tp">→ VIN (+)</text>
+          <text x="276" y="52" font-size="12" font-weight="500">ánodo</text>
+          <text x="276" y="68" font-size="12">→ GND (−)</text>
+          <text x="200" y="98" text-anchor="middle" font-size="12" class="s">dos terminales, sin pata de alimentación</text>
+        </svg>
+      </div>
+      <p class="why" style="margin:6px 0 0">Es pasivo: no se alimenta y a 14.7 V no hace nada. La banda solo dice hacia dónde va. El BOM trae 3: uno puesto y dos de repuesto.</p>
+    </div>
+
+    <h3>A dónde va cada terminal del TVS</h3>
+    <div class="fila"><div class="chip c-pwr"></div><div class="nom t-pwr">banda (cátodo)</div>
+      <div><div class="dst">→ VIN del Pololu</div>
+      <div class="why">Así queda en inverso frente a la batería. No conduce hasta 24 V (fuga máx. de 1 µA); empieza arriba de 26.7 V y en un pico de 15.5 A deja ≤ 38.9 V (600 W, pulso de 10/1000 µs).</div></div></div>
+    <div class="fila"><div class="chip c-gnd"></div><div class="nom">ánodo</div>
+      <div><div class="dst">→ GND del Pololu</div>
+      <div class="why">El pico se va a tierra aquí mismo, pegado al convertidor, sin pasar por la Pi. Patas lo más cortas posible: soldado sobre las uniones de VIN y GND, por la cara de abajo.</div></div></div>
+  </div>
+
+  <div>
+    <div class="esq">
+      <svg viewBox="0 0 400 330" role="img" aria-label="Escalera de voltajes en la entrada del Pololu: carga normal 14.3 a 14.7 volts, el TVS bloquea hasta 24 volts, empieza a conducir en 26.7, recorta a 38.9 volts en un pico, el Pololu aguanta 50 volts; el alternador sin regulador da 46.4 volts o más">
+        <text x="10" y="18" font-size="12.5" font-weight="500">Qué voltaje ve VIN, de abajo hacia arriba</text>
+        <!-- eje vertical: y = 280 - v*4.8 (0..52 V) -->
+        <line x1="70" y1="40" x2="70" y2="280" stroke="currentColor" stroke-width="1.2"/>
+        <line x1="64" y1="280" x2="76" y2="280" stroke="currentColor" stroke-width="1.2"/>
+        <text x="58" y="284" text-anchor="end" font-size="12" class="s">0 V</text>
+        <!-- 12.8 -->
+        <line x1="64" y1="218.6" x2="76" y2="218.6" stroke="#1f5e8b" stroke-width="2"/>
+        <text x="58" y="222" text-anchor="end" font-size="12" class="tp">12.8</text>
+        <text x="86" y="222" font-size="12">batería en reposo</text>
+        <!-- 14.7 -->
+        <line x1="64" y1="209.4" x2="76" y2="209.4" stroke="#1f5e8b" stroke-width="2"/>
+        <text x="58" y="206" text-anchor="end" font-size="12" class="tp">14.7</text>
+        <text x="86" y="206" font-size="12">carga del regulador (p. 494)</text>
+        <!-- 24 -->
+        <line x1="64" y1="164.8" x2="76" y2="164.8" stroke="#1e7d32" stroke-width="2"/>
+        <text x="58" y="169" text-anchor="end" font-size="12" class="tk">24</text>
+        <text x="86" y="169" font-size="12" class="tk">TVS bloqueando: no conduce ✓</text>
+        <!-- 26.7 -->
+        <line x1="64" y1="151.8" x2="76" y2="151.8" stroke="currentColor" stroke-width="2"/>
+        <text x="58" y="152" text-anchor="end" font-size="12">26.7</text>
+        <text x="86" y="152" font-size="12">TVS empieza a conducir</text>
+        <!-- 38.9 -->
+        <line x1="64" y1="93.3" x2="76" y2="93.3" stroke="#1e7d32" stroke-width="2.4"/>
+        <text x="58" y="97" text-anchor="end" font-size="12" class="tk">38.9</text>
+        <text x="86" y="97" font-size="12" class="tk">pico recortado, 15.5 A ✓</text>
+        <!-- 46.4 -->
+        <line x1="64" y1="57.3" x2="76" y2="57.3" stroke="#b3261e" stroke-width="2"/>
+        <text x="58" y="61" text-anchor="end" font-size="12" class="tb">46.4</text>
+        <text x="86" y="61" font-size="12" class="tb">alternador sin regulador</text>
+        <!-- 50 -->
+        <line x1="64" y1="40" x2="76" y2="40" stroke="#b3261e" stroke-width="2.4"/>
+        <text x="58" y="44" text-anchor="end" font-size="12" class="tb">50</text>
+        <text x="86" y="44" font-size="12" class="tb">máximo del Pololu</text>
+        <!-- margen -->
+        <line x1="300" y1="93.3" x2="300" y2="40" stroke="#1e7d32" stroke-width="1.4"/>
+        <line x1="294" y1="93.3" x2="306" y2="93.3" stroke="#1e7d32" stroke-width="1.4"/>
+        <line x1="294" y1="40" x2="306" y2="40" stroke="#1e7d32" stroke-width="1.4"/>
+        <text x="312" y="62" font-size="12" class="tk">11 V de</text>
+        <text x="312" y="78" font-size="12" class="tk">margen ✓</text>
+        <text x="10" y="306" font-size="12" class="s">46.4 V o más: salida del alternador a 4 000 rpm,</text>
+        <text x="10" y="322" font-size="12" class="s">medida sin regulador (p. 494).</text>
+      </svg>
+    </div>
+    <p class="tiny sub" style="margin-top:6px">Escala proporcional. Si el pico dura poco (un borne flojo que rebota), el TVS se lo traga. Si dura mucho, por ejemplo con el regulador dañado,
+    el TVS se calienta y se funde el fusible de 5 A: pierdes la Pi en ese viaje, pero no se quema. Si el TVS falla, lo normal es que quede en corto:
+    el fusible se funde cada vez que pongas uno nuevo hasta que cambies el TVS.</p>
+    <p class="tiny sub">Por qué el D36V50F5 y no el D24V50F5: el máximo de entrada del D24 es de 38 V, por debajo de los 38.9 V del TVS (BOM y hoja general).</p>
+  </div>
+</div>
+
+<!-- ======================================================= -->
+<h2>4 · Del Pololu a la Pi 5</h2>
+
+<div class="cols">
+  <div class="lista">
+    <div class="caja">
+      <h3>La pieza como se ve: adaptador USB-C macho a clemas</h3>
+      <div class="esq">
+        <svg viewBox="0 0 400 124" role="img" aria-label="Adaptador: un conector USB-C macho a la izquierda, una placa y una bornera de dos tornillos a la derecha, marcados más y menos">
+          <text x="46" y="30" text-anchor="middle" font-size="12" class="s">USB-C macho</text>
+          <rect x="16" y="46" width="60" height="26" rx="12" fill="none" stroke="currentColor" stroke-width="1.6"/>
+          <rect x="26" y="54" width="40" height="10" rx="4" fill="none" stroke="currentColor" stroke-width="1"/>
+          <rect class="box" x="76" y="34" width="140" height="50" rx="3"/>
+          <text x="146" y="63" text-anchor="middle" font-size="12" class="s">¿resistencia en CC?</text>
+          <rect x="216" y="38" width="80" height="42" rx="3" fill="none" stroke="currentColor" stroke-width="1.6"/>
+          <circle cx="236" cy="59" r="9" fill="none" stroke="currentColor" stroke-width="1.4"/>
+          <circle cx="276" cy="59" r="9" fill="none" stroke="currentColor" stroke-width="1.4"/>
+          <line x1="232" y1="63" x2="240" y2="55" stroke="currentColor" stroke-width="1.4"/>
+          <line x1="272" y1="63" x2="280" y2="55" stroke="currentColor" stroke-width="1.4"/>
+          <text x="236" y="30" text-anchor="middle" font-size="12.5" font-weight="500" class="tp">+</text>
+          <text x="276" y="30" text-anchor="middle" font-size="12.5" font-weight="500">−</text>
+          <text x="306" y="54" font-size="12" class="tp">+ → VOUT</text>
+          <text x="306" y="74" font-size="12">− → GND</text>
+          <text x="200" y="108" text-anchor="middle" font-size="12" class="tb">rotulado y número de clemas: por confirmar</text>
+        </svg>
+      </div>
+      <p class="why" style="margin:4px 0 0">No pude abrir la ficha de MercadoLibre. Lo dibujado es lo mínimo que trae una pieza así: VBUS y GND.
+      Si la tuya trae más clemas (D+, D−, CC), esas van sin conectar.</p>
+    </div>
+
+    <h3>A dónde va cada clema</h3>
+    <div class="fila"><div class="chip c-pwr"></div><div class="nom t-pwr">+ (VBUS)</div>
+      <div><div class="dst">→ VOUT del Pololu, rojo 18 AWG, ≤ 30 cm</div>
+      <div class="why">La Pi recibe aquí sus 5 V. Corto y grueso, porque cada milivolt que se pierde aquí sale del margen de bajo voltaje.</div></div></div>
+    <div class="fila"><div class="chip c-gnd"></div><div class="nom">− (GND)</div>
+      <div><div class="dst">→ GND del Pololu, negro 18 AWG, junto al rojo</div>
+      <div class="why">La corriente regresa por aquí: la caída cuenta dos veces, de ida y de vuelta. Llévalos juntos o trenzados.</div></div></div>
+    <div class="fila"><div class="chip c-off"></div><div class="nom t-off">D+, D−, CC</div>
+      <div><div class="dst t-off">sin conectar, si existen</div>
+      <div class="why">No hay datos que pasar. Una fuente sin USB-PD no negocia nada (ver la duda).</div></div></div>
+    <div class="fila"><div class="chip c-pwr"></div><div class="nom t-pwr">macho USB-C</div>
+      <div><div class="dst">→ USB-C de la Pi 5</div>
+      <div class="why">Es la entrada de energía de la Pi. El cableado se queda en la moto: cuando la Pi se va al ISIC, se desconecta aquí.</div></div></div>
+
+    <h3>Conectores de la Pi 5 que tocan la energía</h3>
+    <div class="fila"><div class="chip c-pwr"></div><div class="nom t-pwr">USB-C</div>
+      <div><div class="dst">→ macho del adaptador</div>
+      <div class="why">La entrada documentada. Sin USB-PD la Pi supone una fuente de 3 A (whitepaper de Raspberry Pi), y eso basta para la placa.</div></div></div>
+    <div class="fila"><div class="chip c-off"></div><div class="nom t-off">pines 2 y 4 (5 V)</div>
+      <div><div class="dst t-off">nada</div>
+      <div class="why">Si entras por el header, la única forma de decirle a la Pi cuánta corriente tienes es <code>PSU_MAX_CURRENT</code> en la EEPROM, y la EEPROM viaja con la placa al ISIC.
+      El header de 40 pines es el mismo de la Pi 4 (un solo diagrama para todas las placas actuales, documentación oficial).</div></div></div>
+    <div class="fila"><div class="chip c-off"></div><div class="nom">ventilador (4 pines)</div>
+      <div><div class="dst">→ Active Cooler oficial (SC1148), si tu Pi no lo trae <span class="pend">por confirmar</span></div>
+      <div class="why">Conector JST-SH entre el header y los USB 2.0. Cuelga del mismo límite de corriente que los USB: sin USB-PD, 600 mA para todo.</div></div></div>
+    <div class="fila"><div class="chip c-off"></div><div class="nom">J5 · BAT</div>
+      <div><div class="dst">→ batería oficial del reloj, opcional (no está en el BOM)</div>
+      <div class="why">A la derecha del USB-C. En la moto no hay internet para poner la hora, y la llave corta todo: sin batería, el reloj se pierde en cada viaje y las fechas del registro también.
+      Viene con la carga apagada; se prende con <code>dtparam=rtc_bbat_vchg=3000000</code> en la microSD de la moto.</div></div></div>
+    <div class="fila"><div class="chip c-off"></div><div class="nom">botón de encendido</div>
+      <div><div class="dst">→ no se cablea</div>
+      <div class="why">Al recibir 5 V, la Pi 5 arranca sola. Un toque apaga limpio (dos toques seguidos si usas escritorio). Los pads de J2 permiten poner un botón externo; no está en el plan.</div></div></div>
+  </div>
+
+  <div>
+    <div class="esq">
+      <svg viewBox="0 0 400 236" role="img" aria-label="Comparación de voltajes: la salida del Pololu va de 4.80 a 5.20 volts; en el USB-C, tras 38 milivolts de cable, de 4.76 a 5.16; el umbral de bajo voltaje de la Pi va de 4.40 a 4.86 volts. Entre 4.76 y 4.86 se enciman. En lo típico, 4.96 contra 4.63 deja 0.33 volts de margen">
+        <text x="10" y="26" font-size="12" font-weight="500">Salida del Pololu (5.0 V ±4 %)</text>
+        <rect x="210" y="34" width="136" height="12" fill="#1f5e8b" fill-opacity="0.22" stroke="#1f5e8b" stroke-width="1.2"/>
+        <line x1="278" y1="30" x2="278" y2="50" stroke="#1f5e8b" stroke-width="2"/>
+        <text x="10" y="76" font-size="12" font-weight="500">En el USB-C, tras 38 mV del cable</text>
+        <rect x="196.4" y="84" width="136" height="12" fill="#1f5e8b" fill-opacity="0.22" stroke="#1f5e8b" stroke-width="1.2"/>
+        <rect x="196.4" y="84" width="34" height="12" fill="#b3261e" fill-opacity="0.45"/>
+        <line x1="264.4" y1="80" x2="264.4" y2="100" stroke="#1f5e8b" stroke-width="2"/>
+        <text x="10" y="126" font-size="12" font-weight="500">Umbral de bajo voltaje de la Pi (4.63 V ±5 %)</text>
+        <rect x="74" y="134" width="156.4" height="12" fill="#b3261e" fill-opacity="0.18" stroke="#b3261e" stroke-width="1.2"/>
+        <line x1="152.2" y1="130" x2="152.2" y2="150" stroke="#b3261e" stroke-width="2"/>
+        <text x="10" y="170" font-size="12" class="tb">En rojo, 4.76–4.86 V: puede avisar bajo voltaje ✗</text>
+        <line x1="40" y1="186" x2="380" y2="186" stroke="currentColor" stroke-width="1.2"/>
+        <line x1="74" y1="186" x2="74" y2="191" stroke="currentColor" stroke-width="1.2"/>
+        <line x1="142" y1="186" x2="142" y2="191" stroke="currentColor" stroke-width="1.2"/>
+        <line x1="210" y1="186" x2="210" y2="191" stroke="currentColor" stroke-width="1.2"/>
+        <line x1="278" y1="186" x2="278" y2="191" stroke="currentColor" stroke-width="1.2"/>
+        <line x1="346" y1="186" x2="346" y2="191" stroke="currentColor" stroke-width="1.2"/>
+        <text x="74" y="205" text-anchor="middle" font-size="12" class="s">4.4</text>
+        <text x="142" y="205" text-anchor="middle" font-size="12" class="s">4.6</text>
+        <text x="210" y="205" text-anchor="middle" font-size="12" class="s">4.8</text>
+        <text x="278" y="205" text-anchor="middle" font-size="12" class="s">5.0</text>
+        <text x="346" y="205" text-anchor="middle" font-size="12" class="s">5.2</text>
+        <text x="376" y="205" text-anchor="end" font-size="12" class="s">V</text>
+        <text x="10" y="228" font-size="12" class="tk">Típico: 4.96 V contra 4.63 V → 0.33 V de margen ✓</text>
+      </svg>
+    </div>
+    <p class="tiny sub" style="margin-top:6px">Las barras son los límites de las hojas de datos, no mediciones; la raya de cada barra es el valor nominal.
+    Un Pololu real suele salir cerca de 5.0 V y el umbral cerca de 4.63 V, pero la combinación de los dos extremos sí existe en papel.
+    Raspberry Pi pide 5.1 V para todos los modelos; este Pololu da 5.0 V. El dato del umbral es el de la documentación oficial para todos los modelos desde la B+; no encontré uno distinto para la Pi 5.</p>
+
+    <div class="caja" style="margin-top:14px">
+      <h3>Qué hacer con eso</h3>
+      <ol style="margin:0">
+        <li>Mide tu Pololu con carga: con la Pi andando, <code>vcgencmd pmic_read_adc EXT5V_V</code> y el multímetro en las clemas. Si da 4.90 V o más, queda arriba del umbral aun en su peor caso (4.86 V).</li>
+        <li>Después de cada rodada, <code>vcgencmd get_throttled</code>. Si aparece el bit <code>0x10000</code> («Undervoltage has occurred»), hubo bajo voltaje en algún momento.</li>
+        <li>Si pasa, engordar el cable no lo arregla: el problema son los 4.80 V de salida. La salida sería un convertidor de 5.1 V o ajustable <span class="pend">por confirmar</span> cuál.</li>
+      </ol>
+    </div>
+
+    <div class="caja">
+      <h3>En <code>/boot/firmware/config.txt</code> de la microSD de la moto</h3>
+<pre># Pi 5 en la moto: el Pololu no negocia USB-PD pero si da 5.5 A
+# Sube el limite de los USB y el ventilador de 600 mA a 1.6 A
+usb_max_current_enable=1</pre>
+      <p class="why" style="margin:0">Se comprueba con <code>vcgencmd get_config usb_max_current_enable</code>. Va en la microSD de la moto y no en la EEPROM: la microSD se queda con la moto y la EEPROM se va con la placa.
+      Si usas la batería del reloj, en otra línea va <code>dtparam=rtc_bbat_vchg=3000000</code>.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ======================================================= -->
+<h2>Dudas</h2>
+
+<div class="dudas">
+
+  <div class="co co-pwr">
+    <div class="co-t">«¿Hacia qué lado entra la toma de fusible en la ranura?»</div>
+    <div class="co-b">
+      <p><b>La pata común va al lado vivo</b>, el que da al bus BR. Así la corriente entra a la toma y se reparte en dos caminos, cada uno con su fusible.
+      Si la volteas, la corriente de la Pi pasa también por el fusible original: un corto en tu cable funde ese y te quedas sin faro o sin luces y claxon, además de sin Pi.</p>
+      <p><b>Cómo encontrar el lado vivo:</b> quita el fusible original, pon la punta negra en el negativo de la batería y la roja en cada terminal de la ranura vacía.</p>
+      <ul>
+        <li>Llave en ON: un lado marca ~12.5 V (es el vivo) y el otro 0 V.</li>
+        <li>Llave en OFF y llave en P: los dos lados en 0 V. Si alguno marca voltaje, esa ranura no sirve.</li>
+      </ul>
+      <p><b>Qué ranura:</b> según el diagrama (p. 502), IG 15 A es la del encendido y la ECU, y alimenta el BR/W del KDS: no. FAN 15 A y METER 7.5 A salen del W directo de la batería: no.
+      TURN 7.5 A (caja 2) sale del BL, que la llave también alimenta en P: no. Quedan <b>HEAD 15 A</b> y <b>BRAKE/HORN 7.5 A</b> <span class="pend">por confirmar</span> con el multímetro.</p>
+      <p style="margin:0">Prefiero HEAD: si la toma quedara al revés y ese fusible carga los focos, como dice su nombre, el faro en alta (prenden los dos de 55 W, unos 9 A, pp. 82 y 540) más los 2.8 A del peor caso de la Pi aún caben en 15 A.
+      En la de 7.5 A ya van las luces de posición, la de freno y el claxon.</p>
+    </div>
+  </div>
+
+  <div class="co co-bad">
+    <div class="co-t">«¿Qué pasa si conecto el TVS al revés?»</div>
+    <div class="co-b">
+      <p>Con la banda en GND, el TVS queda como un diodo en directo entre + y −. Al poner la llave en ON conduce como un corto y <b>se funde el fusible de 5 A</b> en una fracción de segundo.
+      No se quema nada más, siempre que la toma esté del lado correcto y el fusible sea de 5 A. Si la toma está al revés, el que se puede fundir es el original.</p>
+      <p>Mientras siga al revés, la protección contra picos no existe: el Pololu solo aguanta 50 V y no recorta nada.</p>
+      <p style="margin:0"><b>Revísalo antes de soldarlo:</b> en modo diodo, la punta roja en la terminal sin banda y la negra en la banda marca una caída de diodo (unos 0.6 V). Al revés, «OL».
+      Ya soldado, la banda queda del lado de VIN.</p>
+    </div>
+  </div>
+
+  <div class="co co-bad">
+    <div class="co-t">«¿Por qué no sacar los 12 V del conector KDS?»</div>
+    <div class="co-b">
+      <p>Porque el BR/W de ese conector es la salida del fusible <b>IG 15 A</b> de la caja 1 (pp. 131, 502 y 578). El mismo cable alimenta el terminal 6 de la ECU
+      (0 V con la llave en OFF, batería con la llave en ON, p. 130) y la bobina del relevador principal de la ECU (p. 131).</p>
+      <p>Un corto en tu cableado fundiría el IG 15 A: <b>se apagan el encendido y la ECU con la moto andando</b>. Con la toma en la caja 1 tienes lo mismo que buscabas (corriente solo con la llave en ON),
+      pero con tu propio fusible: si algo falla, se funde el de 5 A y la moto sigue.</p>
+      <p style="margin:0">Además, el conector está bajo el asiento trasero y la Pi al frente: el cable de 12 V cruzaría toda la moto.</p>
+    </div>
+  </div>
+
+  <div class="co co-ok">
+    <div class="co-t">«¿El USB-C necesita negociar con la Pi?»</div>
+    <div class="co-b">
+      <p><b>Para prender, no.</b> El Pololu no habla USB-PD y el adaptador solo pasa 5 V y tierra. Según Raspberry Pi, si la fuente no tiene USB-PD, la Pi 5 supone una fuente de 5 V y 3 A. Eso hace:</p>
+      <ul>
+        <li>Arranca sola al recibir los 5 V, sin tocar el botón.</li>
+        <li>Muestra un aviso de que la fuente no da 5 A y que la energía de los periféricos va limitada.</li>
+        <li>Limita los USB a 600 mA en total, ventilador incluido, en lugar de 1.6 A.</li>
+        <li>Desactiva el arranque por USB. No te afecta: arrancas de la microSD.</li>
+      </ul>
+      <p>No frena el procesador: lo único que limita son los USB. Lo que sí lo frena es la temperatura, entre 80 y 85 °C.</p>
+      <p><b>Para los 1.6 A:</b> <code>usb_max_current_enable=1</code> en el <code>config.txt</code> de la microSD de la moto. Es el caso que Raspberry Pi describe: una fuente que sí da 5 A pero no habla PD.</p>
+      <p style="margin:0"><b>No uses <code>PSU_MAX_CURRENT</code> en la EEPROM.</b> La EEPROM es un chip de la placa y se va con ella al ISIC. Si allá la conectas a una fuente de 3 A,
+      la Pi se saltaría la negociación y creería que tiene 5 A. La microSD, en cambio, se queda en la moto. <span class="pend">por confirmar</span> que prenda con tu adaptador: pruébalo en la mesa.</p>
+    </div>
+  </div>
+
+</div>
+
+<!-- ======================================================= -->
+<h2>Qué pasa al prender, al apagar y si algo se suelta</h2>
+<div class="caja">
+  <ul style="margin:0">
+    <li><b>Llave en ON:</b> el bus BR sube, el Pololu arranca con su arranque suave (limita el pico de corriente) y la Pi arranca sola.</li>
+    <li><b>Al dar marcha:</b> la batería baja un momento. El Pololu necesita unos 5.9 V a 3 A para seguir dando 5 V. <span class="pend">por confirmar</span> que la Pi no se reinicie: mídelo al arrancar.</li>
+    <li><b>Llave en OFF o en P:</b> la Pi se queda sin corriente de golpe. Lo que se arriesga es la microSD: ver la hoja general (sistema de solo lectura) o apagar con el botón de la Pi antes de quitar la llave.</li>
+    <li><b>El rojo se pela y toca el chasis:</b> todo el cable está después del fusible de 5 A. Se funde el de 5 A y la moto sigue.</li>
+    <li><b>Se suelta el negro:</b> la caja se queda sin retorno y la Pi se apaga. No se quema nada.</li>
+    <li><b>Se zafa el USB-C:</b> la Pi se apaga y el Pololu se queda sin carga, gastando 2–4 mA mientras la llave esté en ON.</li>
+    <li><b>Toma en una ranura que vive con la llave en OFF o en P:</b> la Pi nunca se apaga. Con la pantalla gasta unos 0.6 A a 12 V: en menos de un día la batería de 8 Ah ya no arranca la moto.</li>
+  </ul>
+</div>
+
+<!-- ======================================================= -->
+<h2>Antes de energizar</h2>
+<ol>
+  <li><b>La toma, en la mesa:</b> deja solo el fusible de 5 A (arriba) y mide continuidad entre cada pata y el cable de salida. La que suena es la común: márcala con plumón.</li>
+  <li><b>La ranura, en la moto:</b> haz las tres mediciones de la duda (OFF, P y ON). Anota cuál terminal es el lado vivo.</li>
+  <li><b>El TVS, antes de soldar:</b> modo diodo, roja sin banda y negra en la banda: ~0.6 V. Al revés: «OL».</li>
+  <li><b>El Pololu, sin nada a la salida:</b> resistencia entre VIN y GND. No debe quedarse en 0 Ω; si marca corto, revisa el TVS y la soldadura.</li>
+  <li><b>Llave en OFF:</b> 0 V entre VIN y GND del Pololu. Llave en P: también 0 V.</li>
+  <li><b>Llave en ON, con el USB-C SIN conectar a la Pi:</b> en las clemas, roja en + y negra en −: de 4.80 a 5.20 V. Si sale negativo, están cruzados.</li>
+  <li><b>La tierra del adaptador:</b> continuidad entre la clema − y el blindaje metálico del USB-C. Si suena, el − es tierra; si no, revisa el rotulado <span class="pend">por confirmar</span>.</li>
+  <li><b>Con la Pi conectada:</b>
+<pre>vcgencmd get_throttled            # throttled=0x0: sin bajo voltaje
+vcgencmd pmic_read_adc EXT5V_V    # el voltaje que ve la Pi; compáralo con las clemas
+vcgencmd get_config usb_max_current_enable   # 1 si lo pusiste
+vcgencmd measure_temp             # en caja cerrada, un día de calor</pre></li>
+  <li><b>Después de la primera rodada:</b> <code>vcgencmd get_throttled</code> otra vez. Cualquier valor distinto de <code>0x0</code> dice que algo pasó; el bit <code>0x10000</code> es bajo voltaje.</li>
+</ol>
+
+<!-- ======================================================= -->
+<h2>Pendiente de confirmar, y cómo</h2>
+<ol>
+  <li><b>El tipo de fusible de la caja 1</b> (mini o estándar) y que la tapa cierre con la toma puesta: ábrela (p. 587) antes de comprar la toma.</li>
+  <li><b>La ranura, HEAD 15 A o BRAKE/HORN 7.5 A:</b> con las mediciones de OFF, P y ON.</li>
+  <li><b>Cuál pata de la toma es la común:</b> con la prueba de continuidad.</li>
+  <li><b>El adaptador USB-C:</b> cuántas clemas trae, cuál es el + y si trae resistencia en CC; que la Pi 5 prenda con él, en la mesa.</li>
+  <li><b>El voltaje real de tu Pololu con carga:</b> con <code>EXT5V_V</code> y el multímetro.</li>
+  <li><b>Si la Pi del ISIC ya trae el Active Cooler</b> y su temperatura en la caja cerrada.</li>
+  <li><b>Si la pantalla se alimenta de este Pololu</b> (pide 5.0 V mínimo) y con qué conector de barril.</li>
+  <li><b>El largo del negro hasta la batería</b> y el tamaño del tornillo del borne, para el ojillo.</li>
+  <li><b>Que el 18 AWG entre en los agujeros del Pololu.</b></li>
+  <li><b>La forma del cable de 2 vías:</b> si es plano, un prensaestopas redondo (PG7, 3–6 mm) no sella bien. Redondéalo con termofil grueso o usa un cable redondo.</li>
+  <li><b>Que la Pi no se reinicie al dar marcha.</b></li>
+</ol>
+
+<h2>Fuentes</h2>
+<ul class="fuentes">
+  <li><b>Tu manual de servicio</b>, Ninja ZX-6R / ZX-6R ABS 636 (ZX636ED/FD, 2013), <code>~/Downloads/NinjaManual.pdf</code>:
+  especificaciones de batería YTX9-BS (12.8 V o más), carga 14.3–14.7 V y alternador 46.4 V o más a 4 000 rpm, p. 494; quitar la batería, p. 510;
+  cajas de fusibles bajo la cubierta interior izquierda, foto de la tapa, y ECU 15 A y principal 30 A en el relevador de arranque, p. 587;
+  diagrama eléctrico con la leyenda de fusibles y la tabla del interruptor de encendido, p. 502;
+  circuitos de faro y luces, direccionales, ventilador y medidor, pp. 540, 544, 547 y 556; faro alto con los dos focos, p. 82;
+  alimentación de la ECU (terminal 6 BR/W), p. 130; circuito de alimentación de la ECU, p. 131; inmovilizador y conector KDS, p. 578; tierras del cuadro, pp. 691, 693 y 722.</li>
+  <li>Pololu <a href="https://www.pololu.com/product/4091">D36V50F5 (#4091)</a>: conexiones, EN con 100 kΩ a VIN, PG de drenaje abierto, VRP, 3 A por pin de header, 5.5–50 V, 5 V ±4 %, inversión hasta 40 V,
+  gráficas de eficiencia, corriente máxima, consumo sin carga y caída. <a href="https://www.pololu.com/product/2851">D24V50F5</a> (38 V máx.).</li>
+  <li>Littelfuse <a href="https://www.digikey.com/en/products/detail/littelfuse-inc/SMBJ24A/285994">SMBJ24A</a> (ficha de DigiKey): 24 V de standoff, 26.7 V de ruptura mín., 38.9 V a 15.5 A, 600 W, DO-214AA, unidireccional.</li>
+  <li>Raspberry Pi: <a href="https://github.com/raspberrypi/documentation/blob/develop/documentation/asciidoc/computers/raspberry-pi/power-supplies.adoc">fuentes de alimentación</a>
+  (Pi 5: 5 A recomendado, 1.6 A o 600 mA para USB, 800 mA típicos, umbral de 4.63 V ±5 %, <code>pmic_read_adc</code>);
+  <a href="https://pip-assets.raspberrypi.com/categories/685-app-notes-guides-whitepapers/documents/RP-009856-WP-1-USB%20Power%20delivery%20on%20Raspberry%20Pi%205.pdf">whitepaper RP-009856, USB Power Delivery on Raspberry Pi 5</a>
+  (sin PD supone 3 A, aviso, USB a 600 mA, sin arranque por USB, <code>usb_max_current_enable</code> y <code>PSU_MAX_CURRENT</code>);
+  <a href="https://github.com/raspberrypi/documentation/blob/develop/documentation/asciidoc/computers/raspberry-pi/eeprom-bootloader.adoc">configuración de la EEPROM</a> (<code>PSU_MAX_CURRENT</code>, solo Pi 5);
+  <a href="https://github.com/raspberrypi/documentation/blob/develop/documentation/asciidoc/computers/configuration/reference.adoc">referencia del device tree</a> (con el header, <code>PSU_MAX_CURRENT</code>);
+  <a href="https://github.com/raspberrypi/documentation/blob/develop/documentation/asciidoc/computers/raspberry-pi/power-button.adoc">botón de encendido</a> y J2;
+  <a href="https://github.com/raspberrypi/documentation/blob/develop/documentation/asciidoc/computers/raspberry-pi/rtc.adoc">reloj y J5</a>;
+  <a href="https://github.com/raspberrypi/documentation/blob/develop/documentation/asciidoc/computers/raspberry-pi/frequency-management.adoc">temperatura y ventilador</a> (80–85 °C, el ventilador comparte el límite de los USB);
+  <a href="https://github.com/raspberrypi/documentation/blob/develop/documentation/asciidoc/computers/os/graphics-utilities.adoc"><code>get_throttled</code></a>;
+  <a href="https://github.com/raspberrypi/documentation/blob/develop/documentation/asciidoc/computers/raspberry-pi/gpio-on-raspberry-pi.adoc">header de 40 pines</a>.</li>
+  <li>Newhaven <a href="https://newhavendisplay.com/content/specs/NHD-5.0-HDMI-N-RSXP-CTU.pdf">NHD-5.0-HDMI-N-RSXP-CTU</a>: 5.0–7.0 V, 560 mA típ. y 590 mA máx. a 5 V; en el esquemático entra por el jack CN3 y el VBUS del micro-USB queda sin conectar (R25 no se monta en la versión CTU).</li>
+  <li>Orientación de la toma de fusible: <a href="https://www.blackboxmycar.com/pages/fuse-facts-the-right-way-to-use-an-add-a-fuse">BlackboxMyCar, «Fuse facts»</a> (fusible original abajo; al revés, el original carga los dos circuitos).</li>
+  <li>Repo: <code>BOM.csv</code> (revisado el 2026-10-06; Pi 5 y Active Cooler el 2026-10-09) y <code>docs/conexion.html</code>.</li>
+</ul>
+
+</div>
