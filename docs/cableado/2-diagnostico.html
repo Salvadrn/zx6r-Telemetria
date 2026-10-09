@@ -1,0 +1,619 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>¿Cómo se conecta el ELM327 (o el OBDLink) a la moto?</title>
+<style>
+html,body{margin:0}
+.hoja{
+  --tp:#1a1a1a; --ts:#5b5b5b; --s1:#ffffff; --s2:#f6f5f2; --bd:#e2dfda;
+  --pwr:#1f5e8b; --act:#7a2f2f; --sig:#8a6d00; --ok:#1e7d32; --bad:#b3261e; --dat:#6b3fa0; --off:#9e9e9e; --gnd:#1a1a1a;
+  --pwr-t:#1f5e8b; --sig-t:#8a6d00; --ok-t:#1e7d32; --bad-t:#b3261e; --dat-t:#6b3fa0;
+  color:var(--text-primary,var(--tp)); background:var(--surface-0,var(--s1));
+  font-family:var(--font-sans,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif);
+  font-size:14px; line-height:1.6; font-weight:400;
+  max-width:1180px; margin:0 auto; padding:18px 16px 56px; box-sizing:border-box;
+}
+@media (prefers-color-scheme:dark){
+  html{background:#141416}
+  .hoja{ --tp:#ececec; --ts:#a8a8a8; --s1:#141416; --s2:#1d1d20; --bd:#38383c; --gnd:#ececec;
+         --pwr-t:#6aa6d6; --sig-t:#d1b04a; --ok-t:#55b46a; --bad-t:#e5675f; --dat-t:#ad8fdc; }
+}
+.hoja *{box-sizing:border-box}
+.hoja h1{font-size:22px; font-weight:500; margin:0 0 6px; letter-spacing:-.01em; line-height:1.3}
+.hoja h2{font-size:16px; font-weight:500; margin:34px 0 12px; letter-spacing:.06em; text-transform:uppercase;
+  padding-bottom:6px; border-bottom:1px solid var(--border,var(--bd))}
+.hoja h3{font-size:14px; font-weight:500; margin:0 0 8px}
+.hoja p{margin:0 0 10px}
+.hoja a{color:var(--pwr-t)}
+.hoja .bajada{color:var(--text-secondary,var(--ts)); margin:0 0 18px; max-width:900px}
+.hoja .sub,.hoja .why{color:var(--text-secondary,var(--ts))}
+.hoja .why{font-size:13px; line-height:1.5}
+.hoja .tiny{font-size:12.5px}
+.hoja code,.hoja pre{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:12.5px}
+.hoja code{background:color-mix(in srgb,#9e9e9e 16%,transparent); padding:1px 5px; border-radius:4px}
+.hoja pre{background:var(--surface-1,var(--s2)); border:1px solid var(--border,var(--bd)); border-radius:8px;
+  padding:12px 14px; overflow-x:auto; line-height:1.5; margin:0 0 12px}
+.hoja .caja{background:var(--surface-1,var(--s2)); border:1px solid var(--border,var(--bd)); border-radius:8px; padding:16px 18px; margin-bottom:16px}
+.hoja .cols{display:grid; grid-template-columns:1fr 1fr; gap:2rem; align-items:start}
+.hoja .cols > *{min-width:0}
+@media (max-width:900px){ .hoja .cols{grid-template-columns:1fr; gap:1rem} }
+.hoja .banda{border-radius:8px; padding:14px 18px; margin:0 0 14px; border:2px solid}
+.hoja .banda h3{font-size:15px; margin:0 0 6px}
+.hoja .b-dat{border-color:#6b3fa0; background:color-mix(in srgb,#6b3fa0 9%,transparent)}
+.hoja .b-dat h3{color:var(--dat-t)}
+.hoja .b-ok{border-color:#1e7d32; background:color-mix(in srgb,#1e7d32 8%,transparent)}
+.hoja .b-ok h3{color:var(--ok-t)}
+.hoja .b-bad{border-color:#b3261e; background:color-mix(in srgb,#b3261e 8%,transparent)}
+.hoja .b-bad h3{color:var(--bad-t)}
+/* filas "a dónde va cada pin" */
+.hoja .lista h3{margin-top:4px; font-size:13px; letter-spacing:.06em; text-transform:uppercase; color:var(--text-secondary,var(--ts))}
+.hoja .fila{display:grid; grid-template-columns:24px 92px 1fr; gap:10px; align-items:start; padding:8px 0;
+  border-top:1px solid var(--border,var(--bd))}
+.hoja .fila:first-of-type{border-top:0}
+.hoja .chip{width:20px; height:20px; border-radius:3px; margin-top:2px}
+.hoja .nom{font-weight:500; font-size:13.5px; line-height:1.35}
+.hoja .dst{font-weight:500}
+.hoja .c-pwr{background:#1f5e8b} .hoja .c-sig{background:#8a6d00} .hoja .c-dat{background:#6b3fa0}
+.hoja .c-gnd{background:var(--gnd); outline:1px solid #9e9e9e} .hoja .c-off{background:#9e9e9e} .hoja .c-bad{background:#b3261e}
+.hoja .c-ok{background:#1e7d32}
+.hoja .t-pwr{color:var(--pwr-t)} .hoja .t-sig{color:var(--sig-t)} .hoja .t-dat{color:var(--dat-t)}
+.hoja .t-ok{color:var(--ok-t)} .hoja .t-bad{color:var(--bad-t)} .hoja .t-off{color:#9e9e9e}
+/* etiquetas */
+.hoja .pend{display:inline-block; font-size:12px; letter-spacing:.04em; text-transform:uppercase; line-height:1.4;
+  border:1px solid #b3261e; color:var(--bad-t); border-radius:4px; padding:0 6px; vertical-align:1px; white-space:nowrap}
+.hoja .conf{display:inline-block; font-size:12px; letter-spacing:.04em; text-transform:uppercase; line-height:1.4;
+  border:1px solid #9e9e9e; color:var(--text-secondary,var(--ts)); border-radius:4px; padding:0 6px; vertical-align:1px; white-space:nowrap}
+.hoja .okt{display:inline-block; font-size:12px; letter-spacing:.04em; text-transform:uppercase; line-height:1.4;
+  border:1px solid #1e7d32; color:var(--ok-t); border-radius:4px; padding:0 6px; vertical-align:1px; white-space:nowrap}
+/* conector KDS: 4 cables por color */
+.hoja .cables{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; margin:8px 0 6px}
+.hoja .cable{border:1px solid var(--border,var(--bd)); border-radius:6px; padding:8px 6px; text-align:center; font-size:12.5px; line-height:1.35}
+.hoja .cable .bar{height:8px; border-radius:2px; margin:0 0 6px}
+.hoja .cable b{font-weight:500; font-size:13.5px; display:block}
+/* cara OBD2 16 */
+.hoja .obd{display:grid; grid-template-columns:repeat(8,minmax(0,1fr)); gap:4px; max-width:360px; margin:8px 0 4px;
+  border:1.5px solid var(--text-primary,var(--tp)); border-radius:10px 10px 18px 18px; padding:8px 10px 10px}
+.hoja .obd div{text-align:center; font-size:12px; line-height:1.2; padding:4px 0; border-radius:3px; border:1px solid #9e9e9e; color:#9e9e9e}
+.hoja .obd .u-pwr{border-color:#1f5e8b; background:color-mix(in srgb,#1f5e8b 16%,transparent); color:var(--pwr-t); font-weight:500}
+.hoja .obd .u-gnd{border-color:var(--gnd); background:color-mix(in srgb,#9e9e9e 22%,transparent); color:var(--text-primary,var(--tp)); font-weight:500}
+.hoja .obd .u-dat{border-color:#6b3fa0; background:color-mix(in srgb,#6b3fa0 16%,transparent); color:var(--dat-t); font-weight:500}
+/* header de la Pi, pines 1-14 */
+.hoja .hdr{display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:4px; max-width:400px; margin:8px 0 2px}
+.hoja .hdr div{border:1px solid #9e9e9e; border-radius:4px; text-align:center; padding:4px 0 3px; font-size:12px; line-height:1.25; color:#9e9e9e}
+.hoja .hdr div b{display:block; font-weight:500; font-size:12.5px}
+.hoja .hdr .h-sig{border-color:#8a6d00; background:color-mix(in srgb,#8a6d00 16%,transparent); color:var(--sig-t)}
+.hoja .hdr .h-gnd{border-color:var(--gnd); background:color-mix(in srgb,#9e9e9e 24%,transparent); color:var(--text-primary,var(--tp))}
+.hoja .hdr .h-pwr3{border-color:#1f5e8b; background:color-mix(in srgb,#1f5e8b 16%,transparent); color:var(--pwr-t)}
+.hoja .hdr .h-dat{border-color:#6b3fa0; background:color-mix(in srgb,#6b3fa0 16%,transparent); color:var(--dat-t)}
+.hoja .hdr .h-bad{border-color:#b3261e; color:var(--bad-t); background:repeating-linear-gradient(135deg,transparent 0 5px,color-mix(in srgb,#b3261e 14%,transparent) 5px 8px)}
+.hoja .hdrlab{display:flex; justify-content:space-between; max-width:400px; font-size:12px; color:var(--text-secondary,var(--ts))}
+/* esquemáticos */
+.hoja .esq{overflow-x:auto; -webkit-overflow-scrolling:touch}
+/* 400 px mínimo: así el texto del esquemático nunca baja de 12 px; en el celular se desliza de lado */
+.hoja .esq svg{display:block; width:100%; min-width:400px; height:auto; color:var(--text-primary,var(--tp))}
+@media (max-width:480px){
+  .hoja{padding:14px 12px 48px}
+  .hoja .cables{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+.hoja svg text{font-family:inherit; fill:currentColor}
+.hoja svg .s{fill:var(--text-secondary,var(--ts))}
+.hoja svg .tp{fill:var(--pwr-t)} .hoja svg .tg{fill:var(--sig-t)} .hoja svg .td{fill:var(--dat-t)}
+.hoja svg .tk{fill:var(--ok-t)} .hoja svg .tb{fill:var(--bad-t)} .hoja svg .to{fill:#9e9e9e}
+.hoja svg .box{fill:var(--surface-1,var(--s2)); stroke:currentColor; stroke-width:1.3}
+.hoja svg .mask{fill:var(--surface-0,var(--s1))}
+.hoja .leyenda{display:flex; flex-wrap:wrap; gap:6px 16px; font-size:12.5px; color:var(--text-secondary,var(--ts)); margin:6px 0 0}
+.hoja .leyenda span{display:inline-flex; align-items:center; gap:6px}
+.hoja .leyenda i{display:inline-block; width:22px; height:0; border-top:3px solid}
+/* callouts */
+.hoja .dudas{display:grid; grid-template-columns:1fr 1fr; gap:1.25rem}
+@media (max-width:900px){ .hoja .dudas{grid-template-columns:1fr} }
+.hoja .co{border:2px solid; border-radius:8px; padding:16px 18px}
+.hoja .co-t{font-weight:500; margin-bottom:8px; font-size:15px; line-height:1.4}
+.hoja .co-b{font-size:14px; line-height:1.6}
+.hoja .co-b p{margin:0 0 8px}
+.hoja .co-b ul{margin:0 0 8px; padding-left:18px}
+.hoja .co-b li{margin-bottom:4px}
+.hoja .co-dat{border-color:#6b3fa0} .hoja .co-dat .co-t{color:var(--dat-t)}
+.hoja .co-pwr{border-color:#1f5e8b} .hoja .co-pwr .co-t{color:var(--pwr-t)}
+.hoja .co-ok{border-color:#1e7d32} .hoja .co-ok .co-t{color:var(--ok-t)}
+.hoja .co-bad{border-color:#b3261e} .hoja .co-bad .co-t{color:var(--bad-t)}
+/* tablas */
+.hoja .tabla{overflow-x:auto; -webkit-overflow-scrolling:touch; margin:0 0 12px}
+/* sin DOCTYPE el navegador va en modo quirks y las tablas no heredan color ni letra: se fijan aquí */
+.hoja table{border-collapse:collapse; width:100%; min-width:560px; color:var(--text-primary,var(--tp));
+  font-family:inherit; font-size:13.5px; font-weight:400; line-height:1.5}
+.hoja td,.hoja th{color:inherit}
+.hoja th{text-align:left; font-weight:500; font-size:12px; letter-spacing:.05em; text-transform:uppercase;
+  color:var(--text-secondary,var(--ts)); padding:0 10px 8px 0; border-bottom:1px solid var(--border,var(--bd)); vertical-align:bottom}
+.hoja td{padding:9px 10px 9px 0; border-bottom:1px solid var(--border,var(--bd)); vertical-align:top}
+.hoja td:first-child{font-weight:500; white-space:nowrap}
+.hoja .grupo td{padding-top:16px; font-weight:500; letter-spacing:.05em; text-transform:uppercase; font-size:12px; color:var(--text-secondary,var(--ts))}
+.hoja ol,.hoja ul{margin:0 0 10px; padding-left:20px}
+.hoja li{margin-bottom:5px}
+.hoja .fuentes li{font-size:13px; line-height:1.5}
+/* hojas por subsistema: barra de navegación (agregado en docs/cableado) */
+.hoja .nav{display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 14px; font-size:13px; line-height:1.5;
+  margin:0 0 16px; padding:0 0 8px; border-bottom:1px solid var(--border,var(--bd))}
+.hoja .nav a{text-decoration:none}
+.hoja .nav a:hover{text-decoration:underline}
+.hoja .nav .act{font-weight:500; color:var(--text-primary,var(--tp)); border-bottom:2px solid currentColor}
+.hoja .nav .gen{margin-left:auto; color:var(--text-secondary,var(--ts))}
+</style>
+
+<div class="hoja">
+
+<nav class="nav" aria-label="Hojas de cableado">
+  <a href="0-sistema.html">Sistema</a>
+  <a href="1-alimentacion.html">Alimentación</a>
+  <span class="act" aria-current="page">Diagnóstico</span>
+  <a href="3-pantalla.html">Pantalla</a>
+  <a href="4-botones.html">Botones</a>
+  <a href="5-direccion.html">Dirección</a>
+  <a class="gen" href="../conexion.html">hoja general</a>
+</nav>
+
+<h1>¿Cómo se conecta el ELM327 (o el OBDLink) a la moto?</h1>
+<p class="bajada">El lado de datos: ECU → conector KDS bajo el asiento trasero → cable adaptador → ELM327 ⇢ WiFi ⇢ Raspberry Pi 5.
+Resuelve: si el ELM se conecta directo a la moto, a qué pin va cada uno de los cuatro cables, cuál es la línea K y qué pasa si el adaptador la trae al revés,
+si el ELM se queda gastando batería, y en el plan B (OBDLink EX por USB) si el cable llega a la caja, por dónde entra y qué cambia con las tierras.</p>
+
+<div class="banda b-ok">
+  <h3>Medido contra no medido</h3>
+  <p style="margin:0">Nada de esta hoja se ha medido en tu moto. El software solo se ha probado con el simulador y con un ELM327 falso.
+  Los pines y colores salen de tu manual de servicio (<b>Ninja ZX-6R 636, ZX636ED/FD, 2013</b>); lo eléctrico del ELM, de su hoja de datos; lo del OBDLink, de su página oficial.
+  Lo que depende de una medición dice <span class="pend">por confirmar</span>.</p>
+</div>
+
+<div class="banda b-dat">
+  <h3>Lo que esta hoja agrega a la hoja general</h3>
+  <ul style="margin:0">
+    <li>La tierra <b>BK/Y</b> del conector no sale de los pines 39 y 65 de la ECU. El manual la lleva al <b>Joint Connector D</b>, donde se une con la tierra de control (BK/BL, pin 38) y va al chasis (pp. 98, 131, 578). Para el ELM da lo mismo; para buscar una falla, no.</li>
+    <li>«12 V en el 7 o en el 15 = cable mal armado» puede ser falsa alarma: la ECU podría tener su propio pull-up en la línea K. Aquí se complementa con un <b>mapeo por color</b> con la llave en OFF, que además te dice qué cable llega al 7.</li>
+    <li>Plan B: el USB-A del OBDLink <b>no pasa por un PG7</b>, OBDLink no publica el largo de su cable, y el USB <b>une la tierra de la moto con la de la Pi</b>.</li>
+  </ul>
+</div>
+
+<!-- ======================================================= -->
+<h2>1 · Moto → ELM327: los cuatro cables</h2>
+
+<div class="cols">
+  <div class="lista">
+    <div class="caja">
+      <h3>La pieza como se ve: conector KDS de 4 cables</h3>
+      <p class="why" style="margin-bottom:6px">Bajo el asiento trasero, junto al sensor de caída, con tapa (p. 107 [B]; tapa p. 558; ruta de cables p. 701, n.º 11).
+      El asiento se quita con la llave de encendido en su cerradura (p. 468): quítalo antes de poner la llave en el switch.
+      Si tu moto es ABS, a un lado está el conector KIBS (p. 701, n.º 10). Ese no es.</p>
+      <div class="cables">
+        <div class="cable"><div class="bar c-dat"></div><b class="t-dat">GY/W</b>gris / blanco<br>comunicación · ECU 48</div>
+        <div class="cable"><div class="bar c-gnd"></div><b>BK/Y</b>negro / amarillo<br>tierra</div>
+        <div class="cable"><div class="bar c-dat"></div><b class="t-dat">LG/BK</b>verde claro / negro<br>comunicación · ECU 31</div>
+        <div class="cable"><div class="bar c-pwr"></div><b class="t-pwr">BR/W</b>café / blanco<br>+12 V con llave · ECU 6</div>
+      </div>
+      <p class="tiny sub" style="margin:0">Es el orden en que lo dibujan los tres diagramas del manual (pp. 98, 501 y 578). <span class="pend">por confirmar</span> que sea la posición en la pieza:
+      el manual no trae la cara del conector. Guíate por el color del cable que entra por detrás de cada hueco, no por la posición.</p>
+    </div>
+
+    <div class="caja">
+      <h3>El otro extremo del adaptador: OBD2 hembra de 16</h3>
+      <p class="why" style="margin-bottom:4px">Ahí se enchufa el ELM (o el OBDLink). Vista de frente, del lado hembra: 1–8 arriba y 9–16 abajo.
+      La cara del ELM es macho y se ve en espejo.</p>
+      <div class="obd">
+        <div>1</div><div>2</div><div>3</div><div class="u-gnd">4</div><div class="u-gnd">5</div><div>6</div><div class="u-dat">7</div><div>8</div>
+        <div>9</div><div>10</div><div>11</div><div>12</div><div>13</div><div>14</div><div class="u-dat">15</div><div class="u-pwr">16</div>
+      </div>
+      <p class="tiny sub" style="margin:4px 0 0">4 y 5: tierra · 7: línea K · 15: línea L · 16: +12 V con llave. En gris, lo que este cable no usa.
+      Si tu adaptador trae hilos en el 6 y el 14, es el de CAN (Z900, Ninja 400) y no sirve (nota del BOM).</p>
+    </div>
+
+    <h3>A dónde va cada cable</h3>
+    <div class="fila"><div class="chip c-pwr"></div><div class="nom t-pwr">BR/W</div>
+      <div><div class="dst">→ pin 16 del OBD2 (+12 V del ELM)</div>
+      <div class="why">Es el pin 6 de la ECU, «Power Supply to ECU» (p. 104). Sale del contacto del relevador principal de la ECU: ese contacto lo alimenta el fusible ECU de 15 A
+      y lo cierra la llave, a través del fusible de encendido de 15 A (p. 131). Llave en OFF: 0 V; en ON: voltaje de batería (p. 130).
+      No cuelgues nada más de este cable: un corto funde el fusible de la ECU y apaga el motor.</div></div></div>
+    <div class="fila"><div class="chip c-gnd"></div><div class="nom">BK/Y</div>
+      <div><div class="dst">→ pines 4 y 5 del OBD2 (tierra del ELM)</div>
+      <div class="why">Entra al Joint Connector D, que lo une con el BK/BL de la tierra de control de la ECU (pin 38) y lo lleva al Frame Ground 1 (pp. 98, 131, 578).
+      Los BK/Y de los pines 39 y 65 son otra rama (Joint Connector C → Frame Ground 2). Las dos acaban en el chasis: contra el negativo de la batería debe dar ~0 Ω.</div></div></div>
+    <div class="fila"><div class="chip c-dat"></div><div class="nom t-dat">LG/BK</div>
+      <div><div class="dst">→ pin 7 o 15 del OBD2</div>
+      <div class="why">Pin 31 de la ECU, «External Communication Line (Immobilizer/KDS)» (p. 105). Va directo de la ECU al conector (p. 578).
+      Es una señal: no alimenta nada.</div></div></div>
+    <div class="fila"><div class="chip c-dat"></div><div class="nom t-dat">GY/W</div>
+      <div><div class="dst">→ pin 15 o 7 del OBD2</div>
+      <div class="why">Pin 48 de la ECU, con la misma descripción (p. 105). <span class="pend">por confirmar</span> cuál de los dos es la K (pin 7): el manual no lo dice.
+      En otra Kawasaki el gris iba al 7 y el LG/BK al 15 (kawiforums); es un indicio. El paso 2 de abajo te dice cuál llega al 7, y si <code>ATFI</code> contesta OK, ese es la K.</div></div></div>
+    <div class="fila"><div class="chip c-off"></div><div class="nom t-off">resto del OBD2</div>
+      <div><div class="dst t-off">sin conectar</div>
+      <div class="why">1, 2, 3, 6 y 8–14. El 6 y el 14 son CAN: el CAN de tu moto (LB y GY/BL, pines 36 y 37) va de la ECU al tablero y al ABS, y no sale a este conector (pp. 105, 578).</div></div></div>
+  </div>
+
+  <div>
+    <div class="esq">
+      <svg viewBox="0 0 400 588" role="img" aria-label="Esquemático: batería, fusible principal de 30 amperes y fusible ECU de 15 amperes hasta el relevador principal de la ECU, que cierra la llave; de su contacto sale el BR/W, que alimenta el pin 6 de la ECU y llega al conector KDS; LG/BK y GY/W van de los pines 31 y 48 de la ECU al conector; el BK/Y del conector se une en el Joint Connector D con la tierra de control BK/BL del pin 38 y va al chasis; el adaptador lleva BR/W al pin 16, BK/Y a 4 y 5, y las dos líneas de comunicación a 7 y 15 del ELM327; el ELM habla por WiFi con la Raspberry Pi 5 al frente">
+        <!-- batería -->
+        <text x="2" y="20" font-size="12" class="s">batería</text>
+        <line x1="14" y1="39" x2="14" y2="53" stroke="#1f5e8b" stroke-width="2.6"/>
+        <line x1="22" y1="34" x2="22" y2="58" stroke="#1f5e8b" stroke-width="2.6"/>
+        <line x1="22" y1="46" x2="40" y2="46" stroke="#1f5e8b" stroke-width="2.4"/>
+        <!-- 30 A -->
+        <rect x="40" y="40" width="28" height="12" rx="3" fill="none" stroke="currentColor" stroke-width="1.6"/>
+        <line x1="40" y1="46" x2="68" y2="46" stroke="currentColor" stroke-width="1.1"/>
+        <text x="54" y="68" text-anchor="middle" font-size="12">30 A</text>
+        <line x1="68" y1="46" x2="84" y2="46" stroke="#1f5e8b" stroke-width="2.4"/>
+        <!-- 15 A ECU -->
+        <rect x="84" y="40" width="28" height="12" rx="3" fill="none" stroke="currentColor" stroke-width="1.6"/>
+        <line x1="84" y1="46" x2="112" y2="46" stroke="currentColor" stroke-width="1.1"/>
+        <text x="100" y="68" text-anchor="middle" font-size="12">15 A ECU</text>
+        <line x1="112" y1="46" x2="140" y2="46" stroke="#1f5e8b" stroke-width="2.4"/>
+        <text x="8" y="88" font-size="12" class="s">W/BK: batería siempre</text>
+        <!-- relevador principal -->
+        <rect class="box" x="128" y="24" width="64" height="40" rx="5"/>
+        <circle cx="142" cy="46" r="2.6" fill="currentColor"/>
+        <circle cx="180" cy="46" r="2.6" fill="currentColor"/>
+        <line x1="142" y1="46" x2="176" y2="33" stroke="currentColor" stroke-width="1.8"/>
+        <text x="200" y="36" font-size="12">relevador principal ECU</text>
+        <text x="200" y="52" font-size="12" class="s">bobina: llave + fusible 15 A</text>
+        <text x="200" y="68" font-size="12" class="s">pp. 130–131</text>
+        <!-- bajada BR/W -->
+        <line x1="180" y1="46" x2="180" y2="200" stroke="#1f5e8b" stroke-width="2.4"/>
+        <text x="188" y="100" font-size="12" class="tp">0 V con llave OFF</text>
+        <text x="188" y="116" font-size="12" class="tp">batería con llave ON</text>
+        <text x="188" y="132" font-size="12" class="tk">14.3–14.7 V con motor ✓</text>
+        <!-- ECU -->
+        <rect class="box" x="10" y="170" width="64" height="226" rx="6" stroke-width="1.8"/>
+        <text x="42" y="292" text-anchor="middle" font-size="13.5" font-weight="500">ECU</text>
+        <text x="68" y="204" text-anchor="end" font-size="12" class="s">6</text>
+        <text x="68" y="264" text-anchor="end" font-size="12" class="s">31</text>
+        <text x="68" y="324" text-anchor="end" font-size="12" class="s">48</text>
+        <text x="68" y="384" text-anchor="end" font-size="12" class="s">38</text>
+        <!-- conector KDS y adaptador -->
+        <text x="246" y="172" text-anchor="end" font-size="12" font-weight="500">KDS</text>
+        <text x="254" y="172" font-size="12" class="s">adaptador</text>
+        <rect x="232" y="180" width="16" height="208" rx="3" fill="none" stroke="currentColor" stroke-width="1.6"/>
+        <!-- BR/W -->
+        <line x1="74" y1="200" x2="232" y2="200" stroke="#1f5e8b" stroke-width="2.4"/>
+        <circle cx="180" cy="200" r="4" fill="#1f5e8b"/>
+        <text x="90" y="193" font-size="12" class="tp">BR/W</text>
+        <line x1="248" y1="200" x2="300" y2="200" stroke="#1f5e8b" stroke-width="2.4"/>
+        <!-- LG/BK -->
+        <line x1="74" y1="260" x2="232" y2="260" stroke="#6b3fa0" stroke-width="2.4"/>
+        <text x="90" y="253" font-size="12" class="td">LG/BK</text>
+        <line x1="248" y1="260" x2="300" y2="260" stroke="#6b3fa0" stroke-width="2.4"/>
+        <!-- GY/W -->
+        <line x1="74" y1="320" x2="232" y2="320" stroke="#6b3fa0" stroke-width="2.4"/>
+        <text x="90" y="313" font-size="12" class="td">GY/W</text>
+        <line x1="248" y1="320" x2="300" y2="320" stroke="#6b3fa0" stroke-width="2.4"/>
+        <!-- tierra: BK/BL de la ECU y BK/Y del conector en el Joint Connector D -->
+        <line x1="74" y1="380" x2="232" y2="380" stroke="currentColor" stroke-width="2.4"/>
+        <text x="84" y="373" font-size="12">BK/BL</text>
+        <text x="166" y="373" font-size="12">BK/Y</text>
+        <circle cx="150" cy="380" r="4" fill="currentColor"/>
+        <line x1="248" y1="380" x2="300" y2="380" stroke="currentColor" stroke-width="2.4"/>
+        <line x1="150" y1="380" x2="150" y2="414" stroke="currentColor" stroke-width="2"/>
+        <line x1="138" y1="414" x2="162" y2="414" stroke="currentColor" stroke-width="2"/>
+        <line x1="142" y1="419" x2="158" y2="419" stroke="currentColor" stroke-width="2"/>
+        <line x1="146" y1="424" x2="154" y2="424" stroke="currentColor" stroke-width="2"/>
+        <text x="158" y="402" font-size="12" class="s">Joint Connector D</text>
+        <text x="166" y="424" font-size="12" class="s">chasis · 0 V</text>
+        <!-- ELM327 -->
+        <text x="346" y="172" text-anchor="middle" font-size="12" font-weight="500">ELM327</text>
+        <rect class="box" x="300" y="180" width="92" height="208" rx="6" stroke-width="1.8"/>
+        <text x="306" y="204" font-size="12" class="tp">16 · +12 V</text>
+        <text x="306" y="264" font-size="12" class="td">7 ó 15</text>
+        <text x="306" y="324" font-size="12" class="td">15 ó 7</text>
+        <text x="306" y="384" font-size="12">4 + 5 · GND</text>
+        <!-- WiFi a la Pi 5 -->
+        <line x1="346" y1="388" x2="346" y2="470" stroke="#6b3fa0" stroke-width="2" stroke-dasharray="6 5"/>
+        <text x="354" y="434" font-size="12" class="td">WiFi</text>
+        <rect class="box" x="200" y="470" width="192" height="46" rx="6" stroke-width="2"/>
+        <text x="296" y="489" text-anchor="middle" font-size="13" font-weight="500">Raspberry Pi 5 · al frente</text>
+        <text x="296" y="507" text-anchor="middle" font-size="12" class="s">192.168.0.10:35000 por WiFi</text>
+        <!-- notas -->
+        <text x="10" y="546" font-size="12" class="td">K en reposo ≈ voltaje del pin 16 (pull-up del ELM)</text>
+        <text x="10" y="562" font-size="12" class="tb">¿LG/BK o GY/W es la K? El manual no lo dice.</text>
+        <text x="10" y="578" font-size="12" class="tk">llave OFF → pin 16 en 0 V → ELM apagado ✓</text>
+      </svg>
+    </div>
+    <div class="leyenda">
+      <span><i style="border-color:#1f5e8b"></i>+12 V con llave</span>
+      <span><i style="border-color:var(--gnd)"></i>tierra</span>
+      <span><i style="border-color:#6b3fa0"></i>comunicación (punteado = WiFi)</span>
+    </div>
+    <p class="tiny sub" style="margin-top:6px">El punto en BR/W marca el nodo: el mismo cable alimenta el pin 6 de la ECU y llega al conector. El punto en la tierra es el Joint Connector D.
+    La llave no lleva la corriente de la ECU: solo energiza la bobina del relevador, y el contacto toma la corriente del fusible ECU de 15 A (p. 131).</p>
+
+    <div class="esq" style="margin-top:18px">
+      <svg viewBox="0 0 400 372" role="img" aria-label="Dentro del ELM327, circuito de referencia: el pin 16 alimenta dos resistencias de 510 ohms; una va a la línea K, pin 7, y la otra a la línea L, pin 15; cada línea tiene un transistor que la jala a 0 volts; la K transmite y recibe, la L solo transmite">
+        <rect x="40" y="14" width="320" height="236" rx="8" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="5 4"/>
+        <text x="50" y="34" font-size="12" font-weight="500">ELM327 · circuito de referencia</text>
+        <!-- riel del pin 16 -->
+        <line x1="80" y1="60" x2="330" y2="60" stroke="#1f5e8b" stroke-width="2"/>
+        <text x="200" y="54" text-anchor="middle" font-size="12" class="tp">pin 16 · BR/W · batería</text>
+        <!-- K -->
+        <line x1="120" y1="60" x2="120" y2="70" stroke="#1f5e8b" stroke-width="2"/>
+        <polyline points="120,70 127,74 113,80 127,86 113,92 127,98 120,102" fill="none" stroke="currentColor" stroke-width="1.6"/>
+        <text x="132" y="90" font-size="12">510 Ω</text>
+        <line x1="120" y1="102" x2="120" y2="280" stroke="#6b3fa0" stroke-width="2.4"/>
+        <circle cx="120" cy="150" r="4" fill="#6b3fa0"/>
+        <line x1="120" y1="150" x2="170" y2="150" stroke="#6b3fa0" stroke-width="2"/>
+        <line x1="170" y1="150" x2="170" y2="161" stroke="#6b3fa0" stroke-width="2"/>
+        <circle cx="170" cy="164" r="2.6" fill="none" stroke="currentColor" stroke-width="1.6"/>
+        <circle cx="170" cy="190" r="2.6" fill="none" stroke="currentColor" stroke-width="1.6"/>
+        <line x1="171" y1="167" x2="182" y2="186" stroke="currentColor" stroke-width="1.6"/>
+        <line x1="170" y1="193" x2="170" y2="212" stroke="currentColor" stroke-width="2"/>
+        <line x1="158" y1="212" x2="182" y2="212" stroke="currentColor" stroke-width="2"/>
+        <line x1="162" y1="217" x2="178" y2="217" stroke="currentColor" stroke-width="2"/>
+        <line x1="166" y1="222" x2="174" y2="222" stroke="currentColor" stroke-width="2"/>
+        <text x="190" y="176" font-size="12">transistor</text>
+        <text x="190" y="192" font-size="12" class="s">jala a 0 V</text>
+        <!-- L -->
+        <line x1="280" y1="60" x2="280" y2="70" stroke="#1f5e8b" stroke-width="2"/>
+        <polyline points="280,70 287,74 273,80 287,86 273,92 287,98 280,102" fill="none" stroke="currentColor" stroke-width="1.6"/>
+        <text x="292" y="90" font-size="12">510 Ω</text>
+        <line x1="280" y1="102" x2="280" y2="280" stroke="#6b3fa0" stroke-width="2.4"/>
+        <circle cx="280" cy="150" r="4" fill="#6b3fa0"/>
+        <line x1="280" y1="150" x2="330" y2="150" stroke="#6b3fa0" stroke-width="2"/>
+        <line x1="330" y1="150" x2="330" y2="161" stroke="#6b3fa0" stroke-width="2"/>
+        <circle cx="330" cy="164" r="2.6" fill="none" stroke="currentColor" stroke-width="1.6"/>
+        <circle cx="330" cy="190" r="2.6" fill="none" stroke="currentColor" stroke-width="1.6"/>
+        <line x1="331" y1="167" x2="342" y2="186" stroke="currentColor" stroke-width="1.6"/>
+        <line x1="330" y1="193" x2="330" y2="212" stroke="currentColor" stroke-width="2"/>
+        <line x1="318" y1="212" x2="342" y2="212" stroke="currentColor" stroke-width="2"/>
+        <line x1="322" y1="217" x2="338" y2="217" stroke="currentColor" stroke-width="2"/>
+        <line x1="326" y1="222" x2="334" y2="222" stroke="currentColor" stroke-width="2"/>
+        <text x="288" y="204" font-size="12" class="s">igual</text>
+        <!-- salidas -->
+        <text x="128" y="272" font-size="12" font-weight="500" class="td">pin 7 · K</text>
+        <text x="128" y="288" font-size="12" class="s">transmite y recibe</text>
+        <text x="288" y="272" font-size="12" font-weight="500" class="td">pin 15 · L</text>
+        <text x="288" y="288" font-size="12" class="s">solo transmite</text>
+        <!-- notas -->
+        <text x="10" y="314" font-size="12" class="td">reposo: las dos ≈ batería; el transistor las baja a ~0 V</text>
+        <text x="10" y="330" font-size="12" class="tk">corriente máx.: 14.7 V / 510 Ω ≈ 29 mA por línea ✓</text>
+        <text x="10" y="346" font-size="12" class="s">el ELM lee la K: umbral de 7.0 V al subir, 3.6 V al bajar</text>
+        <text x="10" y="362" font-size="12" class="tb">tu Steren es un clon: su circuito, por confirmar</text>
+      </svg>
+    </div>
+    <p class="tiny sub" style="margin-top:6px">Así lo dibuja la hoja de datos del ELM327 (figura 9: transistores 2N3904 y resistencias de 510 Ω de ½ W, «as the standard requires»).
+    El interruptor representa al transistor. Con la llave en OFF el pin 16 está en 0 V y las dos líneas también.</p>
+  </div>
+</div>
+
+<!-- ======================================================= -->
+<h2>2 · Plan B: OBDLink EX por USB a la Pi 5</h2>
+
+<div class="cols">
+  <div class="lista">
+    <p>Solo si el pretest dice que tu Steren no acepta el inicio KDS, o si falla su WiFi (BOM, fase 3). Del adaptador para atrás no cambia nada:
+    el EX se enchufa en el mismo OBD2 de 16 y usa los mismos cuatro cables. Lo nuevo es un cable USB del asiento trasero a la caja del frente.</p>
+
+    <h3>A dónde va cada punta</h3>
+    <div class="fila"><div class="chip c-dat"></div><div class="nom t-dat">OBD2 del EX</div>
+      <div><div class="dst">→ lado de 16 del mismo adaptador</div>
+      <div class="why">Toma de 8 a 30 V del pin 16 y gasta 6.5 mA a 12 V, menos de 1 mA en BatterySaver (OBDLink). Como el ELM, se apaga con la llave.</div></div></div>
+    <div class="fila"><div class="chip c-dat"></div><div class="nom t-dat">USB-A del EX</div>
+      <div><div class="dst">→ un USB 2.0 de la Pi 5 (los negros)</div>
+      <div class="why">El EX es USB 2.0 (OBDLink). Los puertos azules son USB 3, y su ruido cae en los 2.4 GHz (Intel), justo donde la Pi levantaría su red para el celular.
+      En Linux aparece como puerto serie FTDI (<code>/dev/ttyUSB0</code>).</div></div></div>
+    <div class="fila"><div class="chip c-dat"></div><div class="nom t-dat">extensión</div>
+      <div><div class="dst">→ USB 2.0 pasiva, solo si el cable no llega</div>
+      <div class="why">OBDLink no publica el largo del cable del EX: <span class="pend">por confirmar</span> al recibirlo. Mide la ruta del asiento a la caja con un cordón.
+      USB 2.0 admite 5 m en total, contando el cable del EX (26 ns de retardo por cable): una extensión pasiva de 1 o 2 m cabe. No hacen falta hubs ni extensiones activas.</div></div></div>
+    <div class="fila"><div class="chip c-dat"></div><div class="nom t-dat">entrada a la caja</div>
+      <div><div class="dst">→ pasamuros USB-A IP67 o prensaestopas partido (no están en el BOM)</div>
+      <div class="why">Un PG7 sella cables de 3 a 6 mm y su rosca mide 12.5 mm por fuera; el USB-A mide 12 × 4.5 mm solo el metal: no pasa.
+      Un pasamuros de panel deja el USB-A hembra afuera y un tramo corto adentro hasta la Pi, que así entra y sale de la caja sin desarmar nada.
+      Su tapa sella sin nada conectado; enchufado, deja la unión debajo del carenado.</div></div></div>
+    <div class="fila"><div class="chip c-gnd"></div><div class="nom">GND del USB</div>
+      <div><div class="dst">→ une la tierra de la moto con la de la Pi</div>
+      <div class="why">Con el ELM por WiFi no hay cable entre la moto y la Pi. Con el EX sí lo hay, y eso cambia qué pasa si se zafa una tierra: ver la duda «¿se juntan las tierras?».</div></div></div>
+    <div class="fila"><div class="chip c-off"></div><div class="nom t-off">WiFi</div>
+      <div><div class="dst t-off">ya no hace falta el del ELM</div>
+      <div class="why">La Pi crea su propia red para el celular (hoja general, §5). Eso y leer el puerto serie son trabajo de software: hoy la app y <code>tools/pretest.py</code> solo hablan TCP.</div></div></div>
+  </div>
+
+  <div>
+    <div class="esq">
+      <svg viewBox="0 0 400 504" role="img" aria-label="Plan B: bajo el asiento, el conector KDS con su adaptador y el OBDLink EX; un cable USB 2.0, con extensión pasiva si falta, va al frente y entra a la caja Hammond por un pasamuros USB-A IP67 hasta un puerto USB 2.0 de la Raspberry Pi 5; el convertidor Pololu alimenta la Pi; la tierra del conector va al chasis y la del convertidor al negativo de la batería, y el USB une las dos">
+        <text x="10" y="18" font-size="12" font-weight="500">Bajo el asiento trasero</text>
+        <rect class="box" x="10" y="28" width="170" height="42" rx="6"/>
+        <text x="95" y="46" text-anchor="middle" font-size="13" font-weight="500">KDS + adaptador</text>
+        <text x="95" y="62" text-anchor="middle" font-size="12" class="s">OBD2 16 hembra</text>
+        <line x1="95" y1="70" x2="95" y2="92" stroke="currentColor" stroke-width="2.4"/>
+        <text x="103" y="86" font-size="12" class="s">16 · 7 · 15 · 4/5</text>
+        <rect class="box" x="10" y="92" width="170" height="50" rx="6"/>
+        <text x="95" y="112" text-anchor="middle" font-size="13" font-weight="500">OBDLink EX</text>
+        <text x="95" y="130" text-anchor="middle" font-size="12" class="s">8–30 V · 6.5 mA</text>
+        <!-- USB: datos y tierra -->
+        <polyline points="180,117 226,117 226,290" fill="none" stroke="#6b3fa0" stroke-width="2.6"/>
+        <polyline points="180,124 219,124 219,290" fill="none" stroke="currentColor" stroke-width="1.2"/>
+        <text x="186" y="108" font-size="12" class="td">USB 2.0</text>
+        <text x="236" y="150" font-size="12">cable fijo del EX</text>
+        <text x="236" y="166" font-size="12" class="tb">largo: por confirmar</text>
+        <text x="236" y="182" font-size="12" class="s">+ extensión pasiva</text>
+        <text x="236" y="198" font-size="12" class="tk">total ≤ 5 m (USB 2.0) ✓</text>
+        <!-- caja Hammond -->
+        <rect x="200" y="236" width="192" height="180" rx="8" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="5 4"/>
+        <rect x="213" y="230" width="20" height="12" rx="2" fill="#6b3fa0"/>
+        <text x="242" y="226" font-size="12" class="td">pasamuros USB-A IP67</text>
+        <text x="384" y="410" text-anchor="end" font-size="12" class="s">caja Hammond · al frente</text>
+        <!-- Pi 5 -->
+        <rect class="box" x="212" y="290" width="168" height="46" rx="6" stroke-width="2"/>
+        <text x="296" y="309" text-anchor="middle" font-size="13" font-weight="500">Raspberry Pi 5</text>
+        <text x="296" y="327" text-anchor="middle" font-size="12" class="s">USB 2.0 (negro)</text>
+        <line x1="296" y1="336" x2="296" y2="350" stroke="#1f5e8b" stroke-width="2.4"/>
+        <!-- Pololu -->
+        <rect class="box" x="212" y="350" width="168" height="40" rx="5"/>
+        <text x="296" y="367" text-anchor="middle" font-size="12">Pololu D36V50F5</text>
+        <text x="296" y="383" text-anchor="middle" font-size="12" class="s">5 V por USB-C</text>
+        <!-- tierra del convertidor -->
+        <polyline points="212,382 130,382 130,430" fill="none" stroke="currentColor" stroke-width="2"/>
+        <line x1="118" y1="430" x2="142" y2="430" stroke="currentColor" stroke-width="2"/>
+        <line x1="122" y1="435" x2="138" y2="435" stroke="currentColor" stroke-width="2"/>
+        <line x1="126" y1="440" x2="134" y2="440" stroke="currentColor" stroke-width="2"/>
+        <text x="146" y="440" font-size="12" class="s">negativo de batería</text>
+        <!-- tierra de la moto -->
+        <line x1="40" y1="142" x2="40" y2="250" stroke="currentColor" stroke-width="2"/>
+        <line x1="28" y1="250" x2="52" y2="250" stroke="currentColor" stroke-width="2"/>
+        <line x1="32" y1="255" x2="48" y2="255" stroke="currentColor" stroke-width="2"/>
+        <line x1="36" y1="260" x2="44" y2="260" stroke="currentColor" stroke-width="2"/>
+        <text x="56" y="258" font-size="12" class="s">BK/Y → chasis</text>
+        <text x="10" y="300" font-size="12">dos caminos de tierra:</text>
+        <text x="10" y="316" font-size="12" class="s">BK/Y del conector y</text>
+        <text x="10" y="332" font-size="12" class="s">negativo del convertidor</text>
+        <!-- notas -->
+        <text x="10" y="472" font-size="12" class="tb">✗ el USB-A (12 × 4.5 mm) no pasa por un PG7 (3–6 mm)</text>
+        <text x="10" y="490" font-size="12" class="tk">✓ el EX gasta 6.5 mA a 12 V del pin 16 (OBDLink)</text>
+      </svg>
+    </div>
+    <div class="leyenda">
+      <span><i style="border-color:#6b3fa0"></i>USB (datos)</span>
+      <span><i style="border-color:var(--gnd)"></i>tierra (la delgada va dentro del mismo cable USB)</span>
+      <span><i style="border-color:#1f5e8b"></i>5 V</span>
+    </div>
+    <p class="tiny sub" style="margin-top:6px">El cable USB lleva datos y tierra. Con él, la tierra de la moto (BK/Y, atrás) y la del convertidor (negativo de la batería) quedan unidas por dos caminos.
+    Lo que el EX tome del USB no está publicado; un FTDI y sus LED son pocos mA, lejos de los 600 mA que la Pi 5 da a sus USB sin una fuente de 5 A con PD.</p>
+  </div>
+</div>
+
+<!-- ======================================================= -->
+<h2>Dudas</h2>
+
+<div class="dudas">
+
+  <div class="co co-ok">
+    <div class="co-t">«¿El ELM327 se conecta directo a la moto?»</div>
+    <div class="co-b">
+      <p><b>No.</b> Tu moto no tiene el conector OBD2 de 16 pines de un coche. Tiene el conector KDS de Kawasaki, de 4 cables, bajo el asiento trasero (p. 107).
+      El ELM se enchufa en el lado de 16 del cable adaptador «Kawasaki 4 → OBD2 16 hembra» (Lydesor, en el BOM), y el adaptador en el KDS.</p>
+      <p>El adaptador no tiene electrónica: solo lleva cuatro cables a cuatro posiciones. Es pasivo, no se alimenta y no tiene polaridad propia; por eso un multímetro basta para revisarlo.</p>
+      <p style="margin:0">Que el cable entre no quiere decir que se entiendan: tu ECU habla KDS (KWP2000 por línea K), no OBD2 estándar.
+      Eso lo decide <code>tools/pretest.py</code> (<a href="../conexion.html#prueba">hoja general, §6</a>).</p>
+    </div>
+  </div>
+
+  <div class="co co-pwr">
+    <div class="co-t">«¿Cuál de los dos cables es la línea K y qué pasa si el adaptador los trae al revés?»</div>
+    <div class="co-b">
+      <p><b>Cuál es:</b> el manual no lo dice; los dos son «External Communication Line» (pines 31 y 48, p. 105). En el OBD2, la K es el 7 y la L el 15.
+      Lo resuelves con el paso 2 de abajo (qué color llega al 7) y con el pretest: si <code>ATFI</code> contesta <code>BUS INIT: ...OK</code>, el color que llega al 7 es la K.</p>
+      <p><b>Si vienen al revés, no se quema nada.</b> El ELM manda y recibe todo por el 7. El 15 (L) es solo una salida, y solo se mueve durante el inicio: 25 ms abajo y 25 ms arriba
+      (hoja de datos, parámetros 1A–1C). Por dentro, el 7 y el 15 son iguales: un transistor que jala a 0 V contra 510 Ω al pin 16.
+      Al derecho o al revés, la ECU ve el mismo pull-up en sus dos líneas; solo cambia por cuál le llega la petición. Si le llega por la que no escucha, no contesta y sale <code>BUS INIT: ...ERROR</code>.</p>
+      <p style="margin:0"><b>Corriente en el peor caso:</b> 14.7 V / 510 Ω ≈ 29 mA por línea, la misma que en una conexión normal. El 2N3904 del diseño de referencia aguanta 200 mA.</p>
+    </div>
+  </div>
+
+  <div class="co co-bad">
+    <div class="co-t">«¿El ELM se queda gastando batería con la moto apagada?»</div>
+    <div class="co-b">
+      <p><b>No, según tu manual.</b> El pin 16 es el BR/W, que sale del contacto del relevador principal de la ECU. La bobina de ese relevador se energiza por la llave
+      (fusible de encendido de 15 A, p. 131). Al quitar la llave el contacto se abre y el BR/W cae a 0 V (p. 130). Sin voltaje en el 16, el ELM está apagado, no en reposo.</p>
+      <p><b>Mídelo de todos modos</b> (paso 3): si alguien cambió el arnés y el 16 tuviera 12 V permanentes, solo el circuito de referencia del ELM327 gasta ~26 mA (hoja de datos),
+      más el WiFi, que Steren no publica. Son más de 0.6 Ah al día de una batería de 8 Ah.</p>
+      <p style="margin:0"><b>El OBDLink EX</b> usa el mismo pin 16: 6.5 mA a 12 V y menos de 1 mA en BatterySaver (OBDLink). Con la llave en OFF tampoco recibe voltaje.</p>
+    </div>
+  </div>
+
+  <div class="co co-bad">
+    <div class="co-t">«Con el OBDLink por USB, ¿se juntan las tierras?»</div>
+    <div class="co-b">
+      <p><b>Sí.</b> Con el ELM por WiFi, la moto y la Pi solo se hablan por radio. Con el EX, el cable USB lleva datos y tierra: une los pines 4 y 5
+      (BK/Y → Joint Connector D → chasis) con la tierra de la Pi, que regresa al negativo de la batería por el convertidor.</p>
+      <p>Mientras las dos tierras estén firmes, es el mismo punto eléctrico y no pasa nada. <b>El riesgo es que se zafe el negativo del convertidor.</b>
+      Entonces la corriente del Pololu, que son amperes, busca otro regreso y lo encuentra por la Pi, el USB, el EX y el BK/Y del conector:
+      hilos y pistas hechos para miliamperes. Se calienta el cable USB o se quema una pista del EX.</p>
+      <ul style="margin:0">
+        <li>El negativo del convertidor, con terminal de ojo crimpada y apretada; mide ~0 Ω al negativo de la batería antes de conectar el USB.</li>
+        <li>Para cerrar esa ruta del todo: un aislador USB de velocidad completa (12 Mbit/s, la del FTDI del EX) entre el EX y la Pi. Opcional; <span class="pend">por confirmar</span> modelo.</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+
+<!-- ======================================================= -->
+<h2 id="antes">Antes de enchufar el ELM</h2>
+
+<div class="cols">
+  <div>
+    <p class="why">Multímetro, la moto en el soporte, el asiento trasero fuera y la tapa del conector quitada. Mide resistencia y continuidad solo con la llave en OFF.</p>
+    <ol>
+      <li><b>El adaptador suelto, en la mesa.</b> Continuidad desde el lado de 4: un terminal llega al <b>16</b>; uno al <b>4 y al 5</b> (el 4 con el 5 da 0 Ω);
+      dos llegan al <b>7</b> y al <b>15</b>. Nada en el 6 ni en el 14, y ningún corto entre 16, 4/5, 7 y 15.</li>
+      <li><b>Mapeo por color, llave en OFF, adaptador puesto.</b> Por detrás del conector de la moto, toca cada cable con una punta delgada metida junto al aislante, sin perforarlo ni forzar el sello
+      (así mide el manual con su juego de agujas 57001-1457, p. 130). Continuidad al OBD2: <b>BR/W → 16</b> y <b>BK/Y → 4 y 5</b>. Anota cuál de <b>LG/BK</b> y <b>GY/W</b> llega al <b>7</b>.</li>
+      <li><b>Llave en OFF:</b> el pin <b>16</b> marca <b>0 V</b> contra el negativo de la batería, y los pines <b>4 y 5</b>, ~0 Ω al negativo.</li>
+      <li><b>Llave en ON, motor apagado, sin el ELM:</b> el pin <b>16</b> marca el voltaje de la batería. Anota lo que marquen el 7 y el 15.
+      Si alguno marca lo mismo que la batería, no es por fuerza un error: puede ser un pull-up de la ECU (<span class="pend">por confirmar</span>); el paso 2 decide.
+      Si alguno marca cerca de 5 V, mándame la medición antes de enchufar: sería una línea de 5 V y no sabemos si le conviene el pull-up de 12 V del ELM.</li>
+      <li><b>No conectes el ELM</b> si el paso 2 dice que el BR/W llega al 7 o al 15 (12 V ahí matan el transistor de la línea), o si el 16 no marca 0 V con la llave en OFF.</li>
+      <li><b>Con la llave en OFF</b>, enchufa el ELM. Pon la llave en ON, conecta la computadora o la Pi a la red <code>Steren SCAN-020</code> y corre el pretest desde la carpeta del repo.</li>
+    </ol>
+<pre>python3 tools/pretest.py</pre>
+    <p class="why">Tiene que decir «Voltaje que recibe el ELM: 12.x V ✓»: el adaptador sí le da el 16 y la tierra. Si <code>ATFI</code> da ERROR, revisa que la llave esté en ON y el paro en RUN,
+    espera 10 s y repite. Si sigue igual, el mapeo del paso 2 dice si la K llega al 7.</p>
+  </div>
+
+  <div>
+    <div class="caja">
+      <h3>WiFi: que la Pi alcance al ELM</h3>
+      <p style="margin:0 0 8px">El ELM queda bajo el asiento trasero y la Pi al frente, con el tanque y el cuadro en medio. La caja es de plástico y deja pasar el WiFi;
+      el metal de enmedio, quién sabe. Con la moto armada y la Pi 5 en su caja, llave en ON:</p>
+<pre>nmcli -f SSID,SIGNAL dev wifi list</pre>
+      <p class="why" style="margin:0"><span class="pend">por confirmar</span> que «Steren SCAN-020» aparezca con señal estable. Si se cae seguido, ese es otro motivo para el plan B.</p>
+    </div>
+
+    <div class="caja">
+      <h3>Plan B: antes de conectar el OBDLink a la Pi</h3>
+      <ol style="margin:0 0 8px">
+        <li>Negativo del convertidor contra el negativo de la batería: ~0 Ω (duda «¿se juntan las tierras?»).</li>
+        <li>Haz los pasos 1 a 5 de la izquierda: el EX se enchufa en el mismo adaptador.</li>
+        <li>EX en el adaptador y en un USB 2.0 de la Pi; llave en ON: LED verde en el EX (guía rápida de OBDLink).</li>
+        <li><code>ls -l /dev/serial/by-id/</code> debe mostrar un dispositivo FTDI.</li>
+        <li>El pretest solo habla TCP: puentea el puerto serie a la misma Pi y apúntalo ahí.</li>
+      </ol>
+<pre>sudo apt install socat
+socat TCP-LISTEN:35000,bind=127.0.0.1,reuseaddr,fork \
+  FILE:/dev/ttyUSB0,raw,echo=0,b115200 &amp;
+python3 tools/pretest.py --ip 127.0.0.1</pre>
+      <p class="why" style="margin:0"><span class="pend">por confirmar</span> la velocidad del puerto: 115200 es la común en los OBDLink; si <code>ATI</code> no contesta, prueba 38400. No lo he probado.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ======================================================= -->
+<h2>Pendiente de confirmar</h2>
+<ol>
+  <li><b>La posición de cada color en el conector KDS:</b> el manual no trae la cara del conector. Paso 2.</li>
+  <li><b>Cuál de LG/BK y GY/W es la línea K:</b> paso 2 (qué color llega al 7) y <code>ATFI</code> en el pretest.</li>
+  <li><b>Qué marcan el 7 y el 15 con la llave en ON y sin el ELM:</b> si la ECU tiene pull-up propio, y que ninguna línea sea de 5 V. Paso 4.</li>
+  <li><b>BR/W en 0 V con la llave en OFF en tu moto:</b> el manual dice 0 V (p. 130). Paso 3.</li>
+  <li><b>Tu Steren:</b> el modelo exacto (¿SCAN-020?), su circuito interno y cuánto gasta. Mira la etiqueta.</li>
+  <li><b>Que el ELM y el adaptador quepan bajo el asiento trasero</b> con el asiento puesto, sin pellizcar cables.</li>
+  <li><b>La señal WiFi del ELM en la Pi</b>, con la moto armada.</li>
+  <li><b>Plan B:</b> el largo del cable del OBDLink EX y el de la ruta del asiento a la caja; el modelo del pasamuros USB-A IP67 o del prensaestopas partido; la velocidad del puerto serie del EX.</li>
+</ol>
+
+<h2>Fuentes</h2>
+<ul class="fuentes">
+  <li><b>Tu manual de servicio</b>, Ninja ZX-6R / ZX-6R ABS 636 (ZX636ED/FD, 2013), <code>~/Downloads/NinjaManual.pdf</code>. Pines de la ECU pp. 104–105 (6 BR/W, 7 W/BK, 31 LG/BK, 36–37 CAN, 38 BK/BL, 39 y 65 BK/Y, 48 GY/W);
+  diagrama del DFI p. 98 (KDS = n.º 5; Joint Connector D = n.º 49, con BK/BL y BK/Y); KDS en el diagrama general p. 501; circuito del inmovilizador/KDS p. 578;
+  alimentación de la ECU: prueba con la llave OFF/ON p. 130 (3-42) y circuito p. 131 (3-43); batería 12 V 8 Ah p. 99; ubicación del KDS p. 107 [B]; tapa p. 558;
+  asiento trasero p. 468 (15-8); conectores bajo el asiento p. 701; voltaje de carga 14.3–14.7 V p. 494.</li>
+  <li><a href="https://cdn.sparkfun.com/assets/learn_tutorials/8/3/ELM327DS.pdf">Hoja de datos del ELM327</a> (Elm Electronics, ELM327DSI): ISO K e ISO L son salidas; datos por la K;
+  figura 9 con 2N3904 y 510 Ω de ½ W; divisor de 47 kΩ / 33 kΩ con umbrales de 7.0 V y 3.6 V; parámetros 1A–1C (inicio rápido de 25 ms; K y L en el inicio); J1962: 16 batería, 5 tierra de señal (4 en algunos), 7 K, 15 L, 6 y 14 CAN.</li>
+  <li><a href="https://www.obdlink.com/products/obdlink-ex/">OBDLink EX</a> (8–30 V, 6.5 mA a 12 V, &lt; 1 mA en BatterySaver, USB 2.0, −20 a 55 °C);
+  <a href="https://www.obdlink.com/download/pdf-ex-qsg/">guía rápida</a> (LED); <a href="https://www.obdlink.com/support/ex/">soporte</a> (driver FTDI). El largo del cable no aparece en ninguna de las tres
+  (revisadas el 2026-10-09); <a href="https://obdadvisor.com/best-forscan-adapter-review/">obdadvisor</a> dice que el cable de 5.5 ft del vLinker FS es «más largo que el del EX».</li>
+  <li>Raspberry Pi: <a href="https://github.com/raspberrypi/documentation/blob/develop/documentation/asciidoc/computers/raspberry-pi/power-supplies.adoc">fuentes de alimentación</a>
+  (Pi 5: 600 mA a los USB con una fuente de 3 A, 1.6 A con una de 5 A); <a href="https://datasheets.raspberrypi.com/rpi5/raspberry-pi-5-product-brief.pdf">ficha de la Pi 5</a> (2 USB 3.0 y 2 USB 2.0).</li>
+  <li><a href="https://www.usb.org/sites/default/files/327216.pdf">Intel 327216-001</a>, «USB 3.0 Radio Frequency Interference Impact on 2.4 GHz Wireless Devices» (2012).
+  <a href="https://www.lammertbies.nl/comm/cable/usb-cable-length">Largo de cable USB</a> (26 ns de retardo por cable: 5 m en USB 2.0).</li>
+  <li>Steren <a href="https://descargas.steren.com.mx/SCAN-020-instr.pdf">SCAN-020</a> (red «Steren SCAN-020», ISO 14230-4 con inicio rápido; no publica consumo).
+  <a href="https://github.com/HerrRiebmann/KDS2Bluetooth">KDS2Bluetooth</a> (lector KDS con L9637D y pull-up de 510 Ω del lado del lector).
+  Mapeo de otra Kawasaki (GY/BL → 7, LG/BK → 15, BR/W → 16): kawiforums, «semi-transparent 4-pole male diagnostic connector (KDS)», citado en la hoja general.</li>
+  <li>Repo: <code>tools/pretest.py</code> (TCP a 192.168.0.10:35000, receta KDS, <code>--ip</code>), <code>BOM.csv</code> (adaptador Lydesor, OBDLink EX, PG7 de 3–6 mm) y <code>docs/conexion.html</code> §2, §5 y §6.</li>
+</ul>
+
+</div>
