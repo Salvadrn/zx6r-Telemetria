@@ -1,0 +1,696 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>¿Cómo se conecta la pantalla a la Pi?</title>
+<style>
+html,body{margin:0}
+.hoja{
+  --tp:#1a1a1a; --ts:#5b5b5b; --s1:#ffffff; --s2:#f6f5f2; --bd:#e2dfda;
+  --pwr:#1f5e8b; --act:#7a2f2f; --sig:#8a6d00; --ok:#1e7d32; --bad:#b3261e; --dat:#6b3fa0; --off:#9e9e9e; --gnd:#1a1a1a;
+  --pwr-t:#1f5e8b; --sig-t:#8a6d00; --ok-t:#1e7d32; --bad-t:#b3261e; --dat-t:#6b3fa0;
+  color:var(--text-primary,var(--tp)); background:var(--surface-0,var(--s1));
+  font-family:var(--font-sans,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif);
+  font-size:14px; line-height:1.6; font-weight:400;
+  max-width:1180px; margin:0 auto; padding:18px 16px 56px; box-sizing:border-box;
+}
+@media (prefers-color-scheme:dark){
+  html{background:#141416}
+  .hoja{ --tp:#ececec; --ts:#a8a8a8; --s1:#141416; --s2:#1d1d20; --bd:#38383c; --gnd:#ececec;
+         --pwr-t:#6aa6d6; --sig-t:#d1b04a; --ok-t:#55b46a; --bad-t:#e5675f; --dat-t:#ad8fdc; }
+}
+.hoja *{box-sizing:border-box}
+.hoja h1{font-size:22px; font-weight:500; margin:0 0 6px; letter-spacing:-.01em; line-height:1.3}
+.hoja h2{font-size:16px; font-weight:500; margin:34px 0 12px; letter-spacing:.06em; text-transform:uppercase;
+  padding-bottom:6px; border-bottom:1px solid var(--border,var(--bd))}
+.hoja h3{font-size:14px; font-weight:500; margin:0 0 8px}
+.hoja p{margin:0 0 10px}
+.hoja a{color:var(--pwr-t)}
+.hoja .bajada{color:var(--text-secondary,var(--ts)); margin:0 0 18px; max-width:900px}
+.hoja .sub,.hoja .why{color:var(--text-secondary,var(--ts))}
+.hoja .why{font-size:13px; line-height:1.5}
+.hoja .tiny{font-size:12.5px}
+.hoja code,.hoja pre{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:12.5px}
+.hoja code{background:color-mix(in srgb,#9e9e9e 16%,transparent); padding:1px 5px; border-radius:4px}
+.hoja pre{background:var(--surface-1,var(--s2)); border:1px solid var(--border,var(--bd)); border-radius:8px;
+  padding:12px 14px; overflow-x:auto; line-height:1.5; margin:0 0 12px}
+.hoja .caja{background:var(--surface-1,var(--s2)); border:1px solid var(--border,var(--bd)); border-radius:8px; padding:16px 18px; margin-bottom:16px}
+.hoja .cols{display:grid; grid-template-columns:1fr 1fr; gap:2rem; align-items:start}
+.hoja .cols > *{min-width:0}
+@media (max-width:900px){ .hoja .cols{grid-template-columns:1fr; gap:1rem} }
+.hoja .banda{border-radius:8px; padding:14px 18px; margin:0 0 14px; border:2px solid}
+.hoja .banda h3{font-size:15px; margin:0 0 6px}
+.hoja .b-dat{border-color:#6b3fa0; background:color-mix(in srgb,#6b3fa0 9%,transparent)}
+.hoja .b-dat h3{color:var(--dat-t)}
+.hoja .b-ok{border-color:#1e7d32; background:color-mix(in srgb,#1e7d32 8%,transparent)}
+.hoja .b-ok h3{color:var(--ok-t)}
+.hoja .b-bad{border-color:#b3261e; background:color-mix(in srgb,#b3261e 8%,transparent)}
+.hoja .b-bad h3{color:var(--bad-t)}
+/* filas "a dónde va cada pin" */
+.hoja .lista h3{margin-top:4px; font-size:13px; letter-spacing:.06em; text-transform:uppercase; color:var(--text-secondary,var(--ts))}
+.hoja .fila{display:grid; grid-template-columns:24px 92px 1fr; gap:10px; align-items:start; padding:8px 0;
+  border-top:1px solid var(--border,var(--bd))}
+.hoja .fila:first-of-type{border-top:0}
+.hoja .chip{width:20px; height:20px; border-radius:3px; margin-top:2px}
+.hoja .nom{font-weight:500; font-size:13.5px; line-height:1.35}
+.hoja .dst{font-weight:500}
+.hoja .c-pwr{background:#1f5e8b} .hoja .c-sig{background:#8a6d00} .hoja .c-dat{background:#6b3fa0}
+.hoja .c-gnd{background:var(--gnd); outline:1px solid #9e9e9e} .hoja .c-off{background:#9e9e9e} .hoja .c-bad{background:#b3261e}
+.hoja .c-ok{background:#1e7d32}
+.hoja .t-pwr{color:var(--pwr-t)} .hoja .t-sig{color:var(--sig-t)} .hoja .t-dat{color:var(--dat-t)}
+.hoja .t-ok{color:var(--ok-t)} .hoja .t-bad{color:var(--bad-t)} .hoja .t-off{color:#9e9e9e}
+/* etiquetas */
+.hoja .pend{display:inline-block; font-size:12px; letter-spacing:.04em; text-transform:uppercase; line-height:1.4;
+  border:1px solid #b3261e; color:var(--bad-t); border-radius:4px; padding:0 6px; vertical-align:1px; white-space:nowrap}
+.hoja .conf{display:inline-block; font-size:12px; letter-spacing:.04em; text-transform:uppercase; line-height:1.4;
+  border:1px solid #9e9e9e; color:var(--text-secondary,var(--ts)); border-radius:4px; padding:0 6px; vertical-align:1px; white-space:nowrap}
+.hoja .okt{display:inline-block; font-size:12px; letter-spacing:.04em; text-transform:uppercase; line-height:1.4;
+  border:1px solid #1e7d32; color:var(--ok-t); border-radius:4px; padding:0 6px; vertical-align:1px; white-space:nowrap}
+/* conector KDS: 4 cables por color */
+.hoja .cables{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; margin:8px 0 6px}
+.hoja .cable{border:1px solid var(--border,var(--bd)); border-radius:6px; padding:8px 6px; text-align:center; font-size:12.5px; line-height:1.35}
+.hoja .cable .bar{height:8px; border-radius:2px; margin:0 0 6px}
+.hoja .cable b{font-weight:500; font-size:13.5px; display:block}
+/* cara OBD2 16 */
+.hoja .obd{display:grid; grid-template-columns:repeat(8,minmax(0,1fr)); gap:4px; max-width:360px; margin:8px 0 4px;
+  border:1.5px solid var(--text-primary,var(--tp)); border-radius:10px 10px 18px 18px; padding:8px 10px 10px}
+.hoja .obd div{text-align:center; font-size:12px; line-height:1.2; padding:4px 0; border-radius:3px; border:1px solid #9e9e9e; color:#9e9e9e}
+.hoja .obd .u-pwr{border-color:#1f5e8b; background:color-mix(in srgb,#1f5e8b 16%,transparent); color:var(--pwr-t); font-weight:500}
+.hoja .obd .u-gnd{border-color:var(--gnd); background:color-mix(in srgb,#9e9e9e 22%,transparent); color:var(--text-primary,var(--tp)); font-weight:500}
+.hoja .obd .u-dat{border-color:#6b3fa0; background:color-mix(in srgb,#6b3fa0 16%,transparent); color:var(--dat-t); font-weight:500}
+/* header de la Pi, pines 1-14 */
+.hoja .hdr{display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:4px; max-width:400px; margin:8px 0 2px}
+.hoja .hdr div{border:1px solid #9e9e9e; border-radius:4px; text-align:center; padding:4px 0 3px; font-size:12px; line-height:1.25; color:#9e9e9e}
+.hoja .hdr div b{display:block; font-weight:500; font-size:12.5px}
+.hoja .hdr .h-sig{border-color:#8a6d00; background:color-mix(in srgb,#8a6d00 16%,transparent); color:var(--sig-t)}
+.hoja .hdr .h-gnd{border-color:var(--gnd); background:color-mix(in srgb,#9e9e9e 24%,transparent); color:var(--text-primary,var(--tp))}
+.hoja .hdr .h-pwr3{border-color:#1f5e8b; background:color-mix(in srgb,#1f5e8b 16%,transparent); color:var(--pwr-t)}
+.hoja .hdr .h-dat{border-color:#6b3fa0; background:color-mix(in srgb,#6b3fa0 16%,transparent); color:var(--dat-t)}
+.hoja .hdr .h-bad{border-color:#b3261e; color:var(--bad-t); background:repeating-linear-gradient(135deg,transparent 0 5px,color-mix(in srgb,#b3261e 14%,transparent) 5px 8px)}
+.hoja .hdrlab{display:flex; justify-content:space-between; max-width:400px; font-size:12px; color:var(--text-secondary,var(--ts))}
+/* esquemáticos */
+.hoja .esq{overflow-x:auto; -webkit-overflow-scrolling:touch}
+/* 400 px mínimo: así el texto del esquemático nunca baja de 12 px; en el celular se desliza de lado */
+.hoja .esq svg{display:block; width:100%; min-width:400px; height:auto; color:var(--text-primary,var(--tp))}
+@media (max-width:480px){
+  .hoja{padding:14px 12px 48px}
+  .hoja .cables{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+.hoja svg text{font-family:inherit; fill:currentColor}
+.hoja svg .s{fill:var(--text-secondary,var(--ts))}
+.hoja svg .tp{fill:var(--pwr-t)} .hoja svg .tg{fill:var(--sig-t)} .hoja svg .td{fill:var(--dat-t)}
+.hoja svg .tk{fill:var(--ok-t)} .hoja svg .tb{fill:var(--bad-t)} .hoja svg .to{fill:#9e9e9e}
+.hoja svg .box{fill:var(--surface-1,var(--s2)); stroke:currentColor; stroke-width:1.3}
+.hoja svg .mask{fill:var(--surface-0,var(--s1))}
+.hoja .leyenda{display:flex; flex-wrap:wrap; gap:6px 16px; font-size:12.5px; color:var(--text-secondary,var(--ts)); margin:6px 0 0}
+.hoja .leyenda span{display:inline-flex; align-items:center; gap:6px}
+.hoja .leyenda i{display:inline-block; width:22px; height:0; border-top:3px solid}
+/* callouts */
+.hoja .dudas{display:grid; grid-template-columns:1fr 1fr; gap:1.25rem}
+@media (max-width:900px){ .hoja .dudas{grid-template-columns:1fr} }
+.hoja .co{border:2px solid; border-radius:8px; padding:16px 18px}
+.hoja .co-t{font-weight:500; margin-bottom:8px; font-size:15px; line-height:1.4}
+.hoja .co-b{font-size:14px; line-height:1.6}
+.hoja .co-b p{margin:0 0 8px}
+.hoja .co-b ul{margin:0 0 8px; padding-left:18px}
+.hoja .co-b li{margin-bottom:4px}
+.hoja .co-dat{border-color:#6b3fa0} .hoja .co-dat .co-t{color:var(--dat-t)}
+.hoja .co-pwr{border-color:#1f5e8b} .hoja .co-pwr .co-t{color:var(--pwr-t)}
+.hoja .co-ok{border-color:#1e7d32} .hoja .co-ok .co-t{color:var(--ok-t)}
+.hoja .co-bad{border-color:#b3261e} .hoja .co-bad .co-t{color:var(--bad-t)}
+/* tablas */
+.hoja .tabla{overflow-x:auto; -webkit-overflow-scrolling:touch; margin:0 0 12px}
+/* sin DOCTYPE el navegador va en modo quirks y las tablas no heredan color ni letra: se fijan aquí */
+.hoja table{border-collapse:collapse; width:100%; min-width:560px; color:var(--text-primary,var(--tp));
+  font-family:inherit; font-size:13.5px; font-weight:400; line-height:1.5}
+.hoja td,.hoja th{color:inherit}
+.hoja th{text-align:left; font-weight:500; font-size:12px; letter-spacing:.05em; text-transform:uppercase;
+  color:var(--text-secondary,var(--ts)); padding:0 10px 8px 0; border-bottom:1px solid var(--border,var(--bd)); vertical-align:bottom}
+.hoja td{padding:9px 10px 9px 0; border-bottom:1px solid var(--border,var(--bd)); vertical-align:top}
+.hoja td:first-child{font-weight:500; white-space:nowrap}
+.hoja .grupo td{padding-top:16px; font-weight:500; letter-spacing:.05em; text-transform:uppercase; font-size:12px; color:var(--text-secondary,var(--ts))}
+.hoja ol,.hoja ul{margin:0 0 10px; padding-left:20px}
+.hoja li{margin-bottom:5px}
+.hoja .fuentes li{font-size:13px; line-height:1.5}
+/* hojas de cableado por subsistema: barra de navegación */
+.hoja .nav{display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 14px; font-size:13px; line-height:1.5;
+  margin:0 0 16px; padding:0 0 8px; border-bottom:1px solid var(--border,var(--bd)); color:var(--text-secondary,var(--ts))}
+.hoja .nav a{text-decoration:none}
+.hoja .nav a:hover{text-decoration:underline}
+.hoja .nav b{font-weight:500; color:var(--text-primary,var(--tp)); border-bottom:2px solid currentColor}
+.hoja .nav .gen{margin-left:auto}
+</style>
+
+<div class="hoja">
+
+<nav class="nav" aria-label="Hojas de cableado">
+  <a href="0-sistema.html">Sistema</a>
+  <a href="1-alimentacion.html">Alimentación</a>
+  <a href="2-diagnostico.html">Diagnóstico</a>
+  <b aria-current="page">Pantalla</b>
+  <a href="4-botones.html">Botones</a>
+  <a href="5-direccion.html">Dirección</a>
+  <a class="gen" href="../conexion.html">hoja general</a>
+</nav>
+
+<h1>¿Cómo se conecta la pantalla a la Pi?</h1>
+<p class="bajada">Newhaven NHD-5.0-HDMI-N-RSXP-CTU (5″, 800 × 480, 900 nits) a la Raspberry Pi 5 de 8 GB que se comparte con el ISIC.
+Resuelve: a qué puerto va el HDMI, de dónde saca la corriente la pantalla (ni del HDMI ni de la Pi), si se conecta el toque,
+qué configurar si no sale a 800 × 480 y cómo meter el HDMI a la caja sin perder lo IP68.</p>
+
+<div class="banda b-ok">
+  <h3>Medido contra no medido</h3>
+  <p style="margin:0">Nada de esta hoja se ha medido: no hay pantalla en la mano y la app solo ha corrido con el simulador y un ELM327 falso.
+  Los números salen de la hoja de producto de Newhaven (rev. 5, 2024-08-13), su esquemático y su guía de usuario, de la documentación oficial de Raspberry Pi
+  y del código del repo. Lo que depende de medir dice <span class="pend">por confirmar</span>.</p>
+</div>
+
+<div class="banda b-bad">
+  <h3>Tres cosas que no estaban en la hoja general ni en el BOM</h3>
+  <ul style="margin:0">
+    <li><b>La pantalla se alimenta por un jack DC de 5.5 × 2.1 mm (centro +), de 5.0 a 7.0 V.</b> No por el HDMI ni por el micro-USB.
+    Gasta 560 mA típ. y 590 mA máx. a 5 V. El BOM no trae el plug para ese jack.</li>
+    <li><b>Los conectores del cable HDMI no pasan por un prensaestopas PG7</b> (3–6 mm). Hace falta un prensaestopas partido.</li>
+    <li><b>La pantalla es un módulo abierto</b>: la tarjeta y sus conectores quedan al aire y el datasheet no le da grado IP. Afuera de la caja necesita su propia carcasa sellada.</li>
+  </ul>
+</div>
+
+<!-- ======================================================= -->
+<h2>1 · La pantalla por detrás: qué tiene y a dónde va</h2>
+
+<div class="cols">
+  <div class="lista">
+    <div class="caja">
+      <h3>La pieza como se ve: lado de los componentes</h3>
+      <p class="why" style="margin-bottom:6px">Posiciones del plano mecánico de Newhaven, a escala. En esta vista, el HDMI y el micro-USB quedan en el borde izquierdo
+      (a la derecha si la ves de frente). El jack y CN4 están en el borde de abajo, junto a los flex del panel.</p>
+      <div class="esq">
+        <svg viewBox="0 0 400 300" role="img" aria-label="Parte trasera de la pantalla Newhaven a escala: CN1 HDMI tipo A y CN2 micro-USB en el borde izquierdo; CN3 jack de corriente y CN4 de dos pines en el borde de abajo; chip TFP401A arriba; zona de flex del panel abajo a la derecha; cuatro agujeros de montaje en las orejas">
+          <!-- cota -->
+          <line x1="30" y1="26" x2="369.5" y2="26" stroke="currentColor" stroke-width="0.8"/>
+          <line x1="30" y1="20" x2="30" y2="32" stroke="currentColor" stroke-width="0.8"/>
+          <line x1="369.5" y1="20" x2="369.5" y2="32" stroke="currentColor" stroke-width="0.8"/>
+          <text x="200" y="18" text-anchor="middle" font-size="12" class="s">135.8 mm con orejas · 17.55 mm de grueso</text>
+          <!-- orejas -->
+          <rect class="box" x="30" y="47" width="26" height="24" rx="8"/>
+          <rect class="box" x="344" y="47" width="26" height="24" rx="8"/>
+          <rect class="box" x="30" y="182" width="26" height="24" rx="8"/>
+          <rect class="box" x="344" y="182" width="26" height="24" rx="8"/>
+          <!-- orilla del panel (más alto que la tarjeta) -->
+          <rect x="49" y="40" width="301.5" height="189.5" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="4 3"/>
+          <!-- tarjeta -->
+          <rect class="box" x="49" y="40" width="301.5" height="172"/>
+          <!-- agujeros -->
+          <circle class="mask" cx="38.75" cy="58.75" r="4.4" stroke="currentColor" stroke-width="1.2"/>
+          <circle class="mask" cx="361" cy="58.75" r="4.4" stroke="currentColor" stroke-width="1.2"/>
+          <circle class="mask" cx="38.75" cy="193.5" r="4.4" stroke="currentColor" stroke-width="1.2"/>
+          <circle class="mask" cx="361" cy="193.5" r="4.4" stroke="currentColor" stroke-width="1.2"/>
+          <!-- TFP401A -->
+          <rect x="118" y="55" width="39" height="40" fill="none" stroke="#9e9e9e" stroke-width="1.4"/>
+          <text x="163" y="80" font-size="12" class="s">TFP401A</text>
+          <!-- conectores del flex -->
+          <rect x="180" y="104" width="31" height="10" fill="none" stroke="#9e9e9e" stroke-width="1.2"/>
+          <rect x="228" y="124" width="62" height="10" fill="none" stroke="#9e9e9e" stroke-width="1.2"/>
+          <!-- zona de flex -->
+          <rect x="132" y="168" width="180" height="61" fill="#9e9e9e" fill-opacity="0.12" stroke="#b3261e" stroke-width="1.2" stroke-dasharray="5 3"/>
+          <text x="222" y="187" text-anchor="middle" font-size="12" class="tb">flex del panel</text>
+          <text x="222" y="203" text-anchor="middle" font-size="12" class="tb">no doblar ni forzar</text>
+          <!-- CN1 HDMI -->
+          <rect x="46" y="87" width="24" height="40" fill="#6b3fa0" fill-opacity="0.16" stroke="#6b3fa0" stroke-width="1.6"/>
+          <line x1="46" y1="88" x2="46" y2="126" stroke="#6b3fa0" stroke-width="4"/>
+          <text x="76" y="111" font-size="12" font-weight="500" class="td">CN1 · HDMI</text>
+          <text x="76" y="126" font-size="12" class="s">→ Pi HDMI0</text>
+          <!-- CN2 micro-USB -->
+          <rect x="46" y="145" width="15" height="19" fill="none" stroke="#9e9e9e" stroke-width="1.6"/>
+          <line x1="46" y1="146" x2="46" y2="163" stroke="#9e9e9e" stroke-width="4"/>
+          <text x="67" y="160" font-size="12" class="to">CN2 · micro-USB · sin conectar</text>
+          <!-- CN3 jack -->
+          <rect x="82" y="176" width="22" height="36" fill="#1f5e8b" fill-opacity="0.16" stroke="#1f5e8b" stroke-width="1.6"/>
+          <line x1="83" y1="212" x2="103" y2="212" stroke="#1f5e8b" stroke-width="4"/>
+          <line x1="93" y1="214" x2="93" y2="252" stroke="#1f5e8b" stroke-width="1"/>
+          <!-- CN4 -->
+          <line x1="119" y1="188" x2="119" y2="212" stroke="#9e9e9e" stroke-width="2.4"/>
+          <line x1="126" y1="188" x2="126" y2="212" stroke="#9e9e9e" stroke-width="2.4"/>
+          <rect x="115" y="196" width="15" height="7" fill="none" stroke="#9e9e9e" stroke-width="1.2"/>
+          <line x1="123" y1="214" x2="150" y2="238" stroke="#9e9e9e" stroke-width="1"/>
+          <text x="154" y="246" font-size="12" class="to">CN4 · PWM / GND · sin conectar</text>
+          <!-- etiqueta CN3 -->
+          <text x="30" y="268" font-size="12" font-weight="500" class="tp">CN3 · jack DC 5.5 × 2.1 · centro +</text>
+          <text x="30" y="284" font-size="12" class="s">→ 5 V del Pololu, por su propio par</text>
+        </svg>
+      </div>
+      <p class="tiny sub" style="margin:4px 0 0">La línea punteada es la orilla del panel, 7 mm más alto que la tarjeta. Las bocas gruesas marcan hacia dónde entra cada cable:
+      HDMI y micro-USB por el costado, el plug DC desde abajo.</p>
+    </div>
+
+    <h3>A dónde va cada conector de la pantalla</h3>
+    <div class="fila"><div class="chip c-dat"></div><div class="nom t-dat">CN1 · HDMI tipo A</div>
+      <div><div class="dst">→ micro-HDMI marcado HDMI0 en la Pi, con el cable micro-HDMI → HDMI del BOM</div>
+      <div class="why">Solo video. Su receptor (TI TFP401A) no escala: la Pi tiene que mandar exactamente 800 × 480. Lo hace sola porque la pantalla trae su EDID en una memoria propia.</div></div></div>
+    <div class="fila"><div class="chip c-off"></div><div class="nom t-off">CN2 · micro-USB</div>
+      <div><div class="dst t-off">sin conectar</div>
+      <div class="why">Es solo el toque (USB-HID) y no alimenta la pantalla: en esta versión (CTU) no va puesta la resistencia R25, que uniría su 5 V con la tarjeta (esquemático, «Board versions»). La app no usa toque.</div></div></div>
+    <div class="fila"><div class="chip c-pwr"></div><div class="nom t-pwr">CN3 · centro (+)</div>
+      <div><div class="dst">→ VOUT del Pololu, con un par aparte del de la Pi</div>
+      <div class="why">Es la única entrada de corriente: 5.0–7.0 V, 560 mA típ. y 590 mA máx. a 5 V. Adentro pasa por un diodo Schottky (D10, MSS1P3L) que la protege si inviertes la polaridad.
+      <span class="t-bad">Nunca de la entrada de 12 V del Pololu: la pantalla aguanta 7 V.</span></div></div></div>
+    <div class="fila"><div class="chip c-gnd"></div><div class="nom">CN3 · camisa (−)</div>
+      <div><div class="dst">→ GND del Pololu, en el mismo par</div>
+      <div class="why">Del agujero GND que está junto a VOUT. Así los 0.59 A de la pantalla regresan por su propio hilo y no por el cable de la Pi ni por el HDMI.</div></div></div>
+    <div class="fila"><div class="chip c-off"></div><div class="nom t-off">CN4 · PWM</div>
+      <div><div class="dst t-off">sin conectar</div>
+      <div class="why">Suelto, una resistencia de 47.5 kΩ (R26) lo jala a la entrada de la pantalla (~4.6 V): brillo máximo cuando hay video y apagado cuando no. No lo pongas directo a un GPIO: le subiría ese voltaje a un pin de 3.3 V.</div></div></div>
+    <div class="fila"><div class="chip c-off"></div><div class="nom t-off">CN4 · GND</div>
+      <div><div class="dst t-off">sin conectar</div>
+      <div class="why">Solo sirve de referencia si algún día se atenúa el brillo con PWM (5–100 kHz, 2.5–5.5 V). La serigrafía dice cuál es PWM y cuál GND: <span class="pend">por confirmar</span> el orden en tu pieza.</div></div></div>
+    <div class="fila"><div class="chip c-bad"></div><div class="nom t-bad">Flex del panel</div>
+      <div><div class="dst t-bad">→ no se toca</div>
+      <div class="why">Newhaven advierte que doblar o forzar los flex del borde de abajo daña la imagen o el toque. El plug DC entra justo al lado: conéctalo sin palanquear.</div></div></div>
+    <div class="fila"><div class="chip c-off"></div><div class="nom t-off">4 agujeros ø3.5</div>
+      <div><div class="dst">→ al soporte impreso</div>
+      <div class="why">En esta versión no van a tierra (R32–R35 sin poner): un tornillo metálico no une la tierra de la pantalla con el chasis.</div></div></div>
+    <div class="fila"><div class="chip c-off"></div><div class="nom t-off">LEDs</div>
+      <div><div class="dst">→ solo para verificar</div>
+      <div class="why">Verde (LED3): tiene corriente. Azul (LED1): recibe video. Rojo (LED4): algo toca el vidrio. Su lugar exacto en la tarjeta: <span class="pend">por confirmar</span> con la serigrafía.</div></div></div>
+  </div>
+
+  <div class="lista">
+    <div class="caja">
+      <h3>Del lado de la Pi 5: el borde de los conectores</h3>
+      <p class="why" style="margin-bottom:6px">Pi vista desde arriba, con el header de 40 pines arriba. Distancias desde la orilla izquierda, del plano oficial de la Pi 5.</p>
+      <div class="esq">
+        <svg viewBox="0 0 400 170" role="img" aria-label="Borde inferior de la Raspberry Pi 5: USB-C de alimentación a 11.2 milímetros, micro-HDMI HDMI0 a 25.8 y micro-HDMI HDMI1 a 39.2; la pantalla va en HDMI0">
+          <polyline points="300,14 30,14 30,106 370,106" fill="none" stroke="currentColor" stroke-width="1.4"/>
+          <polyline points="300,14 370,14 370,106" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="4 4"/>
+          <rect x="58" y="22" width="200" height="12" fill="none" stroke="#9e9e9e" stroke-width="1.2"/>
+          <text x="158" y="52" text-anchor="middle" font-size="12" class="to">header de 40 pines (otras hojas)</text>
+          <text x="38" y="76" font-size="12" font-weight="500">Raspberry Pi 5</text>
+          <!-- USB-C -->
+          <rect x="57" y="90" width="36" height="19" rx="6" fill="#1f5e8b" fill-opacity="0.16" stroke="#1f5e8b" stroke-width="1.6"/>
+          <!-- HDMI0 -->
+          <rect x="118" y="92" width="30" height="16" rx="2" fill="#6b3fa0" fill-opacity="0.2" stroke="#6b3fa0" stroke-width="2"/>
+          <!-- HDMI1 -->
+          <rect x="172" y="92" width="30" height="16" rx="2" fill="none" stroke="#9e9e9e" stroke-width="1.6"/>
+          <text x="75" y="128" text-anchor="middle" font-size="12" class="tp">USB-C</text>
+          <text x="75" y="144" text-anchor="middle" font-size="12" class="s">5 V Pololu</text>
+          <text x="133" y="128" text-anchor="middle" font-size="12" font-weight="500" class="tk">HDMI0 ✓</text>
+          <text x="133" y="144" text-anchor="middle" font-size="12" class="s">pantalla</text>
+          <text x="187" y="128" text-anchor="middle" font-size="12" class="to">HDMI1</text>
+          <text x="187" y="144" text-anchor="middle" font-size="12" class="to">libre</text>
+          <text x="228" y="128" font-size="12" class="s">11.2 · 25.8 · 39.2 mm</text>
+          <text x="228" y="144" font-size="12" class="s">desde la orilla</text>
+          <text x="30" y="164" font-size="12" class="s">El nombre manda: busca «HDMI0» en la serigrafía.</text>
+        </svg>
+      </div>
+    </div>
+
+    <h3>A dónde va cada puerto de la Pi</h3>
+    <div class="fila"><div class="chip c-dat"></div><div class="nom t-dat">micro-HDMI · HDMI0</div>
+      <div><div class="dst">→ CN1 de la pantalla</div>
+      <div class="why">Es la primera salida (HDMI-A-1 en Linux) y la que Raspberry Pi pide para el monitor principal. Cada vez que la Pi sale de la caja se desconecta aquí:
+      jala del conector, no del cable. Amarra el cable a 2–3 cm del conector para que la vibración no haga palanca sobre la tarjeta.</div></div></div>
+    <div class="fila"><div class="chip c-off"></div><div class="nom t-off">micro-HDMI · HDMI1</div>
+      <div><div class="dst t-off">sin conectar</div>
+      <div class="why">Si la pantalla fuera aquí, Linux la llamaría HDMI-A-2 y el <code>video=</code> de la sección 3 apuntaría al puerto equivocado.</div></div></div>
+    <div class="fila"><div class="chip c-pwr"></div><div class="nom t-pwr">USB-C</div>
+      <div><div class="dst">→ 5 V del Pololu por el adaptador a clemas</div>
+      <div class="why">Es la alimentación de la Pi, no la de la pantalla. El detalle está en la hoja <a href="1-alimentacion.html">Alimentación</a>.</div></div></div>
+    <div class="fila"><div class="chip c-off"></div><div class="nom t-off">USB-A (4)</div>
+      <div><div class="dst t-off">nada de la pantalla</div>
+      <div class="why">Ni el toque ni su corriente. Sin USB-PD, los cuatro juntos dan 600 mA (ver la duda 3).</div></div></div>
+    <div class="fila"><div class="chip c-off"></div><div class="nom t-off">header de 40 pines</div>
+      <div><div class="dst t-off">nada de la pantalla</div>
+      <div class="why">Ahí van los botones y el sensor de dirección (hojas <a href="4-botones.html">Botones</a> y <a href="5-direccion.html">Dirección</a>).</div></div></div>
+
+    <div class="caja" style="margin-top:14px">
+      <h3>Qué viaja por el HDMI (no lo cableas tú: lo hace el cable)</h3>
+      <div class="tabla">
+        <table style="min-width:0">
+          <tr><th>Pines</th><th>Qué es</th><th>Qué hace la pantalla con él</th></tr>
+          <tr><td>1–12</td><td>4 pares de video (TMDS) y su blindaje</td><td>Entran al TFP401A, que los vuelve 800 × 480 en paralelo para el panel.</td></tr>
+          <tr><td>15 · 16</td><td>SCL · SDA (DDC)</td><td>La Pi lee por aquí el EDID de la memoria de la pantalla.</td></tr>
+          <tr><td>18</td><td>+5 V de la Pi (≤ 50 mA)</td><td>Alimenta solo la memoria del EDID y la señal de «conectado».</td></tr>
+          <tr><td>19</td><td>detección de conexión</td><td>Sube a 5 V con 10 kΩ desde el pin 18: la Pi ve pantalla aunque esta no tenga corriente.</td></tr>
+          <tr><td>13 · 14</td><td>CEC · utility</td><td class="t-off">sin usar</td></tr>
+          <tr><td>17 · carcasa</td><td>tierra</td><td>Une la tierra de la pantalla con la de la Pi.</td></tr>
+        </table>
+      </div>
+      <p class="tiny sub" style="margin:0">Del esquemático de Newhaven (bloque «HDMI-A» y «EEPROM»). El EDID trae un solo modo: 800 × 480 a ~65.7 Hz (reloj de 32 MHz), sin audio.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ======================================================= -->
+<h2>2 · De dónde saca la corriente</h2>
+
+<div class="cols">
+  <div>
+    <div class="esq">
+      <svg viewBox="0 0 400 590" role="img" aria-label="Esquemático: el Pololu D36V50F5, dentro de la caja, da 5 V por dos pares: uno al USB-C de la Pi y otro, por un prensaestopas PG7, al jack CN3 de la pantalla. Dentro de la pantalla, el diodo D10 lleva a la entrada, que alimenta el regulador de 3.3 voltios y la luz de fondo. El HDMI sale de HDMI0 de la Pi por un prensaestopas partido hasta el receptor TFP401A; su pin 18 solo alimenta la memoria EDID. La tierra de la pantalla regresa por su par y también por el HDMI.">
+        <text x="14" y="30" font-size="12" class="tp">entra 12–14.7 V con llave</text>
+        <text x="392" y="30" text-anchor="end" font-size="12" class="s">dentro de la caja Hammond</text>
+        <!-- Pololu -->
+        <rect class="box" x="14" y="40" width="104" height="120" rx="6" stroke-width="1.8"/>
+        <text x="66" y="60" text-anchor="middle" font-size="13.5" font-weight="500">Pololu</text>
+        <text x="66" y="76" text-anchor="middle" font-size="12" class="s">D36V50F5</text>
+        <text x="66" y="112" text-anchor="middle" font-size="12" class="s">pines dobles</text>
+        <text x="112" y="96" text-anchor="end" font-size="12" class="tp">VOUT</text>
+        <text x="112" y="140" text-anchor="end" font-size="12">GND</text>
+        <text x="40" y="154" text-anchor="middle" font-size="12">GND</text>
+        <text x="90" y="154" text-anchor="middle" font-size="12" class="tp">VOUT</text>
+        <!-- par 1 a la Pi -->
+        <line x1="118" y1="100" x2="260" y2="100" stroke="#1f5e8b" stroke-width="2.4"/>
+        <text x="126" y="92" font-size="12" class="tp">5.0 V ±4 %</text>
+        <text x="126" y="118" font-size="12" class="s">4.80–5.20 V</text>
+        <text x="206" y="92" font-size="12" class="s">par 1</text>
+        <line x1="118" y1="146" x2="260" y2="146" stroke="currentColor" stroke-width="2.4"/>
+        <circle cx="176" cy="146" r="4" fill="currentColor"/>
+        <line x1="176" y1="146" x2="176" y2="164" stroke="currentColor" stroke-width="2"/>
+        <line x1="164" y1="164" x2="188" y2="164" stroke="currentColor" stroke-width="2"/>
+        <line x1="168" y1="169" x2="184" y2="169" stroke="currentColor" stroke-width="2"/>
+        <line x1="172" y1="174" x2="180" y2="174" stroke="currentColor" stroke-width="2"/>
+        <text x="194" y="176" font-size="12" class="s">− batería / chasis</text>
+        <!-- Pi -->
+        <rect class="box" x="260" y="40" width="132" height="120" rx="6" stroke-width="1.8"/>
+        <text x="326" y="60" text-anchor="middle" font-size="13.5" font-weight="500">Raspberry Pi 5</text>
+        <text x="326" y="78" text-anchor="middle" font-size="12" class="s">3 A sin USB-PD</text>
+        <text x="266" y="104" font-size="12" class="tp">USB-C</text>
+        <text x="266" y="150" font-size="12">GND</text>
+        <text x="386" y="150" text-anchor="end" font-size="12" class="td">HDMI0</text>
+        <!-- pared -->
+        <line x1="0" y1="212" x2="400" y2="212" stroke="currentColor" stroke-width="1" stroke-dasharray="6 4"/>
+        <text x="150" y="230" font-size="12" class="s">pared de la caja</text>
+        <rect x="28" y="204" width="80" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="1.2"/>
+        <text x="112" y="200" font-size="12" class="tk">PG7 ✓ sin conector</text>
+        <rect x="348" y="202" width="24" height="20" rx="3" fill="none" stroke="#6b3fa0" stroke-width="1.4"/>
+        <text x="342" y="246" text-anchor="end" font-size="12" class="tk">KVT-ER 25 partido ✓</text>
+        <!-- HDMI -->
+        <line x1="360" y1="160" x2="360" y2="330" stroke="#6b3fa0" stroke-width="2.4"/>
+        <text x="352" y="198" text-anchor="end" font-size="12" class="td">micro-HDMI → HDMI</text>
+        <text x="352" y="268" text-anchor="end" font-size="12" class="td">pin 18: +5 V ≤ 50 mA</text>
+        <!-- par 2 a la pantalla -->
+        <line x1="90" y1="160" x2="90" y2="416" stroke="#1f5e8b" stroke-width="2.4"/>
+        <line x1="90" y1="416" x2="140" y2="416" stroke="#1f5e8b" stroke-width="2.4"/>
+        <line x1="40" y1="160" x2="40" y2="516" stroke="currentColor" stroke-width="2.4"/>
+        <line x1="40" y1="516" x2="206" y2="516" stroke="currentColor" stroke-width="2.4"/>
+        <text x="98" y="248" font-size="12" class="s">par 2 · 18 AWG</text>
+        <text x="98" y="264" font-size="12" class="s">0.59 A · −0.01 V</text>
+        <!-- pantalla -->
+        <rect class="box" x="110" y="280" width="282" height="262" rx="6" stroke-width="1.8"/>
+        <text x="118" y="298" font-size="12.5" font-weight="500">Newhaven NHD-5.0-HDMI-N-RSXP-CTU</text>
+        <text x="118" y="314" font-size="12" class="s">afuera, en su carcasa</text>
+        <!-- video -->
+        <rect class="box" x="222" y="330" width="166" height="40" rx="4"/>
+        <text x="305" y="346" text-anchor="middle" font-size="12">CN1 → TFP401A (video)</text>
+        <text x="305" y="362" text-anchor="middle" font-size="12" class="td">pin 18 → solo EDID</text>
+        <!-- entrada de corriente -->
+        <text x="118" y="392" font-size="12" class="tp">CN3 · jack · centro +</text>
+        <polygon points="140,408 140,424 154,416" fill="none" stroke="currentColor" stroke-width="1.6"/>
+        <line x1="154" y1="408" x2="154" y2="424" stroke="currentColor" stroke-width="1.6"/>
+        <line x1="154" y1="416" x2="222" y2="416" stroke="#1f5e8b" stroke-width="2.4"/>
+        <circle cx="206" cy="416" r="4" fill="#1f5e8b"/>
+        <text x="160" y="408" font-size="12" class="tp">≈ 4.6 V</text>
+        <text x="118" y="442" font-size="12" class="s">D10 · −0.4 V</text>
+        <rect class="box" x="222" y="398" width="148" height="38" rx="4"/>
+        <text x="296" y="413" text-anchor="middle" font-size="12">LDO 3.3 V (AZ1117)</text>
+        <text x="296" y="429" text-anchor="middle" font-size="12" class="s">→ TFP401A y panel</text>
+        <line x1="206" y1="416" x2="206" y2="466" stroke="#1f5e8b" stroke-width="2"/>
+        <line x1="206" y1="466" x2="222" y2="466" stroke="#1f5e8b" stroke-width="2"/>
+        <rect class="box" x="222" y="448" width="148" height="38" rx="4"/>
+        <text x="296" y="463" text-anchor="middle" font-size="12">luz de fondo</text>
+        <text x="296" y="479" text-anchor="middle" font-size="12" class="s">TPS61165 · 900 nits</text>
+        <!-- tierra de la pantalla -->
+        <circle cx="206" cy="516" r="4" fill="currentColor"/>
+        <text x="118" y="508" font-size="12">GND</text>
+        <polyline points="206,516 380,516 380,370" fill="none" stroke="currentColor" stroke-width="1.4" stroke-dasharray="5 4"/>
+        <text x="118" y="534" font-size="12" class="s">el HDMI también une las tierras</text>
+        <!-- notas -->
+        <text x="10" y="562" font-size="12" class="tb">jack: 5.0–7.0 V · Pololu: 4.80–5.20 V → mídelo</text>
+        <text x="10" y="580" font-size="12" class="tk">3 A (Pi) + 0.59 A (pantalla) = 3.6 A de 5.5 A ✓</text>
+      </svg>
+    </div>
+    <div class="leyenda">
+      <span><i style="border-color:#1f5e8b"></i>5 V</span>
+      <span><i style="border-color:var(--gnd)"></i>tierra</span>
+      <span><i style="border-color:#6b3fa0"></i>HDMI</span>
+      <span><i style="border-color:var(--gnd); border-top-style:dashed"></i>tierra por la malla del HDMI</span>
+    </div>
+    <p class="tiny sub" style="margin-top:6px">Los dos pares salen de los agujeros dobles de VOUT y GND del Pololu (Pololu: 3 A por pin, 6 A por par), soldados directo.
+    El punto en GND es el nodo: batería, Pi y pantalla se unen ahí. No hay cruces de cables en el dibujo: cada unión lleva su punto.</p>
+  </div>
+
+  <div>
+    <h3>Decisión: directo del Pololu, no de un USB de la Pi</h3>
+    <div class="tabla">
+      <table style="min-width:420px">
+        <tr><th></th><th>(a) De un USB-A de la Pi</th><th>(b) Directo del Pololu</th></tr>
+        <tr><td>Límite</td><td>600 mA para los 4 USB sin USB-PD; 1.6 A con <code>usb_max_current_enable=1</code></td><td>5.5 A del Pololu</td></tr>
+        <tr><td>Pantalla a 590 mA</td><td class="t-bad">Sin el ajuste, quedan 10 mA para todo lo demás ✗</td><td class="t-ok">No cuenta en el límite de USB ✓</td></tr>
+        <tr><td>Suma</td><td>Pasa por el cable y el interruptor USB de la Pi</td><td class="t-ok">3 A de la Pi + 0.59 A = 3.6 A de 5.5 A ✓</td></tr>
+        <tr><td>Voltaje en el jack</td><td>Pololu menos el cable de la Pi menos su interruptor USB</td><td class="t-ok">Pololu menos ~0.01 V ✓</td></tr>
+        <tr><td>Si se pasa</td><td class="t-bad">Se cortan los 4 USB juntos, con la memoria de la base adentro ✗</td><td class="t-ok">Quedan ~1.9 A de sobra en el Pololu ✓</td></tr>
+        <tr><td>Qué falta</td><td>Cable USB-A → plug 5.5 × 2.1</td><td>Plug 5.5 × 2.1 con bornera; el par sale del cable de 18 AWG del BOM</td></tr>
+      </table>
+    </div>
+    <p>Con (b), la pantalla no necesita <code>usb_max_current_enable=1</code>. Si lo activas por otras cosas en los USB, va en el <code>config.txt</code>
+    de la microSD de la moto, no como <code>PSU_MAX_CURRENT</code> en la EEPROM: la EEPROM es de la placa y regresaría con ella al ISIC, donde le haría creer a la Pi que tiene 5 A sin negociarlo.</p>
+
+    <div class="caja">
+      <h3 class="t-bad">El margen de voltaje es justo</h3>
+      <p>Newhaven pide <b>5.0 V mínimo</b> en el jack (hoja de producto; su guía dice 5–7.5 V). El Pololu da 5.0 V ±4 %: en el peor caso, 4.80 V.
+      Adentro, el diodo D10 se come ~0.4 V y el regulador de 3.3 V necesita ~1.1 V de sobra (dato típico del AZ1117 a 1 A, menos con poca carga).
+      Con 4.80 V en el jack quedan ~4.4 V para un regulador que necesita ~4.4 V: por eso el mínimo es 5.0. Es mi lectura del esquemático, no un dato de Newhaven.</p>
+      <ul style="margin:0">
+        <li><b>Mide el jack con la pantalla prendida:</b> 5.0 V o más ✓. Con un cable de 18 AWG de un metro de ida y vuelta, la caída es de ~0.01 V; el cable no es el problema.</li>
+        <li><b>Si da menos de 5.0 V</b> y ves la imagen con parpadeos o rayas: un segundo convertidor solo para la pantalla, <b>Pololu D36V50F6</b> (#4092, 6 V, misma familia),
+        con su entrada en el mismo punto protegido por el TVS. A 6 V la pantalla queda a la mitad de su rango y gasta menos (420 mA a 7 V, según Newhaven).
+        <span class="pend">por confirmar</span> que haga falta.</li>
+      </ul>
+    </div>
+    <p class="why">La Pi 5 marca bajo voltaje abajo de 4.63 V ±5 % (Raspberry Pi), o sea que su umbral puede quedar hasta en 4.86 V.
+    Con el Pololu en 4.80 V no habría margen ni para la Pi. Ese punto es de la hoja <a href="1-alimentacion.html">Alimentación</a>; aquí cuenta porque comparten convertidor.</p>
+  </div>
+</div>
+
+<!-- ======================================================= -->
+<h2>3 · Configuración en la microSD de la moto</h2>
+
+<div class="cols">
+  <div>
+    <p><b>Para la pantalla, el <code>config.txt</code> no lleva nada.</b> Trae EDID: la Pi lee 800 × 480 y lo pone sola. Primero compruébalo:</p>
+<pre>cat /sys/class/drm/card*-HDMI-A-1/status   # connected
+head -1 /sys/class/drm/card*-HDMI-A-1/modes  # 800x480</pre>
+    <p><b>Solo si no sale 800x480</b>, agrega esto <b>al final de la única línea</b> de <code>/boot/firmware/cmdline.txt</code>, separado con un espacio:</p>
+<pre>video=HDMI-A-1:800x480M@60</pre>
+    <p class="why">Es la forma que documenta Raspberry Pi para el modo de video con KMS: <code>video=&lt;salida&gt;:&lt;ancho&gt;x&lt;alto&gt;M@&lt;Hz&gt;</code>, y HDMI-A-1 es el puerto HDMI0.
+    <code>cmdline.txt</code> es una sola línea: si la partes en dos, la Pi no arranca bien. No lo he probado en esta pantalla.</p>
+    <div class="caja">
+      <h3 class="t-bad">No copies la receta de la guía de Newhaven</h3>
+      <p style="margin:0">Su guía pide <code>hdmi_group=2</code>, <code>hdmi_mode=87</code> y <code>hdmi_cvt=800 480 60 6 0 0 0</code>.
+      Raspberry Pi dice que esas opciones «no funcionan con Raspberry Pi OS Bookworm ni posteriores». No rompen nada, pero tampoco hacen nada.</p>
+    </div>
+  </div>
+
+  <div>
+    <p><b>Que no se apague sola.</b> Raspberry Pi OS puede apagar la pantalla tras 10 minutos sin teclado ni ratón. En una rodada larga sin tocar los botones, el tablero se pondría negro.
+    Es <span class="pend">por confirmar</span> si en tu instalación viene activado. Desactívalo:</p>
+<pre>sudo raspi-config
+# 2 Display Options → D2 Screen Blanking → No</pre>
+    <p><b>Pantalla completa:</b> las dos versiones ya la piden. Python usa <code>-fullscreen</code> (<code>analizador.py</code>, clase <code>Dash</code>) y C++ abre una ventana del tamaño del monitor y le quita el borde
+    (<code>InitWindow(0, 0)</code> y <code>ToggleBorderlessWindowed()</code> en <code>ui.cpp</code>). No hay que agregar opciones.</p>
+    <p class="why">Las dos escalan con <code>u = min(ancho/1280, alto/720)</code>. A 800 × 480 da 0.625: todo se ve al 62.5 % del tamaño de las capturas del README.
+    <span class="pend">por confirmar</span> que se lea en la moto; nunca se ha visto a ese tamaño.</p>
+  </div>
+</div>
+
+<!-- ======================================================= -->
+<h2>4 · Cómo entra el HDMI a la caja</h2>
+
+<div class="cols">
+  <div>
+    <div class="esq">
+      <svg viewBox="0 0 400 270" role="img" aria-label="Comparación a escala: la boca de un PG7, de 6 milímetros, contra el metal del micro-HDMI, de 5.83 por 2.2 milímetros, que no cabe con su funda; a la derecha, un corte M25 de 25 milímetros por el que sí pasa el conector HDMI tipo A, de 13.9 por 4.45 milímetros">
+        <text x="200" y="16" text-anchor="middle" font-size="12" class="s">metal de cada conector a escala · funda ilustrativa</text>
+        <!-- PG7 -->
+        <circle cx="80" cy="120" r="21" fill="none" stroke="currentColor" stroke-width="1.6"/>
+        <rect x="59.6" y="112.3" width="40.8" height="15.4" fill="#6b3fa0" fill-opacity="0.2" stroke="#6b3fa0" stroke-width="1.4"/>
+        <rect x="44" y="102" width="72" height="36" rx="6" fill="none" stroke="#b3261e" stroke-width="1.4" stroke-dasharray="4 3"/>
+        <text x="80" y="174" text-anchor="middle" font-size="12" font-weight="500">PG7 · Ø 6 mm máx.</text>
+        <text x="80" y="190" text-anchor="middle" font-size="12" class="td">micro-HDMI 5.83 × 2.2</text>
+        <text x="80" y="206" text-anchor="middle" font-size="12" class="tb">con su funda no pasa ✗</text>
+        <text x="80" y="222" text-anchor="middle" font-size="12" class="s">funda: <tspan class="tb">mídela</tspan></text>
+        <!-- M25 -->
+        <circle cx="280" cy="120" r="87.5" fill="none" stroke="currentColor" stroke-width="1.6"/>
+        <rect x="231.35" y="104.4" width="97.3" height="31.2" fill="#6b3fa0" fill-opacity="0.2" stroke="#6b3fa0" stroke-width="1.4"/>
+        <rect x="259.6" y="152.3" width="40.8" height="15.4" fill="#6b3fa0" fill-opacity="0.2" stroke="#6b3fa0" stroke-width="1.4"/>
+        <text x="280" y="96" text-anchor="middle" font-size="12" class="td">HDMI A 13.9 × 4.45</text>
+        <text x="280" y="186" text-anchor="middle" font-size="12" class="td">micro 5.83 × 2.2</text>
+        <text x="280" y="236" text-anchor="middle" font-size="12" font-weight="500">corte M25 · Ø ≈ 25 mm</text>
+        <text x="280" y="252" text-anchor="middle" font-size="12" class="tk">el micro-HDMI pasa holgado ✓</text>
+      </svg>
+    </div>
+    <p class="tiny sub" style="margin-top:6px">Medidas del metal de cada conector (tamaños estándar de HDMI). La funda de plástico que lo rodea es más grande y cambia con cada cable (la punteada es ilustrativa):
+    mídela con el vernier antes de escoger. Lo que no pasa por la boca de un PG7 es la funda; el metal del micro-HDMI ya roza los 6 mm en diagonal.</p>
+  </div>
+
+  <div>
+    <h3>La solución: un prensaestopas partido</h3>
+    <p>Los dos extremos del cable traen el conector moldeado, así que no hay forma de pasar el cable «antes» por un PG7. Un prensaestopas partido se arma alrededor del cable ya hecho:</p>
+    <ul>
+      <li><b>icotek KVT-ER 25</b> (art. 45450): corte M25, cuerpo partido con contratuerca, IP66/IP68 certificado si usas un pasacables de un solo hueco.
+      Se completa con un pasacables <b>KT</b> del diámetro de tu cable: el KT 6 es para 6–7 mm. <span class="pend">por confirmar</span> el número de artículo con el distribuidor y dónde comprarlo en México.</li>
+      <li><b>Pasa el extremo micro-HDMI</b> de afuera hacia adentro por el corte de 25 mm. Es el más chico, y el que va a la Pi dentro de la caja.</li>
+      <li><b>Mide el cable</b> (<span class="pend">por confirmar</span>): el BOM y la ficha del cable no dan su diámetro. Un HDMI de más de 6 mm tampoco sellaría en un PG7, aunque no tuviera conector.</li>
+    </ul>
+    <p class="why">El par de la pantalla sí puede ir por un PG7: el lado del Pololu se suelda después de pasarlo y el plug con bornera se atornilla afuera.
+    Si el cable de 2 vías del BOM resulta plano (dos hilos pegados), en una boca redonda no sella: ponle termofil encima para redondearlo. <span class="pend">por confirmar</span> su forma cuando llegue.</p>
+    <div class="caja">
+      <h3 class="t-bad">La pantalla también necesita su caja</h3>
+      <p style="margin:0">Es un módulo abierto: tarjeta, flex y conectores al aire, sin grado IP en el datasheet. El BOM solo prevé una «base de pantalla» impresa.
+      Hace falta una carcasa cerrada en PETG o ASA, con empaque contra el vidrio y una entrada sellada para el HDMI y el par de 5 V, con visera.
+      <span class="pend">por confirmar</span> el diseño.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ======================================================= -->
+<h2>Dudas</h2>
+
+<div class="dudas">
+
+  <div class="co co-ok">
+    <div class="co-t">«¿La pantalla se alimenta por el HDMI?»</div>
+    <div class="co-b">
+      <p><b>No.</b> El HDMI trae un solo pin de corriente, el 18: +5 V que la Pi pone para que la pantalla diga quién es. Da unos 50 mA (Raspberry Pi), y en esta tarjeta
+      solo alimenta la memoria del EDID y la señal de «conectado» (esquemático de Newhaven). La pantalla gasta 560–590 mA, más de diez veces eso, y los toma del jack CN3.</p>
+      <p><b>Si falta el jack,</b> la pantalla se queda negra y sin LED verde, pero la Pi la detecta igual y lee su EDID, porque esa memoria vive del pin 18.
+      «La Pi ve la pantalla» no prueba que la pantalla tenga corriente; el LED verde sí.</p>
+      <p style="margin:0">El micro-USB tampoco la alimenta: es solo para el toque, y en esta versión no va puesta la resistencia que uniría su 5 V con la tarjeta.</p>
+    </div>
+  </div>
+
+  <div class="co co-pwr">
+    <div class="co-t">«¿Se ve al sol?»</div>
+    <div class="co-b">
+      <p><b>Es de las que sí, con matices.</b> Da 900 nits contra 250 del monitor oficial de Raspberry Pi: 3.6 veces más luz. Newhaven la anuncia como visible a pleno sol,
+      y como es IPS, se ve igual desde cualquier ángulo. El tablero ya usa fondo negro y colores base, que es lo que mejor contrasta.</p>
+      <ul>
+        <li><b>El enemigo es el reflejo.</b> Trae vidrio encima, y el datasheet no dice que tenga antirreflejante (<span class="pend">por confirmar</span>).
+        Inclínala para que no refleje el cielo y dale una visera en la carcasa.</li>
+        <li><b>Siempre está al 100 %.</b> Con CN4 suelto, la luz prende a tope en cuanto hay video. De día ayuda; de noche puede deslumbrar.
+        Atenuarla sería trabajo futuro: PWM de 5–100 kHz a CN4, con un transistor, nunca directo a un GPIO.</li>
+        <li><b>Calor:</b> funciona de −20 a 70 °C. Una carcasa oscura al sol se calienta más que el aire: mídela un día de calor.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="co co-bad">
+    <div class="co-t">«¿Qué pasa si la pantalla pide más corriente de la que da el USB de la Pi?»</div>
+    <div class="co-b">
+      <p>Sin USB-PD, la Pi 5 deja <b>600 mA para los cuatro USB juntos</b> (Raspberry Pi). La pantalla a brillo máximo pide 590 mA: quedan 10 mA para todo lo demás.
+      En cuanto conectes la memoria USB de la base de datos o el OBDLink EX del plan B, el limitador de la Pi corta los puertos. Se apagan juntas la pantalla y la memoria,
+      a media escritura, y así es como se daña el sistema de archivos de la memoria.</p>
+      <p>Con <code>usb_max_current_enable=1</code> el límite sube a 1.6 A y sí cabría, pero esos 0.59 A pasarían por el cable y el interruptor USB de la Pi,
+      que ya trabaja cerca de su umbral de bajo voltaje. Raspberry Pi hace lo mismo con su monitor oficial: alimentado de un USB de la Pi, lo limita al 60 % de brillo.</p>
+      <p style="margin:0"><b>Por eso la pantalla va directo al Pololu</b>, con su propio par: no cuenta en el límite de USB y no le quita voltaje a la Pi.</p>
+    </div>
+  </div>
+
+  <div class="co co-ok">
+    <div class="co-t">«¿Conecto el toque?»</div>
+    <div class="co-b">
+      <p><b>No hace falta.</b> La app no escucha ratón ni toque: no hay manejo de clics en <code>analizador.py</code> ni en <code>cpp/src</code>, todo va con los botones.
+      Dejarlo suelto te ahorra un cable que pasar por la caja y corriente de los USB, y evita que las gotas de lluvia sobre el vidrio se vuelvan toques fantasma.</p>
+      <p style="margin:0">El controlador del toque sí prende, porque vive de los 3.3 V de la tarjeta, y el LED rojo se enciende cuando algo toca el vidrio. No pasa nada: sin el USB, ese toque no le llega a nadie.</p>
+    </div>
+  </div>
+
+  <div class="co co-bad">
+    <div class="co-t">«¿Qué pasa si algo se suelta a media rodada?»</div>
+    <div class="co-b">
+      <ul style="margin:0">
+        <li><b>Al arrancar,</b> no importa qué prende primero: la Pi lee el EDID por el pin 18 aunque la pantalla todavía no tenga corriente.
+        Sin video, la luz de fondo se queda apagada, así que no hay destello blanco.</li>
+        <li><b>Se zafa el plug DC:</b> pantalla negra. La Pi sigue leyendo y guardando, y el visor del celular sigue funcionando.</li>
+        <li><b>Se zafa solo el negativo:</b> la pantalla sigue prendida, porque regresa por la tierra del HDMI. Funciona, pero 0.6 A por los hilos delgados del HDMI pueden meter ruido.
+        Si la imagen brinca, revisa ese hilo.</li>
+        <li><b>Se zafa el HDMI:</b> la luz de fondo se apaga sola. Al reconectarlo, <span class="pend">por confirmar</span> que la imagen regrese sin reiniciar.</li>
+        <li><b>Polaridad invertida en el plug:</b> el diodo D10 (30 V en inverso) la bloquea. La pantalla no prende, pero no se daña.</li>
+        <li><b>Le llegan 12–14.7 V</b> (tomaste la entrada del Pololu en vez de VOUT): pasa del máximo de 7 V. Para eso es el paso 1 de abajo.</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+
+<!-- ======================================================= -->
+<h2>Antes de energizar</h2>
+<ol>
+  <li><b>Sin la pantalla, llave en ON:</b> mide en el plug DC: punta roja dentro del hueco (contacto interior, +) y negra en el barril de afuera (−). Debe marcar <b>5.0–5.2 V</b> ✓.
+  Si sale negativo, invertiste el par. Si marca 12–14 V, tomaste VIN en vez de VOUT: <b>no conectes la pantalla</b>.</li>
+  <li><b>El plug debe entrar apretado.</b> Si baila, es de 2.5 mm y no de 2.1: con la vibración hará falso contacto.</li>
+  <li><b>Pantalla con corriente y sin HDMI:</b> LED verde prendido y pantalla negra. Así debe ser: sin video, la luz de fondo no prende.</li>
+  <li><b>HDMI en HDMI0 y la Pi arrancada:</b> LED azul prendido, y en la Pi:
+<pre style="margin:6px 0 0">cat /sys/class/drm/card*-HDMI-A-1/status   # connected
+head -1 /sys/class/drm/card*-HDMI-A-1/modes  # 800x480</pre></li>
+  <li><b>Con la app corriendo</b> (la luz de fondo ya va al máximo) y la Pi trabajando un rato:
+<pre style="margin:6px 0 0">vcgencmd get_throttled         # 0x0 = nunca hubo bajo voltaje
+vcgencmd pmic_read_adc | grep EXT5V   # el 5 V que le llega a la Pi</pre>
+  Al mismo tiempo, mide el jack de la pantalla con el multímetro: <b>5.0 V o más</b> ✓. Si da menos, revisa la sección 2.</li>
+  <li><b>Prueba de sacudida:</b> con la app corriendo, mueve el HDMI y el plug DC. La imagen no debe parpadear. Amarra los dos cables cerca de sus conectores.</li>
+  <li><b>Desconecta el HDMI a media corrida y reconéctalo.</b> El visor web debe seguir recibiendo datos; anota si la imagen regresa sola.</li>
+</ol>
+
+<h2>Pendiente de confirmar</h2>
+<ol>
+  <li>El voltaje real del Pololu en el jack, con la pantalla prendida (≥ 5.0 V). Si no, el D36V50F6.</li>
+  <li>Que la Pi 5 lea 800 × 480 del EDID, y si la imagen regresa sola al reconectar el HDMI.</li>
+  <li>El diámetro del cable HDMI y el tamaño de la funda del micro-HDMI, para escoger el pasacables KT; dónde comprar el KVT-ER en México.</li>
+  <li>Si el cable de 2 vías de 18 AWG es redondo o plano.</li>
+  <li>Si el vidrio trae antirreflejante y si el tablero se lee al 62.5 % de escala.</li>
+  <li>Si el apagado de pantalla (Screen Blanking) viene activado.</li>
+  <li>El orden PWM/GND de CN4 y el lugar de los LEDs, con la serigrafía.</li>
+  <li>El diseño de la carcasa sellada de la pantalla.</li>
+</ol>
+
+<h2>Lo que esta hoja no verificó</h2>
+<ul>
+  <li>Nada se midió. El EDID lo decodifiqué del arreglo que publica Newhaven, no de una pantalla real.</li>
+  <li>La caída del diodo D10 (~0.4 V a 1 A) y la del regulador AZ1117 (~1.1 V típ. a 1 A) salen de resúmenes de sus hojas de datos, no de las hojas completas.
+  Que eso explique el mínimo de 5.0 V es mi deducción.</li>
+  <li>El número de artículo 45450 del KVT-ER 25 y el rango del KT 6 salen de una búsqueda; los PDF de icotek no se pudieron descargar.</li>
+  <li>Que <code>video=HDMI-A-1:800x480M@60</code> funcione con esta pantalla en la Pi 5: está documentado, no probado.</li>
+  <li>Si al arrancar sin USB-PD la Pi 5 muestra un aviso de fuente encima del tablero.</li>
+  <li>La corriente máxima del Pololu con 12–14.7 V de entrada y caja cerrada (Pololu dice que depende de la entrada y la temperatura).</li>
+</ul>
+
+<h2>Fuentes</h2>
+<ul class="fuentes">
+  <li>Newhaven NHD-5.0-HDMI-N-RSXP-CTU: <a href="https://newhavendisplay.com/content/specs/NHD-5.0-HDMI-N-RSXP-CTU.pdf">hoja de producto rev. 5</a>
+  (plano mecánico; esquemático: CN3 → D10 MSS1P3L → VIN, AZ1117 de 3.3 V, TPS61165 con R26 de 47.5 kΩ, HDMI pin 18 → EEPROM y HPD con 10 kΩ, R25 y R32–R35 sin poner en CTU;
+  5.0–7.0 V, 560/590 mA a 5 V, 420/450 mA a 7 V; PWM 2.5–5.5 V y 5–100 kHz; −20 a 70 °C; arreglo del EDID);
+  <a href="https://newhavendisplay.com/content/userguide/NHD-5.0-HDMI-N_User_Guide.pdf">guía de usuario rev. 1.4</a> (CN1–CN4, jack 2.1 × 5.5 mm centro +, 5–7.5 V, «no escala»);
+  <a href="https://newhavendisplay.com/5-0-inch-ips-capacitive-hdmi-tft-module/">página del producto</a> (900 nits, «visible even in direct sunlight»).
+  Receptor <a href="https://www.ti.com/lit/ds/slds190a/slds190a.pdf">TI TFP401A</a>.</li>
+  <li>Raspberry Pi: <a href="https://github.com/raspberrypi/documentation/blob/master/documentation/asciidoc/computers/raspberry-pi/power-supplies.adoc">fuentes</a>
+  (Pi 5: 5 A; 1.6 A a los USB o 600 mA con fuente de 3 A; HDMI 50 mA; bajo voltaje en 4.63 V ±5 %; <code>pmic_read_adc</code>);
+  <a href="https://github.com/raspberrypi/documentation/blob/master/documentation/asciidoc/computers/raspberry-pi/usb-bus-on-raspberry-pi.adoc">bus USB</a>;
+  <a href="https://github.com/raspberrypi/documentation/blob/master/documentation/asciidoc/computers/configuration/reference.adoc"><code>usb_max_current_enable</code> en config.txt</a>;
+  <a href="https://github.com/raspberrypi/documentation/blob/master/documentation/asciidoc/computers/raspberry-pi/eeprom-bootloader.adoc"><code>PSU_MAX_CURRENT</code></a> (EEPROM, salta la negociación);
+  <a href="https://github.com/raspberrypi/documentation/blob/master/documentation/asciidoc/computers/configuration/audio-display.adoc">pantalla</a>
+  (<code>video=</code> en cmdline.txt; HDMI-A-1 = HDMI0; Screen Blanking a los 10 min);
+  <a href="https://github.com/raspberrypi/documentation/blob/master/documentation/asciidoc/computers/legacy_config_txt/legacy.adoc">opciones heredadas</a> (no funcionan desde Bookworm);
+  <a href="https://github.com/raspberrypi/documentation/blob/master/documentation/asciidoc/computers/getting-started/setting-up.adoc">primeros pasos</a> (monitor principal en HDMI0);
+  <a href="https://datasheets.raspberrypi.com/rpi5/raspberry-pi-5-product-brief.pdf">ficha de la Pi 5</a> (5 V 5 A con USB-PD, 0–70 °C) y
+  <a href="https://datasheets.raspberrypi.com/rpi5/raspberry-pi-5-mechanical-drawing.pdf">plano mecánico</a> (USB-C a 11.2 mm, micro-HDMI a 25.8 y 39.2 mm);
+  <a href="https://pip-assets.raspberrypi.com/categories/1118-raspberry-pi-monitor/documents/RP-008219-DS-4-monitor-product-brief.pdf">monitor oficial</a> (250 nits; 60 % de brillo desde un USB de la Pi).</li>
+  <li>Pololu <a href="https://www.pololu.com/product/4091">D36V50F5</a> (5 V ±4 %, 5.5 A, pines VOUT y GND dobles de 3 A cada uno) y
+  <a href="https://www.pololu.com/product/4092">D36V50F6</a> (6 V).</li>
+  <li>icotek <a href="https://www.icotek.com/en/products/cable-glands/kvt-er">KVT-ER</a> (partido, M25 a M63, IP66/IP68 con pasacables de un hueco).
+  Tamaños de conector HDMI (A: 13.9 × 4.45 mm; D: 5.83 × 2.20 mm) y pin 18 de hasta 50 mA: <a href="https://en.wikipedia.org/wiki/HDMI">HDMI, Wikipedia</a>.
+  Vishay <a href="https://www.vishay.com/en/product/89020/">MSS1P3L</a>; Diodes <a href="https://www.diodes.com/part/view/AZ1117E">AZ1117E</a>.</li>
+  <li>Repo: <code>BOM.csv</code> (pantalla, cable micro-HDMI → HDMI de 1 m, PG7 de 3–6 mm, cable de 18 AWG, Pi 5 del ISIC);
+  <code>python/analizador.py</code> (<code>-fullscreen</code>, <code>BG = "#000000"</code>, escala <code>min(W/1280, H/720)</code>);
+  <code>cpp/src/ui.cpp</code> (<code>InitWindow(0, 0)</code>, <code>ToggleBorderlessWindowed()</code>, misma escala); <a href="../conexion.html">hoja general</a>.
+  Manual de servicio: cajas de fusibles p. 587; voltaje de carga 14.3–14.7 V p. 494.</li>
+</ul>
+
+</div>
