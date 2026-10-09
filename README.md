@@ -285,7 +285,8 @@ Todo se configura con variables de entorno, con los mismos nombres en las dos ve
 |---|---|---|
 | `OBD2_SIM` | `0` | `1` = datos simulados |
 | `OBD2_IP` / `OBD2_PORT` | `192.168.0.10` / `35000` | dirección del ELM327 |
-| `OBD2_WINDOWED` | `0` | `1` = ventana de 1280×720 en vez de pantalla completa |
+| `OBD2_WINDOWED` | `0` | `1` = ventana en vez de pantalla completa |
+| `OBD2_SIZE` | `1280x720` | tamaño de esa ventana, `ANCHOxALTO`; `1024x600` = la pantalla de 7" de la moto. En pantalla completa no cuenta: toma el tamaño de la pantalla |
 | `OBD2_HEADLESS` | `0` | `1` = sin pantalla: solo lee, guarda y sirve la web |
 | `OBD2_FPS` | `12` Python · `30` C++ | cuadros por segundo de la pantalla |
 | `OBD2_DB` | `~/obd2_logs/telemetria.db` | archivo SQLite |
