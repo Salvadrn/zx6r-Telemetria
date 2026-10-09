@@ -251,16 +251,17 @@ qué configurar si no sale a 800 × 480 y cómo meter el HDMI a la caja sin perd
     <div class="fila"><div class="chip c-pwr"></div><div class="nom t-pwr">CN3 · centro (+)</div>
       <div><div class="dst">→ VOUT del Pololu, con un par aparte del de la Pi</div>
       <div class="why">Es la única entrada de corriente: 5.0–7.0 V, 560 mA típ. y 590 mA máx. a 5 V. Adentro pasa por un diodo Schottky (D10, MSS1P3L) que la protege si inviertes la polaridad.
-      <span class="t-bad">Nunca de la entrada de 12 V del Pololu: la pantalla aguanta 7 V.</span></div></div></div>
+      <span class="t-bad">Nunca de VIN ni de VRP del Pololu: los dos traen 12–14.7 V y la pantalla aguanta 7 V. En el Pololu, la fila de VIN queda justo debajo de las de GND.</span></div></div></div>
     <div class="fila"><div class="chip c-gnd"></div><div class="nom">CN3 · camisa (−)</div>
       <div><div class="dst">→ GND del Pololu, en el mismo par</div>
       <div class="why">Del agujero GND que está junto a VOUT. Así los 0.59 A de la pantalla regresan por su propio hilo y no por el cable de la Pi ni por el HDMI.</div></div></div>
     <div class="fila"><div class="chip c-off"></div><div class="nom t-off">CN4 · PWM</div>
       <div><div class="dst t-off">sin conectar</div>
-      <div class="why">Suelto, una resistencia de 47.5 kΩ (R26) lo jala a la entrada de la pantalla (~4.6 V): brillo máximo cuando hay video y apagado cuando no. No lo pongas directo a un GPIO: le subiría ese voltaje a un pin de 3.3 V.</div></div></div>
+      <div class="why">Suelto, una resistencia de 47.5 kΩ (R26) lo jala a la entrada de la pantalla (~4.6 V): brillo máximo cuando hay video. Sin video, el diodo D8 lo baja con la señal ACTIVE del TFP401A para apagar la luz;
+      eso es lectura del esquemático, Newhaven no lo describe: <span class="pend">por confirmar</span>. No lo pongas directo a un GPIO: le subiría ese voltaje a un pin de 3.3 V.</div></div></div>
     <div class="fila"><div class="chip c-off"></div><div class="nom t-off">CN4 · GND</div>
       <div><div class="dst t-off">sin conectar</div>
-      <div class="why">Solo sirve de referencia si algún día se atenúa el brillo con PWM (5–100 kHz, 2.5–5.5 V). La serigrafía dice cuál es PWM y cuál GND: <span class="pend">por confirmar</span> el orden en tu pieza.</div></div></div>
+      <div class="why">Solo sirve de referencia si algún día se atenúa el brillo con PWM (5–100 kHz, 2.5–5.5 V). En el esquemático, el pin 1 es PWM y el 2 es GND; cuál es el pin 1 en la tarjeta lo dice la serigrafía: <span class="pend">por confirmar</span> en tu pieza.</div></div></div>
     <div class="fila"><div class="chip c-bad"></div><div class="nom t-bad">Flex del panel</div>
       <div><div class="dst t-bad">→ no se toca</div>
       <div class="why">Newhaven advierte que doblar o forzar los flex del borde de abajo daña la imagen o el toque. El plug DC entra justo al lado: conéctalo sin palanquear.</div></div></div>
@@ -275,7 +276,8 @@ qué configurar si no sale a 800 × 480 y cómo meter el HDMI a la caja sin perd
   <div class="lista">
     <div class="caja">
       <h3>Del lado de la Pi 5: el borde de los conectores</h3>
-      <p class="why" style="margin-bottom:6px">Pi vista desde arriba, con el header de 40 pines arriba. Distancias desde la orilla izquierda, del plano oficial de la Pi 5.</p>
+      <p class="why" style="margin-bottom:6px">Pi vista desde arriba, con el header de 40 pines arriba. Distancias desde la orilla izquierda, del plano oficial de la Pi 5.
+      El plano no dice cuál micro-HDMI es HDMI0: que sea el de junto al USB-C sale de fotos, no de Raspberry Pi (<span class="pend">por confirmar</span> en la serigrafía).</p>
       <div class="esq">
         <svg viewBox="0 0 400 170" role="img" aria-label="Borde inferior de la Raspberry Pi 5: USB-C de alimentación a 11.2 milímetros, micro-HDMI HDMI0 a 25.8 y micro-HDMI HDMI1 a 39.2; la pantalla va en HDMI0">
           <polyline points="300,14 30,14 30,106 370,106" fill="none" stroke="currentColor" stroke-width="1.4"/>
@@ -395,8 +397,8 @@ qué configurar si no sale a 800 × 480 y cómo meter el HDMI a la caja sin perd
         <text x="98" y="264" font-size="12" class="s">0.59 A · −0.01 V</text>
         <!-- pantalla -->
         <rect class="box" x="110" y="280" width="282" height="262" rx="6" stroke-width="1.8"/>
-        <text x="118" y="298" font-size="12.5" font-weight="500">Newhaven NHD-5.0-HDMI-N-RSXP-CTU</text>
-        <text x="118" y="314" font-size="12" class="s">afuera, en su carcasa</text>
+        <text x="118" y="298" font-size="12.5" font-weight="500">Pantalla, fuera de la caja</text>
+        <text x="118" y="314" font-size="12" class="s">NHD-5.0-HDMI-N-RSXP-CTU</text>
         <!-- video -->
         <rect class="box" x="222" y="330" width="166" height="40" rx="4"/>
         <text x="305" y="346" text-anchor="middle" font-size="12">CN1 → TFP401A (video)</text>
@@ -434,6 +436,8 @@ qué configurar si no sale a 800 × 480 y cómo meter el HDMI a la caja sin perd
       <span><i style="border-color:var(--gnd); border-top-style:dashed"></i>tierra por la malla del HDMI</span>
     </div>
     <p class="tiny sub" style="margin-top:6px">Los dos pares salen de los agujeros dobles de VOUT y GND del Pololu (Pololu: 3 A por pin, 6 A por par), soldados directo.
+    Esos agujeros miden 1.02 mm (plano de Pololu) y un 18 AWG multifilar suele medir más de cobre: <span class="pend">por confirmar</span> que entre;
+    para los 0.59 A de la pantalla puedes recortar unos hilos de la punta o usar 20 AWG en ese tramo.
     El punto en GND es el nodo: batería, Pi y pantalla se unen ahí. No hay cruces de cables en el dibujo: cada unión lleva su punto.</p>
   </div>
 
@@ -459,7 +463,7 @@ qué configurar si no sale a 800 × 480 y cómo meter el HDMI a la caja sin perd
       Adentro, el diodo D10 se come ~0.4 V y el regulador de 3.3 V necesita ~1.1 V de sobra (dato típico del AZ1117 a 1 A, menos con poca carga).
       Con 4.80 V en el jack quedan ~4.4 V para un regulador que necesita ~4.4 V: por eso el mínimo es 5.0. Es mi lectura del esquemático, no un dato de Newhaven.</p>
       <ul style="margin:0">
-        <li><b>Mide el jack con la pantalla prendida:</b> 5.0 V o más ✓. Con un cable de 18 AWG de un metro de ida y vuelta, la caída es de ~0.01 V; el cable no es el problema.</li>
+        <li><b>Mide el jack con la pantalla prendida:</b> 5.0 V o más ✓. Con 50 cm de par de 18 AWG (1 m de cobre entre ida y vuelta, ~21 mΩ) la caída es de ~0.01 V, y con 1 m de par, ~0.03 V; el cable no es el problema.</li>
         <li><b>Si da menos de 5.0 V</b> y ves la imagen con parpadeos o rayas: un segundo convertidor solo para la pantalla, <b>Pololu D36V50F6</b> (#4092, 6 V, misma familia),
         con su entrada en el mismo punto protegido por el TVS. A 6 V la pantalla queda a la mitad de su rango y gasta menos (420 mA a 7 V, según Newhaven).
         <span class="pend">por confirmar</span> que haga falta.</li>
@@ -478,10 +482,11 @@ qué configurar si no sale a 800 × 480 y cómo meter el HDMI a la caja sin perd
     <p><b>Para la pantalla, el <code>config.txt</code> no lleva nada.</b> Trae EDID: la Pi lee 800 × 480 y lo pone sola. Primero compruébalo:</p>
 <pre>cat /sys/class/drm/card*-HDMI-A-1/status   # connected
 head -1 /sys/class/drm/card*-HDMI-A-1/modes  # 800x480</pre>
-    <p><b>Solo si no sale 800x480</b>, agrega esto <b>al final de la única línea</b> de <code>/boot/firmware/cmdline.txt</code>, separado con un espacio:</p>
+    <p><b>Solo si no sale 800x480.</b> La Pi tiene Raspberry Pi OS con escritorio (README), y para escritorio Raspberry Pi documenta el cambio en
+    <b>Control Centre → Screens → Resolution</b>. Si ahí no aparece 800 × 480 (EDID ilegible), el respaldo es forzar el modo con KMS: agrega esto <b>al final de la única línea</b> de <code>/boot/firmware/cmdline.txt</code>, separado con un espacio:</p>
 <pre>video=HDMI-A-1:800x480M@60</pre>
-    <p class="why">Es la forma que documenta Raspberry Pi para el modo de video con KMS: <code>video=&lt;salida&gt;:&lt;ancho&gt;x&lt;alto&gt;M@&lt;Hz&gt;</code>, y HDMI-A-1 es el puerto HDMI0.
-    <code>cmdline.txt</code> es una sola línea: si la partes en dos, la Pi no arranca bien. No lo he probado en esta pantalla.</p>
+    <p class="why">Formato documentado por Raspberry Pi: <code>video=&lt;salida&gt;:&lt;ancho&gt;x&lt;alto&gt;M@&lt;Hz&gt;</code>, y HDMI-A-1 es el puerto HDMI0. Ellos lo documentan para consola (sin escritorio):
+    <span class="pend">por confirmar</span> que el escritorio lo respete. <code>cmdline.txt</code> es una sola línea: si la partes en dos, la Pi no arranca bien. No lo he probado en esta pantalla.</p>
     <div class="caja">
       <h3 class="t-bad">No copies la receta de la guía de Newhaven</h3>
       <p style="margin:0">Su guía pide <code>hdmi_group=2</code>, <code>hdmi_mode=87</code> y <code>hdmi_cvt=800 480 60 6 0 0 0</code>.
@@ -528,7 +533,8 @@ head -1 /sys/class/drm/card*-HDMI-A-1/modes  # 800x480</pre>
       </svg>
     </div>
     <p class="tiny sub" style="margin-top:6px">Medidas del metal de cada conector (tamaños estándar de HDMI). La funda de plástico que lo rodea es más grande y cambia con cada cable (la punteada es ilustrativa):
-    mídela con el vernier antes de escoger. Lo que no pasa por la boca de un PG7 es la funda; el metal del micro-HDMI ya roza los 6 mm en diagonal.</p>
+    mídela con el vernier antes de escoger. Ni siquiera el metal pasa: 5.83 × 2.20 mm da 6.2 mm en diagonal, más que los 6 mm del PG7
+    (y la ficha del mismo artículo de Wikipedia da 6.4 × 2.8 mm para el micro-HDMI).</p>
   </div>
 
   <div>
@@ -608,13 +614,13 @@ head -1 /sys/class/drm/card*-HDMI-A-1/modes  # 800x480</pre>
     <div class="co-b">
       <ul style="margin:0">
         <li><b>Al arrancar,</b> no importa qué prende primero: la Pi lee el EDID por el pin 18 aunque la pantalla todavía no tenga corriente.
-        Sin video, la luz de fondo se queda apagada, así que no hay destello blanco.</li>
+        Según el esquemático, sin video la luz de fondo se queda apagada y no hay destello blanco (<span class="pend">por confirmar</span>).</li>
         <li><b>Se zafa el plug DC:</b> pantalla negra. La Pi sigue leyendo y guardando, y el visor del celular sigue funcionando.</li>
         <li><b>Se zafa solo el negativo:</b> la pantalla sigue prendida, porque regresa por la tierra del HDMI. Funciona, pero 0.6 A por los hilos delgados del HDMI pueden meter ruido.
         Si la imagen brinca, revisa ese hilo.</li>
-        <li><b>Se zafa el HDMI:</b> la luz de fondo se apaga sola. Al reconectarlo, <span class="pend">por confirmar</span> que la imagen regrese sin reiniciar.</li>
+        <li><b>Se zafa el HDMI:</b> la pantalla se queda sin imagen; según el esquemático, la luz de fondo se apaga sola. Al reconectarlo, <span class="pend">por confirmar</span> que la imagen regrese sin reiniciar.</li>
         <li><b>Polaridad invertida en el plug:</b> el diodo D10 (30 V en inverso) la bloquea. La pantalla no prende, pero no se daña.</li>
-        <li><b>Le llegan 12–14.7 V</b> (tomaste la entrada del Pololu en vez de VOUT): pasa del máximo de 7 V. Para eso es el paso 1 de abajo.</li>
+        <li><b>Le llegan 12–14.7 V</b> (tomaste VIN o VRP del Pololu en vez de VOUT): pasa del máximo de 7 V. Para eso es el paso 1 de abajo.</li>
       </ul>
     </div>
   </div>
@@ -624,10 +630,12 @@ head -1 /sys/class/drm/card*-HDMI-A-1/modes  # 800x480</pre>
 <!-- ======================================================= -->
 <h2>Antes de energizar</h2>
 <ol>
-  <li><b>Sin la pantalla, llave en ON:</b> mide en el plug DC: punta roja dentro del hueco (contacto interior, +) y negra en el barril de afuera (−). Debe marcar <b>5.0–5.2 V</b> ✓.
-  Si sale negativo, invertiste el par. Si marca 12–14 V, tomaste VIN en vez de VOUT: <b>no conectes la pantalla</b>.</li>
+  <li><b>Sin la pantalla, llave en ON:</b> mide en el plug DC: punta roja dentro del hueco (contacto interior, +) y negra en el barril de afuera (−). El Pololu da <b>4.80–5.20 V</b>; para la pantalla, <b>5.0 V o más</b> ✓.
+  Entre 4.80 y 4.99 V no se daña, pero queda abajo de su mínimo: revisa la sección 2 antes de seguir.
+  Si sale negativo, invertiste el par. Si marca 12–14 V, tomaste VIN o VRP en vez de VOUT: <b>no conectes la pantalla</b>.</li>
   <li><b>El plug debe entrar apretado.</b> Si baila, es de 2.5 mm y no de 2.1: con la vibración hará falso contacto.</li>
-  <li><b>Pantalla con corriente y sin HDMI:</b> LED verde prendido y pantalla negra. Así debe ser: sin video, la luz de fondo no prende.</li>
+  <li><b>Pantalla con corriente y sin HDMI:</b> LED verde prendido. Según el esquemático, la luz de fondo no prende sin video (<span class="pend">por confirmar</span>);
+  si se ve gris o blanca sin imagen, no es falla de tu cableado: anótalo.</li>
   <li><b>HDMI en HDMI0 y la Pi arrancada:</b> LED azul prendido, y en la Pi:
 <pre style="margin:6px 0 0">cat /sys/class/drm/card*-HDMI-A-1/status   # connected
 head -1 /sys/class/drm/card*-HDMI-A-1/modes  # 800x480</pre></li>
@@ -649,6 +657,9 @@ vcgencmd pmic_read_adc | grep EXT5V   # el 5 V que le llega a la Pi</pre>
   <li>Si el apagado de pantalla (Screen Blanking) viene activado.</li>
   <li>El orden PWM/GND de CN4 y el lugar de los LEDs, con la serigrafía.</li>
   <li>El diseño de la carcasa sellada de la pantalla.</li>
+  <li>Que el marco del KVT-ER 25 quepa en la pared de la Hammond: la base mide 45 mm de alto (plano de Hammond) y el corte M25 es de 25 mm, sin contar el marco.</li>
+  <li>Que el 18 AWG del BOM entre en los agujeros de 1.02 mm del Pololu.</li>
+  <li>Que la luz de fondo se apague sola sin video, como sugiere el esquemático.</li>
 </ol>
 
 <h2>Lo que esta hoja no verificó</h2>
@@ -657,8 +668,9 @@ vcgencmd pmic_read_adc | grep EXT5V   # el 5 V que le llega a la Pi</pre>
   <li>La caída del diodo D10 (~0.4 V a 1 A) y la del regulador AZ1117 (~1.1 V típ. a 1 A) salen de resúmenes de sus hojas de datos, no de las hojas completas.
   Que eso explique el mínimo de 5.0 V es mi deducción.</li>
   <li>El número de artículo 45450 del KVT-ER 25 y el rango del KT 6 salen de una búsqueda; los PDF de icotek no se pudieron descargar.</li>
-  <li>Que <code>video=HDMI-A-1:800x480M@60</code> funcione con esta pantalla en la Pi 5: está documentado, no probado.</li>
-  <li>Si al arrancar sin USB-PD la Pi 5 muestra un aviso de fuente encima del tablero.</li>
+  <li>Que <code>video=HDMI-A-1:800x480M@60</code> funcione con esta pantalla en la Pi 5 y con escritorio: Raspberry Pi lo documenta para consola, no probado.</li>
+  <li>Si el aviso de fuente sin USB-PD tapa el tablero. Raspberry Pi dice que en el primer arranque con una fuente que no da 5 A el sistema avisa del límite de 600 mA; no sé si vuelve a salir ni si se pone encima de una ventana en pantalla completa.</li>
+  <li>Que con CN4 suelto y sin video la luz de fondo se apague: el TPS61165 pide ≤ 0.4 V en CTRL para apagar y el diodo D8 deja unos 0.5 V (estimado mío, a ~0.1 mA); puede quedar en la zona indefinida.</li>
   <li>La corriente máxima del Pololu con 12–14.7 V de entrada y caja cerrada (Pololu dice que depende de la entrada y la temperatura).</li>
 </ul>
 
@@ -672,21 +684,23 @@ vcgencmd pmic_read_adc | grep EXT5V   # el 5 V que le llega a la Pi</pre>
   Receptor <a href="https://www.ti.com/lit/ds/slds190a/slds190a.pdf">TI TFP401A</a>.</li>
   <li>Raspberry Pi: <a href="https://github.com/raspberrypi/documentation/blob/master/documentation/asciidoc/computers/raspberry-pi/power-supplies.adoc">fuentes</a>
   (Pi 5: 5 A; 1.6 A a los USB o 600 mA con fuente de 3 A; HDMI 50 mA; bajo voltaje en 4.63 V ±5 %; <code>pmic_read_adc</code>);
-  <a href="https://github.com/raspberrypi/documentation/blob/master/documentation/asciidoc/computers/raspberry-pi/usb-bus-on-raspberry-pi.adoc">bus USB</a>;
+  <a href="https://github.com/raspberrypi/documentation/blob/master/documentation/asciidoc/computers/raspberry-pi/usb-bus-on-raspberry-pi.adoc">bus USB</a> (aviso de 600 mA en el primer arranque sin fuente de 5 A);
   <a href="https://github.com/raspberrypi/documentation/blob/master/documentation/asciidoc/computers/configuration/reference.adoc"><code>usb_max_current_enable</code> en config.txt</a>;
   <a href="https://github.com/raspberrypi/documentation/blob/master/documentation/asciidoc/computers/raspberry-pi/eeprom-bootloader.adoc"><code>PSU_MAX_CURRENT</code></a> (EEPROM, salta la negociación);
   <a href="https://github.com/raspberrypi/documentation/blob/master/documentation/asciidoc/computers/configuration/audio-display.adoc">pantalla</a>
-  (<code>video=</code> en cmdline.txt; HDMI-A-1 = HDMI0; Screen Blanking a los 10 min);
+  (<code>video=</code> en cmdline.txt, para consola; Control Centre → Screens con escritorio; HDMI-A-1 = HDMI0; Screen Blanking a los 10 min);
   <a href="https://github.com/raspberrypi/documentation/blob/master/documentation/asciidoc/computers/legacy_config_txt/legacy.adoc">opciones heredadas</a> (no funcionan desde Bookworm);
   <a href="https://github.com/raspberrypi/documentation/blob/master/documentation/asciidoc/computers/getting-started/setting-up.adoc">primeros pasos</a> (monitor principal en HDMI0);
   <a href="https://datasheets.raspberrypi.com/rpi5/raspberry-pi-5-product-brief.pdf">ficha de la Pi 5</a> (5 V 5 A con USB-PD, 0–70 °C) y
   <a href="https://datasheets.raspberrypi.com/rpi5/raspberry-pi-5-mechanical-drawing.pdf">plano mecánico</a> (USB-C a 11.2 mm, micro-HDMI a 25.8 y 39.2 mm);
   <a href="https://pip-assets.raspberrypi.com/categories/1118-raspberry-pi-monitor/documents/RP-008219-DS-4-monitor-product-brief.pdf">monitor oficial</a> (250 nits; 60 % de brillo desde un USB de la Pi).</li>
-  <li>Pololu <a href="https://www.pololu.com/product/4091">D36V50F5</a> (5 V ±4 %, 5.5 A, pines VOUT y GND dobles de 3 A cada uno) y
+  <li>Pololu <a href="https://www.pololu.com/product/4091">D36V50F5</a> (5 V ±4 %, 5.5 A; VIN, VRP, VOUT y GND duplicados, 3 A por pin de header; agujeros de 1.02 mm en su plano de dimensiones) y
   <a href="https://www.pololu.com/product/4092">D36V50F6</a> (6 V).</li>
   <li>icotek <a href="https://www.icotek.com/en/products/cable-glands/kvt-er">KVT-ER</a> (partido, M25 a M63, IP66/IP68 con pasacables de un hueco).
   Tamaños de conector HDMI (A: 13.9 × 4.45 mm; D: 5.83 × 2.20 mm) y pin 18 de hasta 50 mA: <a href="https://en.wikipedia.org/wiki/HDMI">HDMI, Wikipedia</a>.
-  Vishay <a href="https://www.vishay.com/en/product/89020/">MSS1P3L</a>; Diodes <a href="https://www.diodes.com/part/view/AZ1117E">AZ1117E</a>.</li>
+  Vishay <a href="https://www.vishay.com/en/product/89020/">MSS1P3L</a>; Diodes <a href="https://www.diodes.com/part/view/AZ1117E">AZ1117E</a>;
+  TI <a href="https://www.ti.com/lit/ds/symlink/tps61165.pdf">TPS61165</a> (CTRL: alto ≥ 1.2 V, bajo ≤ 0.4 V, apaga tras 2.5 ms en bajo).
+  Hammond <a href="https://www.hammfg.com/files/parts/pdf/1554N2GYSL.pdf">1554N2GYSL</a> (base de 45 mm de alto, 60.5 mm con tapa).</li>
   <li>Repo: <code>BOM.csv</code> (pantalla, cable micro-HDMI → HDMI de 1 m, PG7 de 3–6 mm, cable de 18 AWG, Pi 5 del ISIC);
   <code>python/analizador.py</code> (<code>-fullscreen</code>, <code>BG = "#000000"</code>, escala <code>min(W/1280, H/720)</code>);
   <code>cpp/src/ui.cpp</code> (<code>InitWindow(0, 0)</code>, <code>ToggleBorderlessWindowed()</code>, misma escala); <a href="../conexion.html">hoja general</a>.
