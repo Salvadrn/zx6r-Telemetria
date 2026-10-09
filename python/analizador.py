@@ -56,10 +56,10 @@ if _size and not _parse_size(_size):
     print(f"[UI] OBD2_SIZE={_size} no es ANCHOxALTO (p. ej. 1024x600); uso {WIN_W}x{WIN_H}")
 elif _size:
     WIN_W, WIN_H = _parse_size(_size)
-FLASH_MS = 600                                              # OBD2_FLASH_MS: destello rojo al cambiar de vista; 0 = sin
+FLASH_MS = 300                                              # OBD2_FLASH_MS: destello rojo al cambiar de vista; 0 = sin
 _flash = os.environ.get("OBD2_FLASH_MS", "")
 if _flash and not re.fullmatch(r"[0-9]{1,5}", _flash):      # solo dígitos ASCII, de 0 a 99999 ms
-    print(f"[UI] OBD2_FLASH_MS={_flash} no son milisegundos (p. ej. 600; 0 = sin destello); uso {FLASH_MS}")
+    print(f"[UI] OBD2_FLASH_MS={_flash} no son milisegundos (p. ej. 300; 0 = sin destello); uso {FLASH_MS}")
 elif _flash:
     FLASH_MS = int(_flash)
 HEADLESS  = os.environ.get("OBD2_HEADLESS", "0") == "1"    # sin pantalla: solo lee, guarda y sirve la web
@@ -83,7 +83,8 @@ STEER_CAL = os.environ.get("OBD2_STEER_CAL",
 
 # =====================================================
 # COLORES — negro puro y grises; el color solo marca estados: ámbar = advertencia,
-# alerta crítica rojo (valor muy alto) o verde (valor muy bajo)
+# alerta crítica rojo (valor muy alto) o verde (valor muy bajo). El único rojo brillante es el del
+# destello al cambiar de vista, y solo dura ese destello.
 # =====================================================
 BG     = "#000000"
 PANEL  = "#000000"
@@ -97,7 +98,10 @@ TEXT3  = "#666666"
 STALE  = "#444444"
 OK, WARN, CRIT = "#6FB583", "#D6A24A", "#D65C57"
 CRIT_BG, OK_BG = "#3A1515", "#12301C"      # fondo de una tarjeta en alerta (Tk no tiene alfa: tinte sólido)
+FLASH      = "#FF2020"                     # destello al cambiar de vista: marco de la pantalla y pestaña activa
 FLASH_TEXT = "#000000"                     # texto de la pestaña mientras destella
+# Tk no tiene alfa: el destello se desvanece en tres pasos de color (hasta qué fracción de OBD2_FLASH_MS, color)
+FLASH_STEPS = ((0.4, FLASH), (0.7, "#A01414"), (1.0, "#4A0A0A"))
 
 
 def _track(text):
@@ -178,6 +182,7 @@ def _p_bat(resp):
 #   crit (alto) = alerta ROJA; crit_lo (bajo) = alerta VERDE: tarjeta teñida, borde doble y número del color.
 #   hold = s que el valor debe quedarse más allá de crit/crit_lo antes de prender la alerta (default 0).
 #   hyst = cuánto debe regresar de este lado del umbral para apagarla (default 0).
+#   En todas las gráficas, la traza va roja arriba de crit y verde abajo de crit_lo (dato crudo, sin hold).
 # TPS, MAP y dirección no llevan umbrales críticos: 0–100 % de acelerador, la presión de admisión y el
 # ángulo del manubrio no tienen un "crítico" que tenga sentido.
 SENSORS = [
@@ -924,7 +929,8 @@ class Dash:
         self.dyn = []
         self.hz = 0.0
         self._errs = 0
-        self.flash_until = 0.0        # time.monotonic() hasta el que dura el destello de la vista nueva
+        self.flash_t0 = -math.inf     # time.monotonic() en que empezó el destello de la vista nueva
+        self._shown_vi = self.vi      # vista del cuadro anterior: si cambia, destella
         self.alerts = {s["id"]: Alert(s) for s in SENSORS if "crit" in s or "crit_lo" in s}
 
         self.root.bind("<Key>", self._on_key)
@@ -947,10 +953,7 @@ class Dash:
             steer_set_center()
 
     def step(self, d):
-        vi = (self.vi + d) % len(self.views)
-        if vi != self.vi and FLASH_MS > 0:          # cambió de vista: destello rojo (se reinicia si ya había)
-            self.flash_until = time.monotonic() + FLASH_MS / 1000
-        self.vi = vi
+        self.vi = (self.vi + d) % len(self.views)   # el destello lo prende _frame al dibujar la vista nueva
 
     def quit(self):
         stop_reading()
@@ -999,9 +1002,9 @@ class Dash:
         sensors = [SENSOR[i] for i in v["sensors"] if SENSOR[i]["enabled"]]
         area = (self.m, self.top_h + self.S(16), W - self.m, H - self.bot_h - self.S(10))
         (self._build_tiles if v["kind"] == "tiles" else self._build_graphs)(v, sensors, area)
-        # marco rojo del destello al cambiar de vista; se crea al final para quedar encima de todo
-        fw = max(3, self.S(6))
-        self.flash_frame = [self.c.create_rectangle(*r, fill=CRIT, outline="", state="hidden") for r in
+        # marco rojo del destello al cambiar de vista (8 px a 1280x720, mínimo 4); al final para quedar encima
+        fw = max(4, self.S(8))
+        self.flash_frame = [self.c.create_rectangle(*r, fill=FLASH, outline="", state="hidden") for r in
                             ((0, 0, W, fw), (0, H - fw, W, H), (0, fw, fw, H - fw), (W - fw, fw, W, H - fw))]
 
     def _build_chrome(self):
@@ -1047,7 +1050,7 @@ class Dash:
             active = i == self.vi
             if active:                                 # relleno rojo del destello (escondido)
                 self.tab_bg = self._rrect(x - S(10), mid - S(15), x + w + S(10), mid + S(15), S(6),
-                                          fill=CRIT, outline="", state="hidden")
+                                          fill=FLASH, outline="", state="hidden")
             tab = c.create_text(x, mid, anchor="w", text=v[key], fill=TEXT if active else TEXT3,
                                 font=self.f("sans", S(14), True))
             if active:
@@ -1103,9 +1106,10 @@ class Dash:
         box = (x + pad, y + h * 0.66, x + w - S(22), y + h - S(22))
         c.create_line(box[0], box[3], box[2], box[3], fill=AXIS)
         c.create_line(box[0], box[1], box[2], box[1], fill=GRID)
-        line = c.create_line(0, 0, 0, 0, fill=TEXT, width=max(2, S(2)), state="hidden")
-        self.dyn.append((self._upd_tile, {"s": s, "card": card, "val": val, "line": line, "box": box,
-                                          "window": window}))
+        lw = max(2, S(2))
+        line = c.create_line(0, 0, 0, 0, fill=TEXT, width=lw, state="hidden")
+        self.dyn.append((self._upd_tile, {"s": s, "card": card, "val": val, "line": line, "lw": lw, "runs": [],
+                                          "box": box, "window": window}))
 
     def _build_graphs(self, v, sensors, area):
         c, S = self.c, self.S
@@ -1191,8 +1195,9 @@ class Dash:
             ly = ry - S(9) if ry - S(9) > py0 + S(26) and not crowded else ry + S(10)
             labels.append((ly, text, text_c))
 
-        # items que se mueven: línea, punto y mensaje
-        line = c.create_line(0, 0, 0, 0, fill=TEXT, width=max(2, S(2)), state="hidden")
+        # items que se mueven: línea (y encima sus tramos rojos/verdes, que se crean al hacer falta), punto y mensaje
+        lw = max(2, S(2))
+        line = c.create_line(0, 0, 0, 0, fill=TEXT, width=lw, state="hidden")
         r = S(5)
         dot = c.create_oval(0, 0, 0, 0, fill=TEXT, outline=PLOT, width=S(2), state="hidden")
         for ly, text, text_c in labels:                # encima de la traza, con fondo negro para que se lea
@@ -1201,9 +1206,9 @@ class Dash:
             c.tag_lower(c.create_rectangle(x0 - S(4), y0b, x1 + S(2), y1b, fill=PLOT, outline=""), t_id)
         msg_bg = c.create_rectangle(0, 0, 0, 0, fill=PLOT, outline="", state="hidden")   # que no lo tache una línea
         msg = c.create_text((px0 + px1) / 2, (py0 + py1) / 2, text="", fill=STALE, font=self.f("sans", S(15), True))
-        self.dyn.append((self._upd_graph, {"s": s, "card": card, "val": val, "line": line, "dot": dot,
-                                           "msg": msg, "msg_bg": msg_bg, "stats": stats, "r": r, "window": window,
-                                           "box": (px0, py0, px1, py1)}))
+        self.dyn.append((self._upd_graph, {"s": s, "card": card, "val": val, "line": line, "lw": lw, "runs": [],
+                                           "dot": dot, "msg": msg, "msg_bg": msg_bg, "stats": stats, "r": r,
+                                           "window": window, "box": (px0, py0, px1, py1)}))
 
     # ── actualización por cuadro ────────────────
     def _snapshot(self):
@@ -1225,14 +1230,32 @@ class Dash:
             return "OBD2 EN VIVO", OK
         return ("CONECTANDO", WARN) if st == "connecting" else ("SIN CONEXIÓN", CRIT)
 
-    def _upd_chrome(self, snap):
-        flash = time.monotonic() < self.flash_until
-        self._set(self.tab_bg, state="normal" if flash else "hidden")
-        self._set(self.tab_txt, fill=FLASH_TEXT if flash else TEXT)
-        self._set(self.tab_line, state="hidden" if flash else "normal")
-        for r in self.flash_frame:
-            self._set(r, state="normal" if flash else "hidden")
+    def _start_flash(self):
+        """Destello rojo de la vista nueva (se reinicia si ya había uno). Además de cada cuadro, lo repinta
+        en cada cambio de paso: a 12 FPS un cuadro dura 83 ms y un paso de 300 ms × 30 % se perdería."""
+        self.flash_t0 = time.monotonic()
+        for end, _ in FLASH_STEPS:
+            self.root.after(math.ceil(FLASH_MS * end) + 2, self._safe, self._upd_flash)
 
+    def _flash_color(self):
+        """Color del destello en este instante, o None si ya terminó."""
+        if FLASH_MS <= 0:
+            return None
+        k = (time.monotonic() - self.flash_t0) * 1000 / FLASH_MS
+        return next((col for end, col in FLASH_STEPS if 0 <= k < end), None)
+
+    def _upd_flash(self):
+        if self._built is None:
+            return
+        col = self._flash_color()
+        state = "normal" if col else "hidden"
+        for item in (self.tab_bg, *self.flash_frame):
+            self._set(item, state=state, fill=col or FLASH)
+        self._set(self.tab_txt, fill=FLASH_TEXT if col else TEXT)
+        self._set(self.tab_line, state="hidden" if col else "normal")
+
+    def _upd_chrome(self, snap):
+        self._upd_flash()
         text, color = self._status(snap)
         blink = link["state"] in ("lost", "connecting") and int(time.time() * 2) % 2 == 0
         self._set(self.chip_dot, fill=PANEL if blink else color)
@@ -1254,15 +1277,59 @@ class Dash:
             self.c.coords(self.rec_dot, x - r, self.by - r, x + r, self.by + r)
         self._set(self.rec_dot, fill=CRIT if db_ok else WARN)
 
-    def _trace(self, s, sd, now, window, box):
+    @staticmethod
+    def _trace(s, sd, now, window, box):
+        """(puntos x, y de la traza, valores, tramos fuera de umbral, lado del último punto).
+
+        Tramos: [(lado, [x, y, ...])], lado +1 = arriba de crit (rojo), −1 = abajo de crit_lo (verde).
+        Cada tramo empieza y termina justo donde la traza cruza el umbral (interpolación lineal sobre el
+        segmento que se dibuja), para que el cambio de color caiga sobre la línea del umbral. Dato crudo:
+        aquí no hay hold."""
         x0, y0, x1, y1 = box
         t_min, k = now - window, (x1 - x0) / window
-        pts, vals = [], []
+        hi, lo = s.get("crit", math.inf), s.get("crit_lo", -math.inf)
+        pts, vals, runs = [], [], []
+        run, side = None, 0                            # tramo abierto y lado del punto anterior
+        px = py = pv = None
         for tv, v in zip(sd["t"], sd["v"]):
-            if tv >= t_min:
-                pts += (x0 + (tv - t_min) * k, _ymap(s, y0, y1, v))
-                vals.append(v)
-        return pts, vals
+            if tv < t_min:
+                continue
+            x, y = x0 + (tv - t_min) * k, _ymap(s, y0, y1, v)
+            z = 1 if v > hi else -1 if v < lo else 0
+            if z != side and pv is not None:           # cruzó un umbral entre el punto anterior y este
+                if side:                               # sale: cierra el tramo sobre su umbral
+                    f = ((hi if side > 0 else lo) - pv) / (v - pv)
+                    run += (px + f * (x - px), py + f * (y - py))
+                    runs.append((side, run))
+                    run = None
+                if z:                                  # entra: el tramo empieza sobre el umbral
+                    f = ((hi if z > 0 else lo) - pv) / (v - pv)
+                    run = [px + f * (x - px), py + f * (y - py)]
+            if z:
+                if run is None:                        # el primer punto de la ventana ya estaba fuera
+                    run = []
+                run += (x, y)
+            pts += (x, y)
+            vals.append(v)
+            px, py, pv, side = x, y, v, z
+        if run and len(run) >= 4:
+            runs.append((side, run))
+        return pts, vals, runs, side
+
+    def _upd_runs(self, d, runs):
+        """Tramos rojos/verdes encima de la traza blanca: reusa los items y esconde los que sobran."""
+        pool, c = d["runs"], self.c
+        while len(pool) < len(runs):
+            item = c.create_line(0, 0, 0, 0, width=d["lw"], state="hidden")
+            c.tag_raise(item, d["line"])               # justo encima de la traza: debajo del punto y los rótulos
+            pool.append(item)
+        for i, item in enumerate(pool):
+            if i < len(runs):
+                side, coords = runs[i]
+                c.coords(item, *coords)
+                self._set(item, state="normal", fill=CRIT if side > 0 else OK)
+            else:
+                self._set(item, state="hidden")
 
     @staticmethod
     def _value(s, sd, now, alert):
@@ -1285,16 +1352,17 @@ class Dash:
     def _upd_tile(self, d, snap, now):
         s, sd = d["s"], snap[d["s"]["id"]]
         stale = self._paint(d, s, sd, now)
-        pts, _ = self._trace(s, sd, now, d["window"], d["box"])
+        pts, _, runs, _ = self._trace(s, sd, now, d["window"], d["box"])
         shown = len(pts) >= 4
         if shown:
             self.c.coords(d["line"], *pts)
         self._set(d["line"], state="normal" if shown else "hidden", fill=STALE if stale else TEXT)
+        self._upd_runs(d, runs if shown and not stale else [])     # dato viejo: toda la traza gris
 
     def _upd_graph(self, d, snap, now):
         s, sd, c = d["s"], snap[d["s"]["id"]], self.c
         stale = self._paint(d, s, sd, now)
-        pts, vals = self._trace(s, sd, now, d["window"], d["box"])
+        pts, vals, runs, side = self._trace(s, sd, now, d["window"], d["box"])
         shown = len(pts) >= 4
         if shown:
             c.coords(d["line"], *pts)
@@ -1302,7 +1370,8 @@ class Dash:
         state = "normal" if shown else "hidden"
         lc = STALE if stale else TEXT
         self._set(d["line"], state=state, fill=lc)
-        self._set(d["dot"], state=state, fill=lc)
+        self._set(d["dot"], state=state, fill=lc if stale or not side else CRIT if side > 0 else OK)
+        self._upd_runs(d, runs if shown and not stale else [])     # dato viejo: toda la traza gris
 
         if s["id"] == "steer" and steer_state["status"] in ("sin_sensor", "sin_iman"):
             msg, mc = ({"sin_sensor": "SIN SENSOR — conecta el AS5600 al I²C",
@@ -1346,6 +1415,10 @@ class Dash:
         if (W, H, self.vi) != self._built:
             self._built = (W, H, self.vi)
             self._rebuild(W, H)
+        if self.vi != self._shown_vi:              # cambió de vista (botón o tecla): destello rojo
+            self._shown_vi = self.vi
+            if FLASH_MS > 0:
+                self._start_flash()
         snap = self._snapshot()
         now = time.time() - session_t0
         for sid, alert in self.alerts.items():     # todos los sensores, se vean o no: el hold no se pierde
@@ -1354,14 +1427,18 @@ class Dash:
         for fn, d in self.dyn:
             fn(d, snap, now)
 
-    def _tick(self):
-        t = time.perf_counter()
+    def _safe(self, fn):
+        """Un error al dibujar no debe tumbar la pantalla: se imprime (los 3 primeros) y se sigue."""
         try:
-            self._frame()
+            fn()
         except Exception:
             self._errs += 1
             if self._errs <= 3:
                 traceback.print_exc()
+
+    def _tick(self):
+        t = time.perf_counter()
+        self._safe(self._frame)
         self.root.after(max(1, int(1000 / UI_FPS - (time.perf_counter() - t) * 1000)), self._tick)
 
     def run(self):
