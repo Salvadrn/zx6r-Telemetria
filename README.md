@@ -82,12 +82,12 @@ La lista completa está en **[`BOM.xlsx`](BOM.xlsx)** (Excel) y en [`BOM.csv`](B
 | Fase | Qué | Aprox. |
 |---|---|---|
 | 1 · Prueba | Solo el cable adaptador KDS → OBD2, para ver si tu Steren habla con la moto | $616 |
-| 2 · Montaje | microSD, ventilador de la Pi 5, energía, pantalla, caja, botones, sensor de dirección y cableado | ~$6,070 + envíos |
+| 2 · Montaje | microSD, ventilador de la Pi 5, energía, caja, botones, sensor de dirección y cableado | ~$4,470 + envíos |
 | 3 · Condicional | OBDLink EX, solo si el Steren no pasa la prueba | $1,719 |
 
-La computadora no se compra: es la Raspberry Pi 5 de 8 GB del proyecto ISIC (ver abajo).
+La computadora no se compra: es la Raspberry Pi 5 de 8 GB del proyecto ISIC (ver abajo). La pantalla tampoco: es la tuya, HDMI de 7″ y 1024 × 600 con touch.
 
-Los envíos no están incluidos: Pololu, Newhaven y K&J mandan desde EE. UU., y 330ohms desde México. En Mouser el envío es gratis desde US$100, y lo que va de Mouser suma ~US$87.
+Los envíos no están incluidos: Pololu y K&J mandan desde EE. UU., y 330ohms desde México. En Mouser el envío es gratis desde US$100, y lo que va de Mouser suma ~US$87.
 
 ## Conexión en la moto
 
