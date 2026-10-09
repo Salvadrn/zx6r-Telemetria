@@ -5,6 +5,7 @@ guarda cada lectura en SQLite y sirve un visor web para verlos en vivo o despué
 celular. Las vistas se cambian con un botón (pensado para los botones del manubrio).
 Con OBD2_SIM=1 corre con datos simulados.
 """
+import bisect
 import os
 import re
 import json
@@ -55,6 +56,12 @@ if _size and not _parse_size(_size):
     print(f"[UI] OBD2_SIZE={_size} no es ANCHOxALTO (p. ej. 1024x600); uso {WIN_W}x{WIN_H}")
 elif _size:
     WIN_W, WIN_H = _parse_size(_size)
+FLASH_MS = 600                                              # OBD2_FLASH_MS: destello rojo al cambiar de vista; 0 = sin
+_flash = os.environ.get("OBD2_FLASH_MS", "")
+if _flash and not re.fullmatch(r"[0-9]{1,5}", _flash):      # solo dígitos ASCII, de 0 a 99999 ms
+    print(f"[UI] OBD2_FLASH_MS={_flash} no son milisegundos (p. ej. 600; 0 = sin destello); uso {FLASH_MS}")
+elif _flash:
+    FLASH_MS = int(_flash)
 HEADLESS  = os.environ.get("OBD2_HEADLESS", "0") == "1"    # sin pantalla: solo lee, guarda y sirve la web
 FONT_SANS = os.environ.get("OBD2_FONT_SANS", "")
 FONT_MONO = os.environ.get("OBD2_FONT_MONO", "")
@@ -75,7 +82,8 @@ STEER_CAL = os.environ.get("OBD2_STEER_CAL",
                            os.path.join(os.path.dirname(DB_PATH) or ".", "direccion.json"))
 
 # =====================================================
-# COLORES — negro puro y grises; el color solo marca estados (advertencia / crítico)
+# COLORES — negro puro y grises; el color solo marca estados: ámbar = advertencia,
+# alerta crítica rojo (valor muy alto) o verde (valor muy bajo)
 # =====================================================
 BG     = "#000000"
 PANEL  = "#000000"
@@ -88,6 +96,8 @@ TEXT2  = "#9A9A9A"
 TEXT3  = "#666666"
 STALE  = "#444444"
 OK, WARN, CRIT = "#6FB583", "#D6A24A", "#D65C57"
+CRIT_BG, OK_BG = "#3A1515", "#12301C"      # fondo de una tarjeta en alerta (Tk no tiene alfa: tinte sólido)
+FLASH_TEXT = "#000000"                     # texto de la pestaña mientras destella
 
 
 def _track(text):
@@ -163,22 +173,38 @@ def _p_bat(resp):
 
 
 # period: segundos entre lecturas; 0 = en cada vuelta (la O2 lo necesita para ver la oscilación).
-# warn/crit (altos) y warn_lo/crit_lo (bajos): umbrales de color, configurables; verifícalos con el manual.
+# Umbrales (configurables; verifícalos con el manual):
+#   warn (alto) / warn_lo (bajo) = número en ámbar.
+#   crit (alto) = alerta ROJA; crit_lo (bajo) = alerta VERDE: tarjeta teñida, borde doble y número del color.
+#   hold = s que el valor debe quedarse más allá de crit/crit_lo antes de prender la alerta (default 0).
+#   hyst = cuánto debe regresar de este lado del umbral para apagarla (default 0).
+# TPS, MAP y dirección no llevan umbrales críticos: 0–100 % de acelerador, la presión de admisión y el
+# ángulo del manubrio no tienen un "crítico" que tenga sentido.
 SENSORS = [
+    # crit 15500: por confirmar contra la zona roja del tacómetro; potencia máxima a 13 500 rpm (manual p. 1-?)
     {"id": "rpm", "pid": "010C", "name": "RPM", "desc": "Revoluciones", "unit": "rpm",
-     "y_min": 0, "y_max": 16000, "dec": 0, "parser": _p_rpm, "enabled": True, "period": 0.25},
+     "y_min": 0, "y_max": 16000, "dec": 0, "parser": _p_rpm, "enabled": True, "period": 0.25,
+     "warn": 14000, "crit": 15500, "hyst": 300},
     {"id": "tps", "pid": "0111", "name": "TPS", "desc": "Posición del acelerador", "unit": "%",
      "y_min": 0, "y_max": 100, "dec": 0, "parser": _p_tps, "enabled": True, "period": 0.25},
+    # El ventilador prende a 100 °C (manual, cap. 4); 105 y 115 son margen del proyecto arriba de eso.
     {"id": "temp", "pid": "0105", "name": "TEMP", "desc": "Refrigerante", "unit": "°C",
      "y_min": 40, "y_max": 120, "dec": 0, "parser": _p_temp, "enabled": True, "period": 2.0,
-     "warn": 105, "crit": 115},
+     "warn": 105, "crit": 115, "hyst": 2},
+    # Sonda de banda angosta: en lazo cerrado oscila entre ~0.1 y ~0.9 V varias veces por segundo, así que
+    # tocar 0.10 o 0.90 V es normal; sin el hold de 1 s la tarjeta parpadearía todo el tiempo. Alerta solo
+    # si se queda pegada: abajo = mezcla pobre (verde), arriba = rica (rojo).
     {"id": "o2", "pid": "0114", "name": "O2", "desc": "Sonda lambda B1S1", "unit": "V",
-     "y_min": 0.0, "y_max": 1.0, "dec": 2, "parser": _p_o2, "enabled": True, "period": 0},
+     "y_min": 0.0, "y_max": 1.0, "dec": 2, "parser": _p_o2, "enabled": True, "period": 0,
+     "crit_lo": 0.10, "crit": 0.90, "hold": 1.0, "hyst": 0.03},
     {"id": "map_l", "pid": "010B", "name": "MAP IZQ", "desc": "Presión de admisión", "unit": "kPa",
      "y_min": 20, "y_max": 120, "dec": 0, "parser": _p_map_l, "enabled": True, "period": 0.25},
+    # Batería YTX9-BS: 12.8 V o más en reposo y carga del regulador de 14.3–14.7 V (manual p. 494).
+    # 12.2 / 11.5 V son los umbrales bajos del proyecto; 15.5 V (arriba de la carga normal) = el regulador
+    # sobrecarga.
     {"id": "bat", "pid": "ATRV", "name": "BATERÍA", "desc": "Voltaje (lo mide el ELM327)", "unit": "V",
      "y_min": 11, "y_max": 15, "dec": 1, "parser": _p_bat, "enabled": True, "period": 5.0,
-     "warn_lo": 12.2, "crit_lo": 11.5},
+     "warn_lo": 12.2, "crit_lo": 11.5, "crit": 15.5, "hyst": 0.2},
     # Apagado por defecto: un ELM327 estándar casi nunca responde este PID (OBD2_MAP_R=1 lo prende).
     {"id": "map_r", "pid": "2201F0", "name": "MAP DER", "desc": "Presión de admisión", "unit": "kPa",
      "y_min": 20, "y_max": 120, "dec": 0, "parser": _p_map_r, "period": 0.5,
@@ -225,9 +251,10 @@ def _fmt(s, v):
     return f"{v:.{s['dec']}f}"
 
 
-def _zone_color(s, v):
-    if v >= s.get("crit", math.inf) or v <= s.get("crit_lo", -math.inf):
-        return CRIT
+def _zone_color(s, v, alert=None):
+    """Color del número: el de la alerta crítica si está prendida; si no, ámbar pasando warn/warn_lo."""
+    if alert:
+        return ALERT_COLOR[alert]
     if v >= s.get("warn", math.inf) or v <= s.get("warn_lo", -math.inf):
         return WARN
     return TEXT
@@ -257,6 +284,69 @@ def _crossings(ts, vs, now, span=10.0, hi=0.5, lo=0.4):
         if cur:
             state = cur
     return n
+
+
+# =====================================================
+# ALERTAS CRÍTICAS — crit (alto) = rojo, crit_lo (bajo) = verde; con hold e histéresis
+# =====================================================
+ALERT_COLOR = {"hi": CRIT, "lo": OK}
+ALERT_LOOK = {None: (PANEL, BORDER, 1), "hi": (CRIT_BG, CRIT, 2), "lo": (OK_BG, OK, 2)}   # fondo, borde, grosor
+
+
+def _beyond(s, v):
+    """'hi' si v llegó a crit, 'lo' si bajó a crit_lo, None si está entre los dos."""
+    if v >= s.get("crit", math.inf):
+        return "hi"
+    if v <= s.get("crit_lo", -math.inf):
+        return "lo"
+    return None
+
+
+class Alert:
+    """Alerta crítica de un sensor. on: None | 'hi' | 'lo'.
+
+    Prende cuando las muestras llevan `hold` s seguidos más allá del umbral; se apaga cuando una regresa
+    `hyst` o más de este lado. Con datos viejos (STALE) o sin dato siempre está apagada. Se alimenta
+    con las muestras (no con los cuadros) para que una O2 que oscila rápido no cuente como pegada.
+    """
+
+    def __init__(self, s):
+        self.s = s
+        self.last_t = -math.inf       # instante de la última muestra ya procesada
+        self.clear()
+
+    def clear(self):
+        self.on = None                # alerta prendida
+        self.run = None               # de qué lado del umbral está la última muestra ('hi' | 'lo' | None)
+        self.since = 0.0              # desde cuándo está de ese lado (s de la sesión)
+
+    def _check(self, now):
+        if self.on is None and self.run and now - self.since >= self.s.get("hold", 0):
+            self.on = self.run
+
+    def feed(self, t, v):
+        s, hyst = self.s, self.s.get("hyst", 0)
+        kind = _beyond(s, v)
+        if kind != self.run:
+            self.run, self.since = kind, t
+        if self.on == "hi" and v <= s["crit"] - hyst or self.on == "lo" and v >= s["crit_lo"] + hyst:
+            self.on = None
+        self._check(t)
+
+    def update(self, ts, vs, now):
+        """Procesa las muestras nuevas del historial (ts ordenado) y devuelve on."""
+        if not ts or now - ts[-1] > STALE_S:
+            self.clear()
+            self.last_t = ts[-1] if ts else -math.inf
+            return None
+        if ts[-1] < self.last_t:                  # el historial se reinició
+            self.clear()
+            self.last_t = -math.inf
+        for i in range(bisect.bisect_right(ts, self.last_t), len(ts)):
+            self.feed(ts[i], vs[i])
+        self.last_t = ts[-1]
+        self._check(now)                          # el hold también se cumple entre muestras
+        return self.on
 
 
 # =====================================================
@@ -834,6 +924,8 @@ class Dash:
         self.dyn = []
         self.hz = 0.0
         self._errs = 0
+        self.flash_until = 0.0        # time.monotonic() hasta el que dura el destello de la vista nueva
+        self.alerts = {s["id"]: Alert(s) for s in SENSORS if "crit" in s or "crit_lo" in s}
 
         self.root.bind("<Key>", self._on_key)
         self.root.protocol("WM_DELETE_WINDOW", self.quit)
@@ -855,7 +947,10 @@ class Dash:
             steer_set_center()
 
     def step(self, d):
-        self.vi = (self.vi + d) % len(self.views)
+        vi = (self.vi + d) % len(self.views)
+        if vi != self.vi and FLASH_MS > 0:          # cambió de vista: destello rojo (se reinicia si ya había)
+            self.flash_until = time.monotonic() + FLASH_MS / 1000
+        self.vi = vi
 
     def quit(self):
         stop_reading()
@@ -904,6 +999,10 @@ class Dash:
         sensors = [SENSOR[i] for i in v["sensors"] if SENSOR[i]["enabled"]]
         area = (self.m, self.top_h + self.S(16), W - self.m, H - self.bot_h - self.S(10))
         (self._build_tiles if v["kind"] == "tiles" else self._build_graphs)(v, sensors, area)
+        # marco rojo del destello al cambiar de vista; se crea al final para quedar encima de todo
+        fw = max(3, self.S(6))
+        self.flash_frame = [self.c.create_rectangle(*r, fill=CRIT, outline="", state="hidden") for r in
+                            ((0, 0, W, fw), (0, H - fw, W, H), (0, fw, fw, H - fw), (W - fw, fw, W, H - fw))]
 
     def _build_chrome(self):
         c, S, W, H, m = self.c, self.S, self.W, self.H, self.m
@@ -946,10 +1045,15 @@ class Dash:
         for i, v in enumerate(self.views):
             w = self.measure("sans", S(14), True, v[key])
             active = i == self.vi
-            c.create_text(x, mid, anchor="w", text=v[key], fill=TEXT if active else TEXT3,
-                          font=self.f("sans", S(14), True))
+            if active:                                 # relleno rojo del destello (escondido)
+                self.tab_bg = self._rrect(x - S(10), mid - S(15), x + w + S(10), mid + S(15), S(6),
+                                          fill=CRIT, outline="", state="hidden")
+            tab = c.create_text(x, mid, anchor="w", text=v[key], fill=TEXT if active else TEXT3,
+                                font=self.f("sans", S(14), True))
             if active:
-                c.create_rectangle(x, self.top_h - S(7), x + w, self.top_h - S(4), fill=TEXT, outline="")
+                self.tab_txt = tab
+                self.tab_line = c.create_rectangle(x, self.top_h - S(7), x + w, self.top_h - S(4),
+                                                   fill=TEXT, outline="")
             x += w + gap
         self.status_line = c.create_rectangle(0, self.top_h, W, self.top_h + S(1), fill=AXIS, outline="")
 
@@ -980,7 +1084,7 @@ class Dash:
 
     def _tile(self, s, x, y, w, h, window):
         c, S = self.c, self.S
-        self._rrect(x, y, x + w, y + h, S(14), fill=PANEL, outline=BORDER)
+        card = self._rrect(x, y, x + w, y + h, S(14), fill=PANEL, outline=BORDER)
         pad = S(26)
         name = _track(s["name"])
         c.create_text(x + pad, y + S(30), anchor="w", text=name, fill=TEXT2,
@@ -1000,7 +1104,8 @@ class Dash:
         c.create_line(box[0], box[3], box[2], box[3], fill=AXIS)
         c.create_line(box[0], box[1], box[2], box[1], fill=GRID)
         line = c.create_line(0, 0, 0, 0, fill=TEXT, width=max(2, S(2)), state="hidden")
-        self.dyn.append((self._upd_tile, {"s": s, "val": val, "line": line, "box": box, "window": window}))
+        self.dyn.append((self._upd_tile, {"s": s, "card": card, "val": val, "line": line, "box": box,
+                                          "window": window}))
 
     def _build_graphs(self, v, sensors, area):
         c, S = self.c, self.S
@@ -1023,7 +1128,7 @@ class Dash:
 
     def _graph_panel(self, s, x, y, w, h, iw, xs, window, ticks):
         c, S = self.c, self.S
-        self._rrect(x, y, x + w, y + h, S(14), fill=PANEL, outline=BORDER)
+        card = self._rrect(x, y, x + w, y + h, S(14), fill=PANEL, outline=BORDER)
         pad = S(26)
         c.create_text(x + pad, y + S(30), anchor="w", text=_track(s["name"]), fill=TEXT2,
                       font=self.f("sans", S(16), True))
@@ -1061,7 +1166,7 @@ class Dash:
         rng = s["y_max"] - s["y_min"]
         special = []                                   # y de umbrales y referencias, para no tapar una con un rótulo
         for lim, tint in ((s.get("warn"), WARN), (s.get("crit"), CRIT),      # umbrales
-                          (s.get("warn_lo"), WARN), (s.get("crit_lo"), CRIT)):
+                          (s.get("warn_lo"), WARN), (s.get("crit_lo"), OK)):
             if lim is not None and s["y_min"] < lim < s["y_max"]:
                 ty = _ymap(s, py0, py1, lim)
                 c.create_line(px0, ty, px1, ty, fill=tint, dash=(2, 6))
@@ -1096,7 +1201,7 @@ class Dash:
             c.tag_lower(c.create_rectangle(x0 - S(4), y0b, x1 + S(2), y1b, fill=PLOT, outline=""), t_id)
         msg_bg = c.create_rectangle(0, 0, 0, 0, fill=PLOT, outline="", state="hidden")   # que no lo tache una línea
         msg = c.create_text((px0 + px1) / 2, (py0 + py1) / 2, text="", fill=STALE, font=self.f("sans", S(15), True))
-        self.dyn.append((self._upd_graph, {"s": s, "val": val, "line": line, "dot": dot,
+        self.dyn.append((self._upd_graph, {"s": s, "card": card, "val": val, "line": line, "dot": dot,
                                            "msg": msg, "msg_bg": msg_bg, "stats": stats, "r": r, "window": window,
                                            "box": (px0, py0, px1, py1)}))
 
@@ -1121,6 +1226,13 @@ class Dash:
         return ("CONECTANDO", WARN) if st == "connecting" else ("SIN CONEXIÓN", CRIT)
 
     def _upd_chrome(self, snap):
+        flash = time.monotonic() < self.flash_until
+        self._set(self.tab_bg, state="normal" if flash else "hidden")
+        self._set(self.tab_txt, fill=FLASH_TEXT if flash else TEXT)
+        self._set(self.tab_line, state="hidden" if flash else "normal")
+        for r in self.flash_frame:
+            self._set(r, state="normal" if flash else "hidden")
+
         text, color = self._status(snap)
         blink = link["state"] in ("lost", "connecting") and int(time.time() * 2) % 2 == 0
         self._set(self.chip_dot, fill=PANEL if blink else color)
@@ -1153,18 +1265,26 @@ class Dash:
         return pts, vals
 
     @staticmethod
-    def _value(s, sd, now):
+    def _value(s, sd, now, alert):
         """(texto, color, obsoleto) del valor actual."""
         age = (now - sd["t"][-1]) if sd["t"] else None
         stale = age is None or age > STALE_S
         if sd["last"] is None:
             return ("N/D" if sd["no_data"] else "--"), STALE, True
-        return _fmt(s, sd["last"]), (STALE if stale else _zone_color(s, sd["last"])), stale
+        return _fmt(s, sd["last"]), (STALE if stale else _zone_color(s, sd["last"], alert)), stale
+
+    def _paint(self, d, s, sd, now):
+        """Número y tarjeta (fondo, borde) según la alerta crítica del sensor; devuelve si está obsoleto."""
+        alert = self.alerts[s["id"]].on if s["id"] in self.alerts else None
+        text, color, stale = self._value(s, sd, now, alert)
+        self._set(d["val"], text=text, fill=color)
+        fill, edge, width = ALERT_LOOK[alert]
+        self._set(d["card"], fill=fill, outline=edge, width=width)
+        return stale
 
     def _upd_tile(self, d, snap, now):
         s, sd = d["s"], snap[d["s"]["id"]]
-        text, color, stale = self._value(s, sd, now)
-        self._set(d["val"], text=text, fill=color)
+        stale = self._paint(d, s, sd, now)
         pts, _ = self._trace(s, sd, now, d["window"], d["box"])
         shown = len(pts) >= 4
         if shown:
@@ -1173,8 +1293,7 @@ class Dash:
 
     def _upd_graph(self, d, snap, now):
         s, sd, c = d["s"], snap[d["s"]["id"]], self.c
-        text, color, stale = self._value(s, sd, now)
-        self._set(d["val"], text=text, fill=color)
+        stale = self._paint(d, s, sd, now)
         pts, vals = self._trace(s, sd, now, d["window"], d["box"])
         shown = len(pts) >= 4
         if shown:
@@ -1229,6 +1348,8 @@ class Dash:
             self._rebuild(W, H)
         snap = self._snapshot()
         now = time.time() - session_t0
+        for sid, alert in self.alerts.items():     # todos los sensores, se vean o no: el hold no se pierde
+            alert.update(snap[sid]["t"], snap[sid]["v"], now)
         self._upd_chrome(snap)
         for fn, d in self.dyn:
             fn(d, snap, now)
