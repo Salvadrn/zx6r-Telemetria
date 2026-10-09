@@ -170,11 +170,11 @@ si la Pi 5 arranca con una fuente que no negocia USB-PD y si los 5.0 V del Polol
   <h3>Tres cosas que no estaban en la hoja general</h3>
   <ul style="margin:0">
     <li><b>No todas las ranuras se apagan con la llave.</b> Según el diagrama eléctrico (p. 502), en la caja 1 los fusibles FAN 15 A y METER 7.5 A
-    se alimentan del cable W, directo de la batería: tienen corriente con la llave en OFF. El de las direccionales (caja 2) se alimenta del BL, que también tiene corriente con la llave en P.
-    Con la toma en cualquiera de esos tres, la Pi nunca se apaga y te deja sin batería. Solo HEAD 15 A y BRAKE/HORN 7.5 A sirven (sección 2).</li>
+    se alimentan del cable W, que viene de la batería por el principal de 30 A: tienen corriente con la llave en OFF. El de las direccionales (caja 2) se alimenta del BL, que según la tabla del interruptor (p. 503) también tiene corriente con la llave en P.
+    Con la toma en FAN o METER, la Pi nunca se apaga; en TURN, se queda prendida si dejas la llave en P. En los dos casos te quedas sin batería. Solo HEAD 15 A y BRAKE/HORN 7.5 A sirven (sección 2).</li>
     <li><b>En el peor caso de tolerancias no hay margen de voltaje.</b> El Pololu da 5.0 V ±4 % (puede bajar hasta 4.80 V) y la Pi avisa bajo voltaje
     abajo de 4.63 V ±5 % (el umbral puede estar hasta en 4.86 V). En lo típico sobran 0.33 V. Hay que medirlo con la Pi andando (sección 4).</li>
-    <li><b>La pantalla pide de 5.0 a 7.0 V</b> por su propio conector de barril, no por el USB (hoja de Newhaven). Si se alimenta de este Pololu, queda justo en su mínimo.</li>
+    <li><b>La pantalla pide de 5.0 a 7.0 V</b> por su propio conector de barril, no por el USB (hoja de Newhaven). Si se alimenta de este Pololu, queda en su mínimo o abajo: 4.80 V en el peor caso.</li>
   </ul>
 </div>
 
@@ -220,7 +220,7 @@ si la Pi 5 arranca con una fuente que no negocia USB-PD y si los 5.0 V del Polol
         <line x1="60" y1="286" x2="60" y2="508" stroke="#1f5e8b" stroke-width="2.4"/>
         <line x1="370" y1="34" x2="370" y2="508" stroke="currentColor" stroke-width="2.4"/>
         <text x="78" y="300" font-size="12" class="tp">0 V · llave en OFF</text>
-        <text x="78" y="316" font-size="12" class="tp">12.5–12.8 V · llave en ON</text>
+        <text x="78" y="316" font-size="12" class="tp">≈ 12.5 V · llave en ON (estimado)</text>
         <text x="78" y="332" font-size="12" class="tp">14.3–14.7 V · motor (p. 494)</text>
         <text x="78" y="348" font-size="12" class="tk">rojo 18 AWG · ≤ 2.8 A &lt; 5 A ✓</text>
         <text x="360" y="300" text-anchor="end" font-size="12" class="s">negro 18 AWG</text>
@@ -283,14 +283,15 @@ si la Pi 5 arranca con una fuente que no negocia USB-PD y si los 5.0 V del Polol
     <div class="tabla">
       <table style="min-width:440px">
         <tr><th>Tramo</th><th>Llave OFF</th><th>Llave ON</th><th>Motor andando</th></tr>
-        <tr><td>Bornes de la batería</td><td>12.8 V o más</td><td>12.5–12.8 V</td><td>14.3–14.7 V</td></tr>
+        <tr><td>Bornes de la batería</td><td>12.8 V o más</td><td>≈ 12.5 V (estimado)</td><td>14.3–14.7 V</td></tr>
         <tr><td>Lado vivo de la ranura</td><td class="t-ok">0 V ✓</td><td>≈ batería</td><td>14.3–14.7 V</td></tr>
         <tr><td>VIN–GND del Pololu</td><td>0 V</td><td>≈ batería</td><td>14.3–14.7 V</td></tr>
         <tr><td>VOUT–GND del Pololu</td><td>0 V</td><td>4.80–5.20 V</td><td>4.80–5.20 V</td></tr>
-        <tr><td>Clemas del USB-C</td><td>0 V</td><td>VOUT − 0.04 V</td><td>VOUT − 0.04 V</td></tr>
+        <tr><td>Clemas del USB-C</td><td>0 V</td><td>VOUT − hasta 0.04 V</td><td>VOUT − hasta 0.04 V</td></tr>
       </table>
     </div>
-    <p class="why">Batería YTX9-BS: «12.8 V o más» en reposo y carga del regulador de 14.3–14.7 V (manual p. 494). Con la llave en ON y el motor apagado baja un poco por las luces, la ECU y la bomba.
+    <p class="why">Batería YTX9-BS: «12.8 V o más» en reposo y carga del regulador de 14.3–14.7 V (manual p. 494). Con la llave en ON y el motor apagado baja un poco por las luces, la ECU y la bomba;
+    el manual no da ese valor, así que el ≈ 12.5 V es estimado <span class="pend">por confirmar</span> con tu multímetro.
     El 0 V con llave en OFF es lo que prueba que la ranura sirve. Con la Pi conectada, el voltaje que ella ve se lee con <code>vcgencmd pmic_read_adc EXT5V_V</code>.</p>
 
     <div class="caja" style="margin-top:14px">
@@ -299,11 +300,14 @@ si la Pi 5 arranca con una fuente que no negocia USB-PD y si los 5.0 V del Polol
         <li><b>Uso normal:</b> la Pi 5 gasta unos 0.8 A a 5 V (consumo típico de la placa, documentación oficial) y la pantalla 0.56 A típ., 0.59 A máx. (Newhaven),
         si va colgada del mismo Pololu <span class="pend">por confirmar</span>. Son 1.36 A × 5.0 V = 6.8 W; con ~92 % de eficiencia, 7.4 W de entrada:
         <b>0.6 A a 12.5 V</b>.</li>
-        <li><b>Lo más que el Pololu puede entregar:</b> 5.5 A × 5.2 V = 28.6 W → ~31 W de entrada → <b>2.8 A a 11 V</b> (batería baja). Aun así, el fusible de 5 A no se funde por carga <span class="okt">✓</span></li>
+        <li><b>Lo más que puede pedir la carga:</b> la Pi 5 con los USB a 1.6 A llega a 5 A (lo que Raspberry Pi pide de fuente) y la pantalla a 0.59 A:
+        5.6 A × 5.2 V = 29 W → ~31 W de entrada → <b>2.8 A a 11 V</b> (batería baja). El fusible de 5 A no se funde por carga <span class="okt">✓</span></li>
+        <li><b>Y si algo pidiera más:</b> los 5.5 A del nombre del Pololu son a 36 V de entrada. A 11–12 V su gráfica da unos 8 A continuos antes de que su protección lo limite:
+        8 A × 5.2 V ≈ 42 W → ≈ 46 W de entrada → <b>≈ 4.2 A a 11 V</b>. Sigue abajo de 5 A <span class="okt">✓</span>; el fusible queda para un corto en el cable.</li>
         <li><b>Cable de 18 AWG:</b> ~21 mΩ por metro. A 2.8 A se calienta 0.16 W por metro y a 5 A, justo antes de que se funda el fusible, 0.53 W por metro: queda tibio a lo mucho <span class="okt">✓</span>.
         Así el fusible protege al cable, no al revés.</li>
         <li><b>Caída en el lado de 12 V:</b> unos 3 m de ida y vuelta a 2.8 A son 0.18 V. Al Pololu no le importa: a 3 A le basta con unos 5.9 V de entrada (gráfica de caída de Pololu).</li>
-        <li><b>Caída en el lado de 5 V:</b> 30 cm de ida y 30 de vuelta en 18 AWG son 13 mΩ: <b>38 mV a 3 A</b> <span class="okt">✓</span> (con 20 AWG serían 60 mV). Aquí sí importa cada milivolt (sección 4).</li>
+        <li><b>Caída en el lado de 5 V:</b> 30 cm de ida y 30 de vuelta en 18 AWG son 13 mΩ: <b>38 mV a 3 A</b> <span class="okt">✓</span> (63 mV si la Pi llegara a 5 A; con 20 AWG serían 60 mV a 3 A). Aquí sí importa cada milivolt (sección 4).</li>
       </ul>
     </div>
   </div>
@@ -315,7 +319,7 @@ si la Pi 5 arranca con una fuente que no negocia USB-PD y si los 5.0 V del Polol
 <div class="cols">
   <div>
     <div class="esq">
-      <svg viewBox="0 0 400 392" role="img" aria-label="Diagrama de las cajas de fusibles según el manual: el cable W viene de la batería tras el fusible principal. La llave en ON alimenta el bus BR, que lleva los fusibles 1 IG 15 A, 2 HEAD 15 A y 3 BRAKE/HORN 7.5 A. El W alimenta directo los fusibles 4 FAN 15 A y 5 METER 7.5 A. La llave en ON o en P alimenta el cable BL, que lleva el fusible TURN 7.5 A de la caja 2. Los candidatos son HEAD y BRAKE/HORN.">
+      <svg viewBox="0 0 400 348" role="img" aria-label="Diagrama de las cajas de fusibles según el manual: el cable W viene de la batería tras el fusible principal. La llave en ON alimenta el bus BR, que lleva los fusibles 1 IG 15 A, 2 HEAD 15 A y 3 BRAKE/HORN 7.5 A. El W alimenta directo los fusibles 4 FAN 15 A y 5 METER 7.5 A. La llave en ON o en P alimenta el cable BL, que lleva el fusible TURN 7.5 A de la caja 2. Los candidatos son HEAD y BRAKE/HORN.">
         <text x="14" y="26" font-size="12" class="tp">W · batería, tras el principal 30 A</text>
         <line x1="24" y1="34" x2="24" y2="275" stroke="#1f5e8b" stroke-width="2.4"/>
         <!-- llave: BR solo en ON -->
@@ -399,16 +403,15 @@ si la Pi 5 arranca con una fuente que no negocia USB-PD y si los 5.0 V del Polol
         <text x="184" y="270" font-size="12" class="s">BR/Y</text>
         <text x="224" y="273" font-size="12" font-weight="500">TURN 7.5 A</text>
         <text x="224" y="288" font-size="12" class="tb">vivo también en P ✗</text>
-        <!-- notas -->
-        <text x="10" y="338" font-size="12" class="s">Lado vivo de cada ranura = el que da al bus.</text>
-        <text x="10" y="354" font-size="12" class="s">ECU 15 A y principal 30 A: en el relevador de</text>
-        <text x="10" y="370" font-size="12" class="s">arranque, bajo el tanque (p. 587).</text>
-        <text x="10" y="386" font-size="12" class="s">Diagrama eléctrico del manual, p. 502.</text>
+        <text x="10" y="338" font-size="12" class="s">lado vivo = el lado del bus · pp. 502 y 503</text>
       </svg>
     </div>
     <p class="tiny sub" style="margin-top:6px">Los nombres son los de la tapa de la caja 1 (foto de la p. 587: 15A IG, 15A HEAD, 7.5A BRAKE/HORN, 15A FAN, 7.5A METER) y la leyenda del diagrama de la p. 502.
-    La tabla del interruptor (p. 502) dice qué une cada posición: en ON, W con BR y con BL; en P (PARK), W solo con BL; en OFF, nada.
-    Los circuitos de las pp. 540, 544, 547 y 556 dibujan lo mismo para cada fusible.
+    La caja y su leyenda son iguales en el diagrama de EE. UU. (p. 500).
+    La tabla «Ignition Switch Connections» de la p. 503 (y la p. 501, EE. UU.) dice qué une cada posición: en ON, W con BR y con BL; en P (PARK), W solo con BL; en OFF, nada.
+    La tablita junto al interruptor en la p. 502 solo trae OFF y ON: la P está en la de la p. 503.
+    Los circuitos de las pp. 540, 544, 547 y 556 dibujan lo mismo para cada fusible, salvo un rótulo: la p. 540 llama «Ignition Fuse 15 A» al de la salida GY, que la p. 502 llama «Headlight Relay Fuse».
+    El ECU 15 A y el principal 30 A no están en estas cajas: van en el relevador de arranque, bajo el tanque (p. 587).
     <span class="pend">por confirmar</span> la posición física de cada ranura: ábrela y compara con la tapa.</p>
   </div>
 
@@ -449,7 +452,8 @@ si la Pi 5 arranca con una fuente que no negocia USB-PD y si los 5.0 V del Polol
       <div class="why">Por ahí sale la corriente del circuito original (faro o luces y claxon), a través del fusible de abajo.</div></div></div>
     <div class="fila"><div class="chip c-off"></div><div class="nom">ranura de abajo</div>
       <div><div class="dst">→ el fusible que traía esa ranura</div>
-      <div class="why">Mismo amperaje: 15 A si es HEAD, 7.5 A si es BRAKE/HORN. Que el de abajo sea el original es lo común en estas tomas; la prueba de continuidad lo confirma.</div></div></div>
+      <div class="why">Mismo amperaje: 15 A si es HEAD, 7.5 A si es BRAKE/HORN. Que el de abajo sea el original es lo común en estas tomas; la prueba de continuidad lo confirma.
+      Que la toma genérica aguante 15 A en esa ranura: <span class="pend">por confirmar</span> en su empaque o ficha.</div></div></div>
     <div class="fila"><div class="chip c-ok"></div><div class="nom t-ok">ranura de arriba</div>
       <div><div class="dst">→ fusible de 5 A (del juego del BOM)</div>
       <div class="why">La carga normal es de 0.6 A y el máximo posible, 2.8 A a 11 V: 5 A no se funde por uso, sí por un corto.</div></div></div>
@@ -487,13 +491,13 @@ si la Pi 5 arranca con una fuente que no negocia USB-PD y si los 5.0 V del Polol
     <h3>A dónde va cada agujero del Pololu</h3>
     <div class="fila"><div class="chip c-pwr"></div><div class="nom t-pwr">VIN (×2)</div>
       <div><div class="dst">→ rojo 18 AWG de la toma, y la banda del TVS</div>
-      <div class="why">Acepta de 5.5 a 50 V y aguanta hasta 40 V invertidos. Le llegan 12.5–14.7 V y, en un pico, lo que deje pasar el TVS: ≤ 38.9 V.</div></div></div>
+      <div class="why">Acepta de 5.5 a 50 V y aguanta hasta 40 V invertidos. Le llegan ≈ 12.5–14.7 V y, en un pico, lo que deje pasar el TVS: ≤ 38.9 V.</div></div></div>
     <div class="fila"><div class="chip c-gnd"></div><div class="nom">GND (×4)</div>
       <div><div class="dst">→ negro a la batería y el ánodo del TVS (un par); − de las clemas (el otro par)</div>
       <div class="why">Los cuatro están unidos en la placa. Es el único retorno de toda la caja: la Pi, la pantalla, el sensor y los botones regresan por aquí, sin tocar el chasis.</div></div></div>
     <div class="fila"><div class="chip c-pwr"></div><div class="nom t-pwr">VOUT (×2)</div>
       <div><div class="dst">→ + de las clemas, con ≤ 30 cm de rojo 18 AWG</div>
-      <div class="why">5.0 V ±4 %. A 12 V de entrada da unos 8 A continuos en la mesa (gráfica de Pololu); la Pi y la pantalla juntas piden ≤ 3.6 A.
+      <div class="why">5.0 V ±4 %. A 12 V de entrada da unos 8 A continuos en la mesa (gráfica de Pololu); la Pi y la pantalla juntas piden ≤ 3.6 A sin <code>usb_max_current_enable</code> y hasta 5.6 A con él.
       El otro agujero puede ir a la pantalla si se alimenta de aquí <span class="pend">por confirmar</span>.</div></div></div>
     <div class="fila"><div class="chip c-off"></div><div class="nom t-off">EN</div>
       <div><div class="dst t-off">sin conectar</div>
@@ -535,7 +539,7 @@ si la Pi 5 arranca con una fuente que no negocia USB-PD y si los 5.0 V del Polol
 
   <div>
     <div class="esq">
-      <svg viewBox="0 0 400 330" role="img" aria-label="Escalera de voltajes en la entrada del Pololu: carga normal 14.3 a 14.7 volts, el TVS bloquea hasta 24 volts, empieza a conducir en 26.7, recorta a 38.9 volts en un pico, el Pololu aguanta 50 volts; el alternador sin regulador da 46.4 volts o más">
+      <svg viewBox="0 0 400 296" role="img" aria-label="Escalera de voltajes en la entrada del Pololu: batería en reposo 12.8 volts, carga normal 14.3 a 14.7 volts, el TVS bloquea hasta 24 volts, empieza a conducir en 26.7, recorta a 38.9 volts en un pico de 15.5 amperes, el Pololu aguanta 50 volts: 11 volts de margen">
         <text x="10" y="18" font-size="12.5" font-weight="500">Qué voltaje ve VIN, de abajo hacia arriba</text>
         <!-- eje vertical: y = 280 - v*4.8 (0..52 V) -->
         <line x1="70" y1="40" x2="70" y2="280" stroke="currentColor" stroke-width="1.2"/>
@@ -561,10 +565,6 @@ si la Pi 5 arranca con una fuente que no negocia USB-PD y si los 5.0 V del Polol
         <line x1="64" y1="93.3" x2="76" y2="93.3" stroke="#1e7d32" stroke-width="2.4"/>
         <text x="58" y="97" text-anchor="end" font-size="12" class="tk">38.9</text>
         <text x="86" y="97" font-size="12" class="tk">pico recortado, 15.5 A ✓</text>
-        <!-- 46.4 -->
-        <line x1="64" y1="57.3" x2="76" y2="57.3" stroke="#b3261e" stroke-width="2"/>
-        <text x="58" y="61" text-anchor="end" font-size="12" class="tb">46.4</text>
-        <text x="86" y="61" font-size="12" class="tb">alternador sin regulador</text>
         <!-- 50 -->
         <line x1="64" y1="40" x2="76" y2="40" stroke="#b3261e" stroke-width="2.4"/>
         <text x="58" y="44" text-anchor="end" font-size="12" class="tb">50</text>
@@ -575,13 +575,14 @@ si la Pi 5 arranca con una fuente que no negocia USB-PD y si los 5.0 V del Polol
         <line x1="294" y1="40" x2="306" y2="40" stroke="#1e7d32" stroke-width="1.4"/>
         <text x="312" y="62" font-size="12" class="tk">11 V de</text>
         <text x="312" y="78" font-size="12" class="tk">margen ✓</text>
-        <text x="10" y="306" font-size="12" class="s">46.4 V o más: salida del alternador a 4 000 rpm,</text>
-        <text x="10" y="322" font-size="12" class="s">medida sin regulador (p. 494).</text>
       </svg>
     </div>
-    <p class="tiny sub" style="margin-top:6px">Escala proporcional. Si el pico dura poco (un borne flojo que rebota), el TVS se lo traga. Si dura mucho, por ejemplo con el regulador dañado,
+    <p class="tiny sub" style="margin-top:6px">Escala proporcional. Si el pico dura poco (un borne flojo que rebota), el TVS se lo traga. Si un sobrevoltaje arriba de ~27 V dura mucho,
     el TVS se calienta y se funde el fusible de 5 A: pierdes la Pi en ese viaje, pero no se quema. Si el TVS falla, lo normal es que quede en corto:
     el fusible se funde cada vez que pongas uno nuevo hasta que cambies el TVS.</p>
+    <p class="tiny sub">Los «46.4 V o más» de la p. 494 no van en esta escala: son voltaje de corriente alterna entre dos cables negros del estator, a 4 000 rpm,
+    con el conector del alternador desconectado del regulador (prueba de la p. 520). No es lo que llega a VIN.
+    Cuánto sube la línea de 12 V si el regulador se daña, el manual no lo dice: <span class="pend">por confirmar</span>. Arriba de ~27 V entra el TVS y, si dura, se funde el de 5 A.</p>
     <p class="tiny sub">Por qué el D36V50F5 y no el D24V50F5: el máximo de entrada del D24 es de 38 V, por debajo de los 38.9 V del TVS (BOM y hoja general).</p>
   </div>
 </div>
@@ -636,7 +637,8 @@ si la Pi 5 arranca con una fuente que no negocia USB-PD y si los 5.0 V del Polol
       <div class="why">La entrada documentada. Sin USB-PD la Pi supone una fuente de 3 A (whitepaper de Raspberry Pi), y eso basta para la placa.</div></div></div>
     <div class="fila"><div class="chip c-off"></div><div class="nom t-off">pines 2 y 4 (5 V)</div>
       <div><div class="dst t-off">nada</div>
-      <div class="why">Si entras por el header, la única forma de decirle a la Pi cuánta corriente tienes es <code>PSU_MAX_CURRENT</code> en la EEPROM, y la EEPROM viaja con la placa al ISIC.
+      <div class="why">Si entras por el header, la referencia oficial pide declarar la fuente con <code>PSU_MAX_CURRENT</code> en la EEPROM, y la EEPROM viaja con la placa al ISIC.
+      Por el USB-C basta la línea del <code>config.txt</code>, que se queda en la microSD de la moto.
       El header de 40 pines es el mismo de la Pi 4 (un solo diagrama para todas las placas actuales, documentación oficial).</div></div></div>
     <div class="fila"><div class="chip c-off"></div><div class="nom">ventilador (4 pines)</div>
       <div><div class="dst">→ Active Cooler oficial (SC1148), si tu Pi no lo trae <span class="pend">por confirmar</span></div>
@@ -694,7 +696,7 @@ si la Pi 5 arranca con una fuente que no negocia USB-PD y si los 5.0 V del Polol
 
     <div class="caja">
       <h3>En <code>/boot/firmware/config.txt</code> de la microSD de la moto</h3>
-<pre># Pi 5 en la moto: el Pololu no negocia USB-PD pero si da 5.5 A
+<pre># Pi 5 en la moto: el Pololu no negocia USB-PD pero da 5 A o mas
 # Sube el limite de los USB y el ventilador de 600 mA a 1.6 A
 usb_max_current_enable=1</pre>
       <p class="why" style="margin:0">Se comprueba con <code>vcgencmd get_config usb_max_current_enable</code>. Va en la microSD de la moto y no en la EEPROM: la microSD se queda con la moto y la EEPROM se va con la placa.
@@ -712,14 +714,14 @@ usb_max_current_enable=1</pre>
     <div class="co-t">«¿Hacia qué lado entra la toma de fusible en la ranura?»</div>
     <div class="co-b">
       <p><b>La pata común va al lado vivo</b>, el que da al bus BR. Así la corriente entra a la toma y se reparte en dos caminos, cada uno con su fusible.
-      Si la volteas, la corriente de la Pi pasa también por el fusible original: un corto en tu cable funde ese y te quedas sin faro o sin luces y claxon, además de sin Pi.</p>
+      Si la volteas, la corriente de la Pi pasa también por el fusible original: ese fusible carga los dos circuitos, el suyo y el tuyo, y si se abre te quedas sin faro o sin luces y claxon, además de sin Pi.</p>
       <p><b>Cómo encontrar el lado vivo:</b> quita el fusible original, pon la punta negra en el negativo de la batería y la roja en cada terminal de la ranura vacía.</p>
       <ul>
         <li>Llave en ON: un lado marca ~12.5 V (es el vivo) y el otro 0 V.</li>
         <li>Llave en OFF y llave en P: los dos lados en 0 V. Si alguno marca voltaje, esa ranura no sirve.</li>
       </ul>
       <p><b>Qué ranura:</b> según el diagrama (p. 502), IG 15 A es la del encendido y la ECU, y alimenta el BR/W del KDS: no. FAN 15 A y METER 7.5 A salen del W directo de la batería: no.
-      TURN 7.5 A (caja 2) sale del BL, que la llave también alimenta en P: no. Quedan <b>HEAD 15 A</b> y <b>BRAKE/HORN 7.5 A</b> <span class="pend">por confirmar</span> con el multímetro.</p>
+      TURN 7.5 A (caja 2) sale del BL, que la llave también alimenta en P (tabla del interruptor, p. 503): no. Quedan <b>HEAD 15 A</b> y <b>BRAKE/HORN 7.5 A</b> <span class="pend">por confirmar</span> con el multímetro.</p>
       <p style="margin:0">Prefiero HEAD: si la toma quedara al revés y ese fusible carga los focos, como dice su nombre, el faro en alta (prenden los dos de 55 W, unos 9 A, pp. 82 y 540) más los 2.8 A del peor caso de la Pi aún caben en 15 A.
       En la de 7.5 A ya van las luces de posición, la de freno y el claxon.</p>
     </div>
@@ -729,7 +731,8 @@ usb_max_current_enable=1</pre>
     <div class="co-t">«¿Qué pasa si conecto el TVS al revés?»</div>
     <div class="co-b">
       <p>Con la banda en GND, el TVS queda como un diodo en directo entre + y −. Al poner la llave en ON conduce como un corto y <b>se funde el fusible de 5 A</b> en una fracción de segundo.
-      No se quema nada más, siempre que la toma esté del lado correcto y el fusible sea de 5 A. Si la toma está al revés, el que se puede fundir es el original.</p>
+      No se quema nada más, siempre que la toma esté del lado correcto y el fusible sea de 5 A. Si la toma está al revés, ese corto pasa por los dos fusibles en serie:
+      lo normal es que el de 5 A se funda primero, pero el original también carga con el pico.</p>
       <p>Mientras siga al revés, la protección contra picos no existe: el Pololu solo aguanta 50 V y no recorta nada.</p>
       <p style="margin:0"><b>Revísalo antes de soldarlo:</b> en modo diodo, la punta roja en la terminal sin banda y la negra en la banda marca una caída de diodo (unos 0.6 V). Al revés, «OL».
       Ya soldado, la banda queda del lado de VIN.</p>
@@ -774,7 +777,8 @@ usb_max_current_enable=1</pre>
     <li><b>Al dar marcha:</b> la batería baja un momento. El Pololu necesita unos 5.9 V a 3 A para seguir dando 5 V. <span class="pend">por confirmar</span> que la Pi no se reinicie: mídelo al arrancar.</li>
     <li><b>Llave en OFF o en P:</b> la Pi se queda sin corriente de golpe. Lo que se arriesga es la microSD: ver la hoja general (sistema de solo lectura) o apagar con el botón de la Pi antes de quitar la llave.</li>
     <li><b>El rojo se pela y toca el chasis:</b> todo el cable está después del fusible de 5 A. Se funde el de 5 A y la moto sigue.</li>
-    <li><b>Se suelta el negro:</b> la caja se queda sin retorno y la Pi se apaga. No se quema nada.</li>
+    <li><b>Se suelta el negro:</b> la caja se queda sin retorno y la Pi se apaga. No se quema nada.
+    Con el plan B (OBDLink EX por USB) puede no apagarse: la corriente buscaría regresar por el USB y la tierra BK/Y del conector KDS, si el OBDLink no aísla sus tierras <span class="pend">por confirmar</span>. Revisa el ojillo si usas el plan B.</li>
     <li><b>Se zafa el USB-C:</b> la Pi se apaga y el Pololu se queda sin carga, gastando 2–4 mA mientras la llave esté en ON.</li>
     <li><b>Toma en una ranura que vive con la llave en OFF o en P:</b> la Pi nunca se apaga. Con la pantalla gasta unos 0.6 A a 12 V: en menos de un día la batería de 8 Ah ya no arranca la moto.</li>
   </ul>
@@ -812,30 +816,33 @@ vcgencmd measure_temp             # en caja cerrada, un día de calor</pre></li>
   <li><b>Que el 18 AWG entre en los agujeros del Pololu.</b></li>
   <li><b>La forma del cable de 2 vías:</b> si es plano, un prensaestopas redondo (PG7, 3–6 mm) no sella bien. Redondéalo con termofil grueso o usa un cable redondo.</li>
   <li><b>Que la Pi no se reinicie al dar marcha.</b></li>
+  <li><b>Cuánta corriente aguanta la toma genérica</b> con el fusible original de 15 A abajo: en su empaque o ficha.</li>
+  <li><b>El voltaje de la batería con la llave en ON</b> y el motor apagado: con el multímetro (aquí va estimado en ≈ 12.5 V).</li>
+  <li><b>Si el OBDLink EX aísla sus tierras,</b> solo si llegas al plan B.</li>
 </ol>
 
 <h2>Fuentes</h2>
 <ul class="fuentes">
   <li><b>Tu manual de servicio</b>, Ninja ZX-6R / ZX-6R ABS 636 (ZX636ED/FD, 2013), <code>~/Downloads/NinjaManual.pdf</code>:
-  especificaciones de batería YTX9-BS (12.8 V o más), carga 14.3–14.7 V y alternador 46.4 V o más a 4 000 rpm, p. 494; quitar la batería, p. 510;
+  especificaciones de batería YTX9-BS (12.8 V o más), carga 14.3–14.7 V y alternador 46.4 V o más a 4 000 rpm, p. 494; esa prueba del alternador (CA, conector desconectado), p. 520; quitar la batería, p. 510;
   cajas de fusibles bajo la cubierta interior izquierda, foto de la tapa, y ECU 15 A y principal 30 A en el relevador de arranque, p. 587;
-  diagrama eléctrico con la leyenda de fusibles y la tabla del interruptor de encendido, p. 502;
+  diagrama eléctrico con las cajas y la leyenda de fusibles, p. 502 (igual en la p. 500 de EE. UU.); tabla «Ignition Switch Connections» con OFF, ON y P, p. 503 (p. 501 en EE. UU.);
   circuitos de faro y luces, direccionales, ventilador y medidor, pp. 540, 544, 547 y 556; faro alto con los dos focos, p. 82;
   alimentación de la ECU (terminal 6 BR/W), p. 130; circuito de alimentación de la ECU, p. 131; inmovilizador y conector KDS, p. 578; tierras del cuadro, pp. 691, 693 y 722.</li>
   <li>Pololu <a href="https://www.pololu.com/product/4091">D36V50F5 (#4091)</a>: conexiones, EN con 100 kΩ a VIN, PG de drenaje abierto, VRP, 3 A por pin de header, 5.5–50 V, 5 V ±4 %, inversión hasta 40 V,
-  gráficas de eficiencia, corriente máxima, consumo sin carga y caída. <a href="https://www.pololu.com/product/2851">D24V50F5</a> (38 V máx.).</li>
-  <li>Littelfuse <a href="https://www.digikey.com/en/products/detail/littelfuse-inc/SMBJ24A/285994">SMBJ24A</a> (ficha de DigiKey): 24 V de standoff, 26.7 V de ruptura mín., 38.9 V a 15.5 A, 600 W, DO-214AA, unidireccional.</li>
-  <li>Raspberry Pi: <a href="https://github.com/raspberrypi/documentation/blob/develop/documentation/asciidoc/computers/raspberry-pi/power-supplies.adoc">fuentes de alimentación</a>
+  gráficas de eficiencia, corriente máxima (los 5.5 A del nombre son a 36 V de entrada; ~8 A a 12 V), consumo sin carga y caída. <a href="https://www.pololu.com/product/2851">D24V50F5</a> (38 V máx.).</li>
+  <li>Littelfuse <a href="https://www.digikey.com/en/products/detail/littelfuse-inc/SMBJ24A/285994">SMBJ24A</a> (ficha de DigiKey): 24 V de standoff, 26.7 V de ruptura mín., 38.9 V a 15.5 A, 1 µA de fuga a 24 V, 600 W, DO-214AA, unidireccional; los mismos valores vienen en la tabla de la hoja de datos de la serie SMBJ de Littelfuse (revisada 06/03/20).</li>
+  <li>Raspberry Pi: <a href="https://github.com/raspberrypi/documentation/blob/master/documentation/asciidoc/computers/raspberry-pi/power-supplies.adoc">fuentes de alimentación</a>
   (Pi 5: 5 A recomendado, 1.6 A o 600 mA para USB, 800 mA típicos, umbral de 4.63 V ±5 %, <code>pmic_read_adc</code>);
   <a href="https://pip-assets.raspberrypi.com/categories/685-app-notes-guides-whitepapers/documents/RP-009856-WP-1-USB%20Power%20delivery%20on%20Raspberry%20Pi%205.pdf">whitepaper RP-009856, USB Power Delivery on Raspberry Pi 5</a>
   (sin PD supone 3 A, aviso, USB a 600 mA, sin arranque por USB, <code>usb_max_current_enable</code> y <code>PSU_MAX_CURRENT</code>);
-  <a href="https://github.com/raspberrypi/documentation/blob/develop/documentation/asciidoc/computers/raspberry-pi/eeprom-bootloader.adoc">configuración de la EEPROM</a> (<code>PSU_MAX_CURRENT</code>, solo Pi 5);
-  <a href="https://github.com/raspberrypi/documentation/blob/develop/documentation/asciidoc/computers/configuration/reference.adoc">referencia del device tree</a> (con el header, <code>PSU_MAX_CURRENT</code>);
-  <a href="https://github.com/raspberrypi/documentation/blob/develop/documentation/asciidoc/computers/raspberry-pi/power-button.adoc">botón de encendido</a> y J2;
-  <a href="https://github.com/raspberrypi/documentation/blob/develop/documentation/asciidoc/computers/raspberry-pi/rtc.adoc">reloj y J5</a>;
-  <a href="https://github.com/raspberrypi/documentation/blob/develop/documentation/asciidoc/computers/raspberry-pi/frequency-management.adoc">temperatura y ventilador</a> (80–85 °C, el ventilador comparte el límite de los USB);
-  <a href="https://github.com/raspberrypi/documentation/blob/develop/documentation/asciidoc/computers/os/graphics-utilities.adoc"><code>get_throttled</code></a>;
-  <a href="https://github.com/raspberrypi/documentation/blob/develop/documentation/asciidoc/computers/raspberry-pi/gpio-on-raspberry-pi.adoc">header de 40 pines</a>.</li>
+  <a href="https://github.com/raspberrypi/documentation/blob/master/documentation/asciidoc/computers/raspberry-pi/eeprom-bootloader.adoc">configuración de la EEPROM</a> (<code>PSU_MAX_CURRENT</code>, solo Pi 5);
+  <a href="https://github.com/raspberrypi/documentation/blob/master/documentation/asciidoc/computers/configuration/reference.adoc">referencia del device tree</a> (con el header, <code>PSU_MAX_CURRENT</code>);
+  <a href="https://github.com/raspberrypi/documentation/blob/master/documentation/asciidoc/computers/raspberry-pi/power-button.adoc">botón de encendido</a> y J2;
+  <a href="https://github.com/raspberrypi/documentation/blob/master/documentation/asciidoc/computers/raspberry-pi/rtc.adoc">reloj y J5</a>;
+  <a href="https://github.com/raspberrypi/documentation/blob/master/documentation/asciidoc/computers/raspberry-pi/frequency-management.adoc">temperatura y ventilador</a> (80–85 °C, el ventilador comparte el límite de los USB);
+  <a href="https://github.com/raspberrypi/documentation/blob/master/documentation/asciidoc/computers/os/graphics-utilities.adoc"><code>get_throttled</code></a>;
+  <a href="https://github.com/raspberrypi/documentation/blob/master/documentation/asciidoc/computers/raspberry-pi/gpio-on-raspberry-pi.adoc">header de 40 pines</a>.</li>
   <li>Newhaven <a href="https://newhavendisplay.com/content/specs/NHD-5.0-HDMI-N-RSXP-CTU.pdf">NHD-5.0-HDMI-N-RSXP-CTU</a>: 5.0–7.0 V, 560 mA típ. y 590 mA máx. a 5 V; en el esquemático entra por el jack CN3 y el VBUS del micro-USB queda sin conectar (R25 no se monta en la versión CTU).</li>
   <li>Orientación de la toma de fusible: <a href="https://www.blackboxmycar.com/pages/fuse-facts-the-right-way-to-use-an-add-a-fuse">BlackboxMyCar, «Fuse facts»</a> (fusible original abajo; al revés, el original carga los dos circuitos).</li>
   <li>Repo: <code>BOM.csv</code> (revisado el 2026-10-06; Pi 5 y Active Cooler el 2026-10-09) y <code>docs/conexion.html</code>.</li>
