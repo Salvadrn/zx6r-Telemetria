@@ -41,6 +41,20 @@ SIM_HZ         = 10
 
 UI_FPS    = int(os.environ.get("OBD2_FPS", "12"))
 WINDOWED  = os.environ.get("OBD2_WINDOWED", "0") == "1"    # ventana en vez de pantalla completa
+
+
+def _parse_size(text):
+    """'1024x600' -> (1024, 600) (cada lado de 100 a 99999 px); None si está mal escrito."""
+    m = re.fullmatch(r"(\d{1,5})[xX](\d{1,5})", text)
+    return (int(m.group(1)), int(m.group(2))) if m and min(int(m.group(1)), int(m.group(2))) >= 100 else None
+
+
+WIN_W, WIN_H = 1280, 720                                    # OBD2_SIZE="1024x600": tamaño de esa ventana
+_size = os.environ.get("OBD2_SIZE", "")
+if _size and not _parse_size(_size):
+    print(f"[UI] OBD2_SIZE={_size} no es ANCHOxALTO (p. ej. 1024x600); uso {WIN_W}x{WIN_H}")
+elif _size:
+    WIN_W, WIN_H = _parse_size(_size)
 HEADLESS  = os.environ.get("OBD2_HEADLESS", "0") == "1"    # sin pantalla: solo lee, guarda y sirve la web
 FONT_SANS = os.environ.get("OBD2_FONT_SANS", "")
 FONT_MONO = os.environ.get("OBD2_FONT_MONO", "")
@@ -792,7 +806,7 @@ class Dash:
         self.root.title("ZX-6R — Telemetría")
         self.root.configure(bg=BG)
         if WINDOWED:
-            self.root.geometry("1280x720+60+60")
+            self.root.geometry(f"{WIN_W}x{WIN_H}+60+60")   # OBD2_SIZE, default 1280x720
         else:
             self.root.attributes("-fullscreen", True)
             try:
