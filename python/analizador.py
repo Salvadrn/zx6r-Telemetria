@@ -45,7 +45,7 @@ WINDOWED  = os.environ.get("OBD2_WINDOWED", "0") == "1"    # ventana en vez de p
 
 def _parse_size(text):
     """'1024x600' -> (1024, 600) (cada lado de 100 a 99999 px); None si está mal escrito."""
-    m = re.fullmatch(r"(\d{1,5})[xX](\d{1,5})", text)
+    m = re.fullmatch(r"([0-9]{1,5})[xX]([0-9]{1,5})", text)   # [0-9] y no \d: solo dígitos ASCII, como C++
     return (int(m.group(1)), int(m.group(2))) if m and min(int(m.group(1)), int(m.group(2))) >= 100 else None
 
 
