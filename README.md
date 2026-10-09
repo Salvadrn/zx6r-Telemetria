@@ -133,6 +133,65 @@ Usa un encoder magnético: un imán en el eje de la dirección y el sensor fijo 
 - **Calibrar:** con la moto derecha, en el visor web toca **Fijar centro**. Si los lados salen al revés, toca **Invertir**. En un teclado conectado a la Pi, la tecla `C` también fija el centro. La calibración se guarda en `~/obd2_logs/direccion.json` y las dos versiones la comparten.
 - **Sin el sensor conectado**, la vista DIRECCIÓN dice "SIN SENSOR" y todo lo demás sigue funcionando.
 
+## Install
+
+En la Raspberry Pi 5 con Raspberry Pi OS Trixie (con escritorio). Así quedó instalada y probada con el simulador el 2026-10-09. En la moto todavía no se ha probado.
+
+**1. Bajar el repo.** Es privado, así que la Pi necesita `gh` con tu cuenta (`gh auth login`):
+
+```bash
+gh repo clone Salvadrn/zx6r-Telemetria ~/zx6r-analizador
+```
+
+**2. Python.** Raspberry Pi OS con escritorio ya trae Python 3 y Tk. Si falta Tk:
+
+```bash
+sudo apt install python3-tk
+```
+
+**3. C++.** Instala los paquetes (piden la contraseña de la Pi) y compila con 2 núcleos:
+
+```bash
+sudo apt install -y build-essential cmake libsqlite3-dev libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl1-mesa-dev
+cd ~/zx6r-analizador
+cmake -S cpp -B cpp/build -DCMAKE_BUILD_TYPE=Release
+cmake --build cpp/build -j2
+```
+
+La primera vez tarda ~1.5 min porque descarga y compila raylib. Compila con 2 núcleos y no con 4: con 4 y una fuente débil esta Pi ya se apagó por bajo voltaje.
+
+**4. Probar con el simulador** en la pantalla de la Pi:
+
+```bash
+cd ~/zx6r-analizador/python && OBD2_SIM=1 OBD2_WINDOWED=1 python3 analizador.py
+cd ~/zx6r-analizador && OBD2_SIM=1 OBD2_WINDOWED=1 ./cpp/build/zx6r
+```
+
+Sin `OBD2_SIM=1` se conectan al ELM327 y abren en pantalla completa. Si lo lanzas por SSH desde otra computadora, primero corre `export DISPLAY=:0 WAYLAND_DISPLAY=wayland-0 XDG_RUNTIME_DIR=/run/user/$(id -u)` para que abra en el monitor de la Pi.
+
+**5. Actualizar** después de un cambio en GitHub:
+
+```bash
+cd ~/zx6r-analizador && git pull && cmake --build cpp/build -j2
+```
+
+**Medido en la Pi 5** (simulador, ventana de 1280×720):
+
+| | Python | C++ |
+|---|---|---|
+| CPU | ~4 % | ~4 % |
+| Memoria | 40 MB | 84 MB |
+| Lecturas por segundo | 85 | 85 |
+
+En las dos el visor web contesta. Compilar C++ tardó 92 s; durante la compilación la Pi marcó 4.88 V como mínimo y 49 °C como máximo, sin avisos de bajo voltaje.
+
+**Lo que falta, en la microSD de la moto.** No se hizo en la del ISIC para no tocar ese proyecto:
+
+- Activar I²C y los botones en `/boot/firmware/config.txt` (ver [Botones del manubrio](#botones-del-manubrio) y [Sensor de dirección](#sensor-de-dirección-as5600)).
+- En el mismo archivo, `usb_max_current_enable=1` si algo se alimenta de los USB de la Pi.
+- Conectar la Pi al WiFi del ELM327 con IP fija (sección 5 de la [hoja de conexión](docs/conexion.html)).
+- Que el tablero arranque solo al prender la Pi. Todavía no está hecho.
+
 ## Cómo correrlo
 
 ### Python
