@@ -982,10 +982,13 @@ class Dash:
         c, S = self.c, self.S
         self._rrect(x, y, x + w, y + h, S(14), fill=PANEL, outline=BORDER)
         pad = S(26)
-        c.create_text(x + pad, y + S(30), anchor="w", text=_track(s["name"]), fill=TEXT2,
+        name = _track(s["name"])
+        c.create_text(x + pad, y + S(30), anchor="w", text=name, fill=TEXT2,
                       font=self.f("sans", S(16), True))
-        c.create_text(x + w - S(22), y + S(30), anchor="e", text=s["desc"], fill=TEXT3,
-                      font=self.f("sans", S(12)))
+        name_end = x + pad + self.measure("sans", S(16), True, name)
+        if x + w - S(22) - self.measure("sans", S(12), False, s["desc"]) > name_end + S(12):   # solo si no se enciman
+            c.create_text(x + w - S(22), y + S(30), anchor="e", text=s["desc"], fill=TEXT3,
+                          font=self.f("sans", S(12)))
         vchars = max(len(_fmt(s, s["y_min"])), len(_fmt(s, s["y_max"])))
         vpx = int(min(h * 0.36, w * 0.58 / (vchars * 0.62)))
         xr = x + pad + self.measure("mono", vpx, True, "0") * vchars
