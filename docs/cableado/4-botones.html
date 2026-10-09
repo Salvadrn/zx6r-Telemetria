@@ -171,7 +171,7 @@ si sirven los interruptores originales de la moto, qué pasa si un cable se pela
   <h3>Lo que cambia el plan: el 3-145-122 es IP67 solo por el frente</h3>
   <p style="margin:0 0 6px">Schurter da «IP66 and IP67 Front Side» para toda la serie, pero en su tabla de variantes el <b>3-145-122</b> trae el microinterruptor de atrás en <b>IP40</b>
   (columna «IP specification backside»). IP40 no protege contra el agua. En el manubrio, la lluvia y el agua del lavado llegan por detrás, justo a las lengüetas,
-  y una película de agua entre el NO y el COM se lee igual que un dedo apretando.</p>
+  y una película de agua entre el NO y el COM puede leerse como un dedo apretando.</p>
   <ul style="margin:0">
     <li><b>Lo limpio:</b> el <b>3-145-275</b>, la misma medida (16 mm, 100 mA, SPDT, contacto de oro) con el microinterruptor IP67.
     A carga máxima dura 50 000 operaciones en vez de 200 000. <span class="pend">por confirmar</span> precio y existencia en Mouser.</li>
@@ -188,7 +188,7 @@ si sirven los interruptores originales de la moto, qué pasa si un cable se pela
   <div class="lista">
     <div class="caja">
       <h3>La pieza como se ve: Schurter MSM II 16 (3-145-122), por detrás</h3>
-      <p class="why" style="margin-bottom:6px">Botón momentáneo de acero inoxidable con un microinterruptor de tres lengüetas atornillado atrás. No trae LED, así que no hay terminales de luz.</p>
+      <p class="why" style="margin-bottom:6px">Botón momentáneo de acero inoxidable con un microinterruptor de tres lengüetas que se encaja atrás, a presión. No trae LED, así que no hay terminales de luz.</p>
       <div class="esq">
         <svg viewBox="0 0 400 336" role="img" aria-label="Dibujo del botón Schurter: de lado en corte, actuador, bisel con O-ring, pared de la abrazadera, tuerca de 19 milímetros, microinterruptor y tres lengüetas de 2.8 milímetros; abajo, vista por detrás con las tres lengüetas en fila numeradas 1, 2 y 3">
           <defs>
@@ -223,7 +223,7 @@ si sirven los interruptores originales de la moto, qué pasa si un cable se pela
           <line x1="180" y1="50" x2="110" y2="42" stroke="currentColor" stroke-width="0.8"/>
           <text x="184" y="54" font-size="12">bisel Ø20 + O-ring: IP67</text>
           <line x1="180" y1="68" x2="118" y2="58" stroke="currentColor" stroke-width="0.8"/>
-          <text x="184" y="72" font-size="12" class="s">pared de la abrazadera</text>
+          <text x="184" y="72" font-size="12" class="s">pared de la abrazadera ≤ 6 mm</text>
           <line x1="180" y1="86" x2="108" y2="72" stroke="currentColor" stroke-width="0.8"/>
           <text x="184" y="90" font-size="12">tuerca M16, llave de 19 mm</text>
           <text x="184" y="106" font-size="12" class="s">máx. 2 N·m: es de plástico</text>
@@ -253,9 +253,11 @@ si sirven los interruptores originales de la moto, qué pasa si un cable se pela
       <ul class="datos">
         <li>Contacto <b>SPDT</b> (COM, NO y NC), de <b>oro</b>: máx. 30 V CC y 0.1 A, menos de 50 mΩ cerrado, rebote menor a 5 ms.</li>
         <li>Agujero de <b>Ø16.1 (+0.1) mm</b> sin muesca antigiro (el modelo sin luz no la trae); rosca M16 × 1. Imprime el agujero un poco más grande y prueba el ajuste.</li>
-        <li>Tuerca de plástico (PA) de 19 mm entre caras, <b>máx. 2 N·m</b>. Schurter vende aparte una de acero inoxidable (0098.9260), por si la vibración la afloja.</li>
+        <li>Tuerca de plástico (PA) de 19 mm entre caras, <b>máx. 2 N·m</b>. Schurter vende tuercas metálicas aparte, por si la vibración la afloja:
+        <span class="pend">por confirmar</span> el número de la M16 × 1 (ni la hoja de datos ni la página del 3-145-122 lo traen; RS lista la 0098.9206, M16 × 1 de acero zincado con sello, sin existencia).</li>
         <li>El microinterruptor (20 mm de ancho) no pasa por el agujero de 16: viene suelto en la caja y se encaja <b>después</b> de apretar la tuerca.</li>
-        <li>Detrás de la pared ocupa 33.5 mm hasta la punta de las lengüetas, más la zapata y la curva del cable. Trabaja de −30 a 85 °C.</li>
+        <li>Pared de <b>6 mm como máximo</b> (cota «max. 6» del dibujo de Schurter, del bisel a la tuerca). De la cara de afuera de la pared a la punta de las lengüetas son 33.5 mm,
+        más la zapata y la curva del cable. Trabaja de −30 a 85 °C.</li>
       </ul>
     </div>
 
@@ -272,6 +274,8 @@ si sirven los interruptores originales de la moto, qué pasa si un cable se pela
       <p class="tiny sub" style="margin:8px 0 0">Un solo Dupont 1 × 7 cubre la fila de adentro del 1 al 13: 3V3 · SDA · SCL · (vacío) · GND · ▶ · ◀.
       De esta hoja son el <b>9</b>, el <b>11</b> y el <b>13</b>; el 1, el 3 y el 5 son del sensor de dirección. Como la Pi entra y sale de la caja,
       marca con pintura la posición del pin 1 en la carcasa del Dupont.</p>
+      <p class="tiny" style="margin:6px 0 0"><b class="t-bad">Ojo:</b> metido en la fila del borde y volteado, el ▶ y el ◀ caen en los pines 4 y 2 (5 V) y su común en el 6 (GND):
+      apretar un botón pone el 5 V en corto a través del contacto de 100 mA. Solo va en la fila de adentro, pin 1 sobre pin 1.</p>
     </div>
 
     <h3>A dónde va cada lengüeta del botón ▶</h3>
@@ -284,7 +288,7 @@ si sirven los interruptores originales de la moto, qué pasa si un cable se pela
       <div class="why">Normalmente abierto. Suelto, el pull-up deja la línea en 3.3 V; apretado, 0 V. Con el NO, un cable que se corta se lee «suelto» y no dispara nada.</div></div></div>
     <div class="fila"><div class="chip c-off"></div><div class="nom t-off">NC</div>
       <div><div class="dst t-off">sin conectar</div>
-      <div class="why">Normalmente cerrado: está unido al COM mientras el botón está suelto. Si lo usas por error, la Pi lee «apretado» todo el tiempo.
+      <div class="why">Normalmente cerrado: está unido al COM mientras el botón está suelto. Si lo usas por error en vez del NO, la Pi lee al revés: «apretado» mientras está suelto y «suelto» cuando lo aprietas.
       Cúbrelo con termofil para que no toque la abrazadera ni otra lengüeta.</div></div></div>
     <div class="fila"><div class="chip c-sig"></div><div class="nom t-sig">botón ◀</div>
       <div><div class="dst">→ igual, con el par azul: NO → pin 13 · GPIO27</div>
@@ -302,7 +306,7 @@ si sirven los interruptores originales de la moto, qué pasa si un cable se pela
       <div class="why">Bus I²C 1. Esta hoja no lo toca.</div></div></div>
     <div class="fila"><div class="chip c-off"></div><div class="nom t-off">pin 7 · GPIO4</div>
       <div><div class="dst t-off">hueco vacío del Dupont</div>
-      <div class="why">Se deja libre para que el conector de 7 vías no toque nada.</div></div></div>
+      <div class="why">Esa posición del Dupont va sin terminal: el conector es de 7 vías para cubrir del 1 al 13 de una vez, y el GPIO4 no se usa.</div></div></div>
     <div class="fila"><div class="chip c-gnd"></div><div class="nom">pin 9 · GND</div>
       <div><div class="dst">→ las dos tierras de los botones, empalmadas, y el GND del AS5600</div>
       <div class="why">Es la referencia contra la que la Pi lee el 0 V del botón. Une los dos hilos blancos con soldadura y termofil en un solo hilo corto;
@@ -420,7 +424,7 @@ si sirven los interruptores originales de la moto, qué pasa si un cable se pela
         <table style="min-width:440px">
           <tr><th>Qué</th><th>Valor</th><th>Contra qué</th></tr>
           <tr><td>Suelto</td><td>3.3 V, sin corriente</td><td class="t-ok">entrada de 3.3 V ✓</td></tr>
-          <tr><td>Apretado</td><td>≈ 0 V: contacto &lt; 50 mΩ y 2 m de 24 AWG ≈ 0.17 Ω, por 1 mA o menos</td><td class="t-ok">muy abajo de cualquier umbral de «bajo» ✓</td></tr>
+          <tr><td>Apretado</td><td>≈ 0 V: contacto &lt; 50 mΩ y ~3 m de ida y vuelta de 24–26 AWG ≈ 0.25–0.4 Ω, por 1 mA o menos: &lt; 1 mV</td><td class="t-ok">muy abajo de cualquier umbral de «bajo» ✓</td></tr>
           <tr><td>Corriente, solo pull-up interno</td><td>3.3 V ÷ pull-up del RP1 <span class="pend">por confirmar</span> (con los 33–73 kΩ de la Pi 4 serían 45–100 µA)</td><td class="t-ok">máx. del contacto: 100 mA ✓</td></tr>
           <tr><td>Corriente, con 4.7 kΩ</td><td>3.3 V ÷ 4.7 kΩ = 0.70 mA</td><td class="t-ok">100 mA ✓</td></tr>
           <tr><td>Voltaje sobre el contacto</td><td>3.3 V</td><td class="t-ok">máx. 30 V CC ✓</td></tr>
@@ -462,11 +466,13 @@ si sirven los interruptores originales de la moto, qué pasa si un cable se pela
     Así, entre los hilos que llegan al Dupont cada color aparece una sola vez. Los pares naranja y café de este cable no se cortan: dóblalos hacia atrás con termofil en las puntas,
     lejos del Dupont, y te sirven de repuesto o para un tercer botón.</p>
 
-    <h3>Antes de cortar, revisa dos cosas del cable</h3>
+    <h3>Antes de cortar, revisa tres cosas del cable</h3>
     <ul>
       <li><b>Que sea multifilar, no sólido.</b> Pela una punta: si cada hilo es un solo alambre, es cable de instalación y se rompe por fatiga con el giro del manubrio.
       Los cables de parcheo (los que ya traen conector) suelen ser multifilares. <span class="pend">por confirmar</span></li>
       <li><b>Que entre en el PG7.</b> El prensaestopas sella cables de 3 a 6 mm (BOM) y un Cat5e suele andar por 5–6 mm: mídelo con el vernier. <span class="pend">por confirmar</span></li>
+      <li><b>Que alcance.</b> El BOM dice que tu UTP mide de 1 a 2 m y de él salen dos tramos: este (~1.5 m, sin medir) y el del sensor (&lt; 50 cm).
+      Con 1 m no alcanza. Mide el cable y el cordón antes de cortar. <span class="pend">por confirmar</span></li>
     </ul>
 
     <h3>Las puntas</h3>
@@ -600,8 +606,9 @@ sudo evtest
         <tr><th>Si ves…</th><th>Quiere decir</th></tr>
         <tr><td><code>pu | hi</code> suelto, <code>lo</code> apretado</td><td class="t-ok">Cableado y overlay bien ✓</td></tr>
         <tr><td><code>pd</code> o <code>pn</code> en vez de <code>pu</code></td><td>El overlay no cargó: revisa la línea de <code>config.txt</code> y reinicia.</td></tr>
-        <tr><td><code>lo</code> siempre, aun suelto</td><td class="t-bad">Hilo pelado contra el cuadro, NC en vez de NO, o agua en las lengüetas.</td></tr>
-        <tr><td><code>hi</code> siempre, aun apretado</td><td>Cable cortado, zapata floja o el NO y el COM al revés de lo que crees: repite el paso 1.</td></tr>
+        <tr><td><code>lo</code> siempre, aun suelto</td><td class="t-bad">Hilo pelado contra el cuadro, o agua en las lengüetas.</td></tr>
+        <tr><td><code>lo</code> suelto y <code>hi</code> apretado</td><td>Al revés: un hilo está en el NC en vez del NO. Repite el paso 1.</td></tr>
+        <tr><td><code>hi</code> siempre, aun apretado</td><td>Cable cortado, zapata floja, o los hilos en el NO y el NC sin pasar por el COM: repite el paso 1. (Cambiar el NO por el COM no importa: el contacto es el mismo.)</td></tr>
         <tr><td>en <code>evtest</code>, dos <code>value 1</code> por toque</td><td>Rebote más largo que 5 ms: el filtro de la duda 4 no lo arregla.</td></tr>
       </table>
     </div>
@@ -647,8 +654,8 @@ sudo evtest
         <li><b>Toca el chasis:</b> la tierra de la Pi es el chasis, así que la línea se queda en 0 V y se lee «apretado» todo el tiempo. No se daña nada.
         Lo más probable es que en Python la vista avance sola por la repetición de tecla del entorno gráfico; en C++ no, porque raylib usa <code>IsKeyPressed</code>. Se arregla aislando el hilo.</li>
         <li><b>Se corta:</b> el pull-up deja la línea en 3.3 V y se lee «suelto». Ese botón deja de servir y nada más. Por eso va al NO y no al NC.</li>
-        <li><b>Toca el 12 V:</b> entran 12–14.7 V a un pin de 3.3 V. Lo más que dice el datasheet del RP1 es que casi no entra corriente al pin mientras esté abajo de 3.63 V;
-        arriba de eso no promete nada.
+        <li><b>Toca el 12 V:</b> entran 12–14.7 V a un pin de 3.3 V. Lo más que dice el datasheet del RP1 es que, con la Pi apagada (IOVDD en 0 V), casi no entra corriente al pin mientras esté abajo de 3.63 V;
+        arriba de eso, o con la Pi prendida, no promete nada.
         En la Pi 5, el RP1 también maneja los USB, el Ethernet y las cámaras, así que el daño puede pasar del GPIO, y es la Pi del ISIC.
         El 1 kΩ en serie limita la corriente a unos 10 mA, pero Raspberry Pi no publica cuánto aguanta la entrada: <b>no es garantía</b>.</li>
         <li><b>Lo que sí evita ese caso:</b> el forro del UTP como segunda capa, termofil en cada lengüeta, el cable lejos de bornes y conectores de 12 V, y que nada roce de tope a tope.
@@ -718,7 +725,8 @@ sudo evtest
   <li><b>3-145-275 o sellar el 122:</b> precio y existencia del de IP67 por detrás.</li>
   <li><b>El largo del cable:</b> con el cordón, de tope a tope, más el lazo.</li>
   <li><b>Tu UTP:</b> que sea multifilar y mida de 3 a 6 mm para el PG7.</li>
-  <li><b>El lado y el diámetro del semimanubrio</b> (22 mm esperado), y el espesor de la pared de la abrazadera: la rosca M16 tiene que atravesarla y dejar lugar a la tuerca. Pruébalo con el botón en la mano.</li>
+  <li><b>El lado y el diámetro del semimanubrio</b> (22 mm esperado), y el espesor de la pared de la abrazadera: Schurter dibuja 6 mm como máximo para que la rosca M16 deje lugar a la tuerca. Pruébalo con el botón en la mano.</li>
+  <li><b>El largo de tu UTP:</b> que alcance para este tramo y el del sensor.</li>
   <li><b>Que el O-ring selle sobre la pieza impresa:</b> la cara donde asienta el bisel tiene que quedar lisa y plana (imprímela contra la cama).</li>
   <li><b>Que el Dupont 1 × 7 entre en la fila de adentro con el ventilador de la Pi 5 puesto.</b></li>
   <li><b>El nombre de los botones en <code>evtest</code>.</b></li>
@@ -729,7 +737,8 @@ sudo evtest
   <li>Schurter, <a href="https://www.schurter.com/en/datasheet/typ_MSM_II_MO_SPDT.pdf">datasheet MSM II MO SPDT</a> y <a href="https://www.schurter.com/en/datasheet/3-145-122">página del 3-145-122</a>:
   IP66/IP67 al frente; tabla de variantes con «IP specification backside» (3-145-122 = 16 mm, 100 mA, SPDT, IP40; 3-145-275 = lo mismo en IP67); microinterruptor SPDT con COM, NO y NC y lengüetas quick connect de 2.8 × 0.5 mm;
   contacto de oro, máx. 30 V CC y 0.1 A, &lt; 50 mΩ, rebote &lt; 5 ms, 0.2 / 0.05 millones de operaciones (IP40 / IP67); 4.5 N y 1 mm de carrera; −30 a 85 °C;
-  tuerca de plástico M16 máx. 2 N·m, 19 mm entre caras; agujero Ø16.1 +0.1 sin antigiro en los no iluminados; 33.5 mm de fondo; tuerca y microinterruptor sueltos en la caja; tuerca de acero 0098.9260.</li>
+  tuerca de plástico M16 máx. 2 N·m, 19 mm entre caras; agujero Ø16.1 +0.1 sin antigiro en los no iluminados; dibujo de la p. 3: pared «max. 6» y 33.5 mm de la cara del panel a la punta de las lengüetas;
+  tuerca y microinterruptor sueltos en la caja. Hoja de la serie anterior, <a href="https://www.schurter.com/en/datasheet/typ_MSM_MO.pdf">MSM MO</a>: el microinterruptor se encaja en su portador después de apretar la tuerca, y recomienda zapatas totalmente aisladas. <a href="https://uk.rs-online.com/web/p/push-button-adapters-mounts/8767767">RS 0098.9206</a> (tuerca M16 × 1 de acero zincado con sello).</li>
   <li><b>Tu manual de servicio</b> (ZX636ED/FD, 2013), <code>~/Downloads/NinjaManual.pdf</code>: tabla «Left Switch Housing Connections» p. 500 (16-16);
   arranque R/BK y paro R en los pines 34 y 56 de la ECU p. 105; ruta del cable de los mandos izquierdos por dentro de la horquilla y por arriba de la columna p. 683 (18-3);
   advertencia de cables que no dejan llegar la dirección al tope p. 458 (14-12).</li>
