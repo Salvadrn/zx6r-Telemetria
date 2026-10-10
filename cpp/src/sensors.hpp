@@ -1,11 +1,13 @@
 // Tabla de sensores y vistas: la misma que la versión Python.
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstddef>
 #include <cstdio>
 #include <cstring>
+#include <limits>
 #include <optional>
 #include <string>
 #include <vector>
@@ -30,32 +32,125 @@ struct Sensor {
     int dec;              // decimales al mostrar
     double period;        // s entre lecturas; 0 = en cada vuelta
     Parse parse;
-    std::optional<double> warn, crit;          // umbrales altos
-    std::optional<double> warn_lo, crit_lo;    // umbrales bajos
+    std::optional<double> warn, crit;          // umbrales altos: warn = ámbar, crit = ROJO
+    std::optional<double> warn_lo, crit_lo;    // umbrales bajos: warn_lo = ámbar, crit_lo = VERDE
     bool on_by_default;
     Source source = Source::Obd;
+    double hold = 0;      // s que el valor debe quedarse más allá de crit/crit_lo antes de pintar el número
+    double hyst = 0;      // cuánto debe regresar de este lado del umbral para que el número deje ese color
 };
 
 constexpr std::size_t SENSOR_COUNT = 8;
 
-// warn/crit: umbrales de color del valor (verifícalos con el manual).
+// Umbrales (configurables; verifícalos con el manual):
+//   warn (alto) / warn_lo (bajo) = número en ámbar.
+//   crit (alto) = rojo; crit_lo (bajo) = verde. Lo único que se pinta es:
+//     - la línea de las gráficas (grandes y mini): los tramos en crit o arriba en rojo y en crit_lo o abajo
+//       en verde, con el dato crudo (sin hold);
+//     - el número grande, con hold e hyst para que una O2 que oscila no lo haga parpadear.
+//   Las tarjetas y paneles se dibujan como siempre (sin relleno ni borde de color).
+//   TPS, MAP y dirección no llevan umbrales críticos: 0–100 % de acelerador, la presión de admisión y el
+//   ángulo del manubrio no tienen un "crítico" que tenga sentido.
 inline const std::array<Sensor, SENSOR_COUNT> SENSORS = {{
     // id      cmd       nombre       descripción                    unidad y_min y_max  dec period  parseo
-    {"rpm",   "010C",   "RPM",       "Revoluciones",                "rpm", 0,    16000, 0,  0.25, Parse::Rpm,     {},  {},  {},   {},   true},
-    {"tps",   "0111",   "TPS",       "Posición del acelerador",     "%",   0,    100,   0,  0.25, Parse::Tps,     {},  {},  {},   {},   true},
-    {"temp",  "0105",   "TEMP",      "Refrigerante",                "°C",  40,   120,   0,  2.0,  Parse::Temp,    105, 115, {},   {},   true},
-    // O2 en cada vuelta: necesita tasa alta para ver la oscilación
-    {"o2",    "0114",   "O2",        "Sonda lambda B1S1",           "V",   0,    1,     2,  0,    Parse::O2,      {},  {},  {},   {},   true},
-    {"map_l", "010B",   "MAP IZQ",   "Presión de admisión",         "kPa", 20,   120,   0,  0.25, Parse::MapL,    {},  {},  {},   {},   true},
-    {"bat",   "ATRV",   "BATERÍA",   "Voltaje (lo mide el ELM327)", "V",   11,   15,    1,  5.0,  Parse::Battery, {},  {},  12.2, 11.5, true},
+    // 2.ª línea: warn, crit, warn_lo, crit_lo, prendido por defecto, fuente, hold, hyst
+    // crit 15500: por confirmar contra la zona roja del tacómetro; potencia máxima a 13 500 rpm (manual p. 1-?)
+    {"rpm",   "010C",   "RPM",       "Revoluciones",                "rpm", 0,    16000, 0,  0.25, Parse::Rpm,
+     14000, 15500, {}, {}, true, Source::Obd, 0, 300},
+    {"tps",   "0111",   "TPS",       "Posición del acelerador",     "%",   0,    100,   0,  0.25, Parse::Tps,
+     {}, {}, {}, {}, true},
+    // El ventilador prende a 100 °C (manual, cap. 4); 105 y 115 son margen del proyecto arriba de eso.
+    {"temp",  "0105",   "TEMP",      "Refrigerante",                "°C",  40,   120,   0,  2.0,  Parse::Temp,
+     105, 115, {}, {}, true, Source::Obd, 0, 2},
+    // O2 en cada vuelta: necesita tasa alta para ver la oscilación. Sonda de banda angosta: en lazo cerrado
+    // oscila entre ~0.1 y ~0.9 V varias veces por segundo, así que tocar 0.10 o 0.90 V es normal; sin el hold
+    // de 1 s el número parpadearía todo el tiempo. El número cambia de color solo si se queda pegada: abajo =
+    // mezcla pobre (verde), arriba = rica (rojo). La línea sí marca cada pico (dato crudo).
+    {"o2",    "0114",   "O2",        "Sonda lambda B1S1",           "V",   0,    1,     2,  0,    Parse::O2,
+     {}, 0.90, {}, 0.10, true, Source::Obd, 1.0, 0.03},
+    {"map_l", "010B",   "MAP IZQ",   "Presión de admisión",         "kPa", 20,   120,   0,  0.25, Parse::MapL,
+     {}, {}, {}, {}, true},
+    // Batería YTX9-BS: 12.8 V o más en reposo y carga del regulador de 14.3–14.7 V (manual p. 494).
+    // 12.2 / 11.5 V son los umbrales bajos del proyecto (11.5 V = verde, como todo valor muy bajo); 15.5 V
+    // (arriba de la carga normal) = el regulador sobrecarga.
+    {"bat",   "ATRV",   "BATERÍA",   "Voltaje (lo mide el ELM327)", "V",   11,   15,    1,  5.0,  Parse::Battery,
+     {}, 15.5, 12.2, 11.5, true, Source::Obd, 0, 0.2},
     // PID propietario Kawasaki: un ELM327 estándar casi nunca lo responde (OBD2_MAP_R=1 lo prende)
-    {"map_r", "2201F0", "MAP DER",   "Presión de admisión",         "kPa", 20,   120,   0,  0.5,  Parse::MapR,    {},  {},  {},   {},   false},
+    {"map_r", "2201F0", "MAP DER",   "Presión de admisión",         "kPa", 20,   120,   0,  0.5,  Parse::MapR,
+     {}, {}, {}, {}, false},
     // No viene del ELM327: encoder AS5600 en el eje de la dirección (OBD2_STEER=0 lo apaga)
-    {"steer", "",       "DIRECCIÓN", "Manubrio · − izq / + der",    "°",   -40,  40,    1,  0,    Parse::Steer,   {},  {},  {},   {},   true,
-     Source::I2c},
+    {"steer", "",       "DIRECCIÓN", "Manubrio · − izq / + der",    "°",   -40,  40,    1,  0,    Parse::Steer,
+     {}, {}, {}, {}, true, Source::I2c},
 }};
 
 inline bool is_obd(const Sensor& s) { return s.source == Source::Obd; }
+
+// =====================================================
+// ALERTAS CRÍTICAS — crit (alto) = rojo, crit_lo (bajo) = verde
+// =====================================================
+enum class Alert { None, Hi, Lo };
+
+inline bool has_alert(const Sensor& s) { return s.crit || s.crit_lo; }
+
+// Hi si v llegó a crit, Lo si bajó a crit_lo, None si está entre los dos
+inline Alert beyond(const Sensor& s, double v) {
+    if (s.crit && v >= *s.crit) return Alert::Hi;
+    if (s.crit_lo && v <= *s.crit_lo) return Alert::Lo;
+    return Alert::None;
+}
+
+// Color del número grande, con hold e histéresis (la línea de la gráfica no pasa por aquí: usa el dato crudo).
+// Prende cuando las muestras llevan `hold` s seguidos más allá del umbral; se apaga cuando una regresa
+// `hyst` o más de este lado. Con datos viejos (STALE) o sin dato siempre está apagada. Se alimenta con las
+// muestras (no con los cuadros) para que una O2 que oscila rápido no cuente como pegada.
+class AlertTracker {
+public:
+    Alert on() const { return on_; }
+
+    // ts ordenado (muestras recientes del sensor); devuelve la alerta en `now`
+    Alert update(const Sensor& s, const std::vector<double>& ts, const std::vector<double>& vs, double now) {
+        if (ts.empty() || now - ts.back() > STALE_S) {
+            clear();
+            last_t_ = ts.empty() ? -std::numeric_limits<double>::infinity() : ts.back();
+            return on_;
+        }
+        if (ts.back() < last_t_) {   // el historial se reinició
+            clear();
+            last_t_ = -std::numeric_limits<double>::infinity();
+        }
+        const auto first = std::upper_bound(ts.begin(), ts.end(), last_t_);
+        for (auto i = static_cast<std::size_t>(first - ts.begin()); i < ts.size(); ++i) feed(s, ts[i], vs[i]);
+        last_t_ = ts.back();
+        check(s, now);   // el hold también se cumple entre muestras
+        return on_;
+    }
+
+private:
+    void clear() {
+        on_ = run_ = Alert::None;
+        since_ = 0;
+    }
+
+    void check(const Sensor& s, double now) {
+        if (on_ == Alert::None && run_ != Alert::None && now - since_ >= s.hold) on_ = run_;
+    }
+
+    void feed(const Sensor& s, double t, double v) {
+        const Alert kind = beyond(s, v);
+        if (kind != run_) {
+            run_ = kind;
+            since_ = t;
+        }
+        if ((on_ == Alert::Hi && v <= *s.crit - s.hyst) || (on_ == Alert::Lo && v >= *s.crit_lo + s.hyst))
+            on_ = Alert::None;
+        check(s, t);
+    }
+
+    Alert on_ = Alert::None;    // alerta prendida
+    Alert run_ = Alert::None;   // de qué lado del umbral está la última muestra
+    double since_ = 0;          // desde cuándo está de ese lado (s desde el arranque)
+    double last_t_ = -std::numeric_limits<double>::infinity();   // última muestra ya procesada
+};
 
 inline int sensor_index(const char* id) {
     for (std::size_t i = 0; i < SENSORS.size(); ++i)
