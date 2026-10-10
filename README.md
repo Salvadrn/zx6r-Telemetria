@@ -103,16 +103,16 @@ La hoja completa, pin por pin, está en **[`docs/conexion.html`](docs/conexion.h
 
 | Sensor | Fuente | Rango en pantalla | Se lee | Notas |
 |---|---|---|---|---|
-| RPM | PID `010C` | 0–16000 rpm | cada 0.25 s | |
+| RPM | PID `010C` | 0–16000 rpm | cada 0.25 s | ámbar ≥ 14000, rojo ≥ 15500 rpm (por confirmar contra la zona roja de tu tacómetro; el manual no la publica) |
 | TPS (acelerador) | PID `0111` | 0–100 % | cada 0.25 s | |
 | Temperatura refrigerante | PID `0105` | 40–120 °C | cada 2 s | ámbar ≥ 105 °C, rojo ≥ 115 °C; línea en 100 °C, donde se prende el ventilador (manual, cap. 4) |
-| O2 B1S1 | PID `0114` | 0–1 V | en cada vuelta | solo en las versiones que la traen; línea en 0.45 V (λ = 1) |
+| O2 B1S1 | PID `0114` | 0–1 V | en cada vuelta | solo en las versiones que la traen; línea en 0.45 V (λ = 1); verde ≤ 0.10 V, rojo ≥ 0.90 V (el número cambia solo si se sostiene 1 s) |
 | MAP (presión de admisión) | PID `010B` | 20–120 kPa | cada 0.25 s | línea en 101 kPa (presión atmosférica) |
-| Batería | `ATRV` del ELM327 | 11–15 V | cada 5 s | ámbar ≤ 12.2 V, rojo ≤ 11.5 V |
+| Batería | `ATRV` del ELM327 | 11–15 V | cada 5 s | ámbar ≤ 12.2 V, verde ≤ 11.5 V, rojo ≥ 15.5 V (sobrecarga) |
 | Dirección | AS5600 por I²C | −40…40 ° | 25 por segundo | negativo = izquierda |
 | "MAP derecho" | `2201F0` | 20–120 kPa | cada 0.5 s | **apagado** (`OBD2_MAP_R=1`). Según el manual, el segundo sensor de presión de esta moto mide la presión **atmosférica**, no un lado derecho |
 
-Los umbrales están en la tabla `SENSORS` de cada versión y son configurables.
+Los umbrales están en la tabla `SENSORS` de cada versión y son configurables. Al pasar un límite crítico solo cambia de color la línea de la gráfica: roja en el tramo que pasa el límite alto y verde en el que baja del límite bajo, cortada justo en la línea del límite. Las tarjetas no se rellenan. El número grande se pone ámbar cerca del límite, rojo al pasar el alto y verde al pasar el bajo. Cada vez que cambias de vista, el marco de la pantalla y la pestaña nueva dan un destello rojo brillante de 0.3 s.
 
 Si la ECU no responde un PID, ese valor muestra `N/D` y los demás siguen funcionando. Si no responde ninguno, el indicador de arriba dice **SIN DATOS ECU**.
 
@@ -287,6 +287,7 @@ Todo se configura con variables de entorno, con los mismos nombres en las dos ve
 | `OBD2_IP` / `OBD2_PORT` | `192.168.0.10` / `35000` | dirección del ELM327 |
 | `OBD2_WINDOWED` | `0` | `1` = ventana en vez de pantalla completa |
 | `OBD2_SIZE` | `1280x720` | tamaño de esa ventana, `ANCHOxALTO`; `1024x600` = la pantalla de 7" de la moto. En pantalla completa no cuenta: toma el tamaño de la pantalla |
+| `OBD2_FLASH_MS` | `300` | duración en milisegundos del destello rojo al cambiar de vista; `0` lo apaga |
 | `OBD2_HEADLESS` | `0` | `1` = sin pantalla: solo lee, guarda y sirve la web |
 | `OBD2_FPS` | `12` Python · `30` C++ | cuadros por segundo de la pantalla |
 | `OBD2_DB` | `~/obd2_logs/telemetria.db` | archivo SQLite |
