@@ -35,14 +35,31 @@ constexpr Color hex(unsigned v) {
 }
 
 // =====================================================
-// COLORES — negro puro y grises; el color solo marca estados (advertencia / crítico)
+// COLORES — negro puro y grises; el color solo marca estados: ámbar = advertencia, rojo = muy alto
+// (crit), verde = muy bajo (crit_lo). Se pintan el número y la línea de la gráfica; las tarjetas, nunca.
 // =====================================================
 constexpr Color BG = hex(0x000000), BORDER = hex(0x262626), GRID = hex(0x161616), AXIS = hex(0x333333),
                 TEXT = hex(0xF0F0F0), TEXT2 = hex(0x9A9A9A), TEXT3 = hex(0x666666), STALE = hex(0x444444),
                 OK = hex(0x6FB583), WARN = hex(0xD6A24A), CRIT = hex(0xD65C57),
-                REF_LINE = hex(0x3A3A3A), REF_TEXT = hex(0x7A7A7A);
+                REF_LINE = hex(0x3A3A3A), REF_TEXT = hex(0x7A7A7A),
+                FLASH = hex(0xFF2020),        // destello al cambiar de vista: el único rojo brillante, solo dura el destello
+                FLASH_TEXT = hex(0x000000);   // texto de la pestaña mientras destella
 
 bool same(Color a, Color b) { return a.r == b.r && a.g == b.g && a.b == b.b && a.a == b.a; }
+
+// c con opacidad a (0..1)
+Color with_alpha(Color c, float a) {
+    c.a = static_cast<unsigned char>(std::lround(std::clamp(a, 0.0f, 1.0f) * c.a));
+    return c;
+}
+
+// De a (t = 0) a b (t = 1)
+Color mix(Color a, Color b, float t) {
+    auto ch = [t](unsigned char x, unsigned char y) {
+        return static_cast<unsigned char>(std::lround(x + (static_cast<float>(y) - x) * t));
+    };
+    return Color{ch(a.r, b.r), ch(a.g, b.g), ch(a.b, b.b), ch(a.a, b.a)};
+}
 
 const char* const CHIP_TEXTS[] = {"SIMULADOR", "CONECTANDO", "OBD2 EN VIVO", "SIN CONEXIÓN", "SIN DATOS ECU"};
 const int TICK_STEPS[] = {1, 2, 5, 10, 15, 20, 30, 60, 120, 300};
@@ -78,8 +95,13 @@ int crossings(const std::vector<double>& ts, const std::vector<double>& vs, doub
     return n;
 }
 
-Color zone_color(const Sensor& s, double v) {
-    if ((s.crit && v >= *s.crit) || (s.crit_lo && v <= *s.crit_lo)) return CRIT;
+// Rojo para lo muy alto (crit), verde para lo muy bajo (crit_lo)
+Color alert_color(Alert a) { return a == Alert::Hi ? CRIT : OK; }
+
+// Color del número: rojo/verde si la alerta (con hold e histéresis) está prendida; si no, ámbar pasando
+// warn/warn_lo
+Color zone_color(const Sensor& s, double v, Alert alert) {
+    if (alert != Alert::None) return alert_color(alert);
     if ((s.warn && v >= *s.warn) || (s.warn_lo && v <= *s.warn_lo)) return WARN;
     return TEXT;
 }
@@ -101,10 +123,10 @@ struct Shown {
 };
 
 // Texto, color y si está obsoleto el valor actual
-Shown shown_value(const Sensor& s, const SensorView& sv, double now) {
+Shown shown_value(const Sensor& s, const SensorView& sv, double now, Alert alert) {
     if (!sv.last) return {sv.no_data ? "N/D" : "--", STALE, true};
     const bool stale = now - sv.last_t > STALE_S;
-    return {fmt_value(s, *sv.last), stale ? STALE : zone_color(s, *sv.last), stale};
+    return {fmt_value(s, *sv.last), stale ? STALE : zone_color(s, *sv.last, alert), stale};
 }
 
 // =====================================================
@@ -318,25 +340,7 @@ public:
 
     // Rectángulo redondeado: solo contorno de 1 px por dentro
     void rrect(float x0, float y0, float x1, float y1, float r, Color c) {
-        x0 = snap(x0);
-        y0 = snap(y0);
-        x1 = snap(x1);
-        y1 = snap(y1);
-        const float lw = hair();
-        r = std::max(lw, std::min(r, std::min(x1 - x0, y1 - y0) / 2));
-        const int seg = std::clamp(static_cast<int>(std::ceil(r * dpi / 2)), 3, 24);
-        const float cx[4] = {x0 + r, x1 - r, x1 - r, x0 + r}, cy[4] = {y0 + r, y0 + r, y1 - r, y1 - r};
-        const float a0[4] = {PI, 1.5f * PI, 0.0f, 0.5f * PI};
-        outer_.clear();
-        inner_.clear();
-        for (int k = 0; k < 4; ++k) {
-            for (int i = 0; i <= seg; ++i) {
-                const float a = a0[k] + 0.5f * PI * static_cast<float>(i) / static_cast<float>(seg);
-                const float ca = std::cos(a), sa = std::sin(a);
-                outer_.push_back({cx[k] + ca * r, cy[k] + sa * r});
-                inner_.push_back({cx[k] + ca * (r - lw), cy[k] + sa * (r - lw)});
-            }
-        }
+        round_box(x0, y0, x1, y1, r, hair());
         rlBegin(RL_TRIANGLES);
         rlColor4ub(c.r, c.g, c.b, c.a);
         for (std::size_t i = 0; i < outer_.size(); ++i) {
@@ -346,12 +350,31 @@ public:
         rlEnd();
     }
 
+    // Rectángulo redondeado relleno, sin contorno (la pestaña activa durante el destello)
+    void rrect_fill(float x0, float y0, float x1, float y1, float r, Color c) {
+        round_box(x0, y0, x1, y1, r, hair());
+        const Vector2 mid{(snap(x0) + snap(x1)) / 2, (snap(y0) + snap(y1)) / 2};
+        rlBegin(RL_TRIANGLES);
+        rlColor4ub(c.r, c.g, c.b, c.a);
+        for (std::size_t i = 0; i < outer_.size(); ++i) {   // abanico desde el centro: la figura es convexa
+            const Vector2 a = outer_[i], b = outer_[(i + 1) % outer_.size()];
+            rlVertex2f(mid.x, mid.y);
+            rlVertex2f(a.x, a.y);
+            rlVertex2f(b.x, b.y);
+        }
+        rlEnd();
+    }
+
+    void polyline(const std::vector<Vector2>& in, float thick, Color c) { polyline(in.data(), in.size(), thick, c); }
+
     // Línea gruesa: en vueltas suaves los segmentos comparten esquina (inglete); en vueltas cerradas
     // (picos de la O2) cada segmento termina recto y la unión se redondea, como las líneas de Tk
-    void polyline(const std::vector<Vector2>& in, float thick, Color c) {
+    void polyline(const Vector2* in, std::size_t count, float thick, Color c) {
         pts_.clear();
-        for (const Vector2& p : in)
+        for (std::size_t k = 0; k < count; ++k) {
+            const Vector2 p = in[k];
             if (pts_.empty() || std::fabs(p.x - pts_.back().x) + std::fabs(p.y - pts_.back().y) > 0.01f) pts_.push_back(p);
+        }
         const std::size_t n = pts_.size();
         if (n < 2) return;
         auto dir = [](Vector2 a, Vector2 b) {
@@ -399,6 +422,28 @@ public:
     void triangle(Vector2 a, Vector2 b, Vector2 c, Color col) { DrawTriangle(a, b, c, col); }
 
 private:
+    // Contorno exterior e interior (a `lw` hacia dentro) de un rectángulo redondeado alineado a píxeles
+    void round_box(float x0, float y0, float x1, float y1, float r, float lw) {
+        x0 = snap(x0);
+        y0 = snap(y0);
+        x1 = snap(x1);
+        y1 = snap(y1);
+        r = std::max(lw, std::min(r, std::min(x1 - x0, y1 - y0) / 2));
+        const int seg = std::clamp(static_cast<int>(std::ceil(r * dpi / 2)), 3, 24);
+        const float cx[4] = {x0 + r, x1 - r, x1 - r, x0 + r}, cy[4] = {y0 + r, y0 + r, y1 - r, y1 - r};
+        const float a0[4] = {PI, 1.5f * PI, 0.0f, 0.5f * PI};
+        outer_.clear();
+        inner_.clear();
+        for (int k = 0; k < 4; ++k) {
+            for (int i = 0; i <= seg; ++i) {
+                const float a = a0[k] + 0.5f * PI * static_cast<float>(i) / static_cast<float>(seg);
+                const float ca = std::cos(a), sa = std::sin(a);
+                outer_.push_back({cx[k] + ca * r, cy[k] + sa * r});
+                inner_.push_back({cx[k] + ca * (r - lw), cy[k] + sa * (r - lw)});
+            }
+        }
+    }
+
     // Dos triángulos: (a, b) un lado, (c, d) el otro
     static void quad(Vector2 a, Vector2 b, Vector2 c, Vector2 d) {
         rlVertex2f(a.x, a.y);
@@ -454,13 +499,15 @@ private:
     void draw_chrome(const Snapshot& snap);
     void draw_tiles(const View& v, const std::vector<std::size_t>& ids, const Snapshot& snap, float x0, float y0,
                     float x1, float y1);
-    void draw_tile(const Sensor& s, const SensorView& sv, double now, float x, float y, float w, float h, double window);
+    void draw_tile(const Sensor& s, const SensorView& sv, Alert alert, double now, float x, float y, float w, float h,
+                   double window);
     void draw_graphs(const View& v, const std::vector<std::size_t>& ids, const Snapshot& snap, float x0, float y0,
                      float x1, float y1);
-    void draw_panel(const Sensor& s, const SensorView& sv, double now, float x, float y, float w, float h, float iw,
-                    float px0, float px1, double window, const std::vector<int>& ticks);
+    void draw_panel(const Sensor& s, const SensorView& sv, Alert alert, double now, float x, float y, float w, float h,
+                    float iw, float px0, float px1, double window, const std::vector<int>& ticks);
     void trace(const Sensor& s, const SensorView& sv, double now, double window, float x0, float y0, float x1,
-               float y1, std::vector<double>* vals);
+               float y1);
+    Color draw_trace(float thick, bool stale);
 
     const Config& cfg_;
     const Telemetry& tel_;
@@ -470,10 +517,22 @@ private:
     Canvas cv_;
     std::vector<const View*> views_;
     int vi_ = 0;
+    int shown_vi_ = 0;              // vista del cuadro anterior: si cambia, destella
+    double flash_until_ = -1;       // s (tel_.elapsed()) hasta el que dura el destello de la vista nueva
+    float flash_ = 0;               // opacidad del destello en este cuadro: 1 al cambiar de vista, baja lineal a 0
+    std::array<AlertTracker, SENSOR_COUNT> alerts_;   // alertas críticas, se vea o no el sensor
     float W_ = 0, H_ = 0, u_ = 1, m_ = 0, top_h_ = 0, bot_h_ = 0;
     std::string ip_;
     double ip_at_ = -1e9;
-    std::vector<Vector2> pts_;
+    // traza de la última llamada a trace(): puntos, valores y tramos más allá de crit / crit_lo
+    struct Run {
+        std::size_t begin;   // primer punto en run_pts_; el tramo sigue hasta donde empieza el siguiente
+        Alert alert;
+    };
+    std::vector<Vector2> pts_, run_pts_;
+    std::vector<double> vals_;
+    std::vector<Run> runs_;
+    Alert tail_ = Alert::None;   // de qué lado de los umbrales queda el último punto
 };
 
 std::pair<const char*, Color> Dash::status(const Snapshot& snap) const {
@@ -502,6 +561,14 @@ void Dash::draw(const Snapshot& snap) {
     const float x0 = m_, y0 = top_h_ + S(16), x1 = W_ - m_, y1 = H_ - bot_h_ - S(10);
     if (v.kind == ViewKind::Tiles) draw_tiles(v, ids, snap, x0, y0, x1, y1);
     else draw_graphs(v, ids, snap, x0, y0, x1, y1);
+    if (flash_ > 0) {   // marco del destello al cambiar de vista, encima de todo (cuatro lados que no se enciman)
+        const float fw = std::max(4.0f, S(8));
+        const Color c = with_alpha(FLASH, flash_);
+        cv_.rect(0, 0, W_, fw, c);
+        cv_.rect(0, H_ - fw, W_, H_, c);
+        cv_.rect(0, fw, fw, H_ - fw, c);
+        cv_.rect(W_ - fw, fw, W_, H_ - fw, c);
+    }
 }
 
 void Dash::draw_chrome(const Snapshot& snap) {
@@ -562,8 +629,11 @@ void Dash::draw_chrome(const Snapshot& snap) {
         const char* name = shorts ? views_[i]->short_name : views_[i]->name;
         const float w = cv_.width(SANS_BOLD, S(14), name);
         const bool active = static_cast<int>(i) == vi_;
-        cv_.text(SANS_BOLD, S(14), name, x, mid, Anchor::W, active ? TEXT : TEXT3);
-        if (active) cv_.rect(x, top_h_ - S(7), x + w, top_h_ - S(4), TEXT);
+        // destello: relleno rojo y texto negro que se desvanecen al estilo normal (texto claro y subrayado)
+        if (active && flash_ > 0)
+            cv_.rrect_fill(x - S(10), mid - S(15), x + w + S(10), mid + S(15), S(6), with_alpha(FLASH, flash_));
+        cv_.text(SANS_BOLD, S(14), name, x, mid, Anchor::W, active ? mix(TEXT, FLASH_TEXT, flash_) : TEXT3);
+        if (active && flash_ < 1) cv_.rect(x, top_h_ - S(7), x + w, top_h_ - S(4), with_alpha(TEXT, 1 - flash_));
         x += w + gap;
     }
     const bool no_ecu = snap.state == LinkState::Live && same(st.second, WARN);
@@ -597,12 +667,13 @@ void Dash::draw_tiles(const View& v, const std::vector<std::size_t>& ids, const 
         const int in_row = r == rows - 1 ? n - r * cols : cols;   // la última fila reparte el ancho
         const float tw = (x1 - x0 - (in_row - 1) * gap) / in_row;
         const std::size_t id = ids[static_cast<std::size_t>(i)];
-        draw_tile(SENSORS[id], snap.sensors[id], snap.now, x0 + c * (tw + gap), y0 + r * (th + gap), tw, th, v.window);
+        draw_tile(SENSORS[id], snap.sensors[id], alerts_[id].on(), snap.now, x0 + c * (tw + gap), y0 + r * (th + gap),
+                  tw, th, v.window);
     }
 }
 
-void Dash::draw_tile(const Sensor& s, const SensorView& sv, double now, float x, float y, float w, float h,
-                     double window) {
+void Dash::draw_tile(const Sensor& s, const SensorView& sv, Alert alert, double now, float x, float y, float w,
+                     float h, double window) {
     cv_.rrect(x, y, x + w, y + h, S(14), BORDER);
     const float pad = S(26);
     const std::string name = track(s.name);
@@ -615,7 +686,7 @@ void Dash::draw_tile(const Sensor& s, const SensorView& sv, double now, float x,
     const float vpx = std::floor(std::min(h * 0.36f, w * 0.58f / (vchars * 0.62f)));
     const float xr = x + pad + cv_.width(MONO_BOLD, vpx, "0", true) * vchars;
     const float vy = y + h * 0.46f;
-    const Shown val = shown_value(s, sv, now);
+    const Shown val = shown_value(s, sv, now, alert);
     cv_.text(MONO_BOLD, vpx, val.text, xr, vy, Anchor::E, val.color, true);
     cv_.text(SANS, std::max(S(14), vpx * 0.3f), s.unit, xr + S(10), vy + vpx * 0.30f, Anchor::SW, TEXT2);
 
@@ -623,8 +694,8 @@ void Dash::draw_tile(const Sensor& s, const SensorView& sv, double now, float x,
     const float bx0 = x + pad, by0 = y + h * 0.66f, bx1 = x + w - S(22), by1 = y + h - S(22);
     cv_.hline(bx0, bx1, by1, AXIS);
     cv_.hline(bx0, bx1, by0, GRID);
-    trace(s, sv, now, window, bx0, by0, bx1, by1, nullptr);
-    cv_.polyline(pts_, std::max(2.0f, S(2)), val.stale ? STALE : TEXT);
+    trace(s, sv, now, window, bx0, by0, bx1, by1);
+    draw_trace(std::max(2.0f, S(2)), val.stale);
 }
 
 void Dash::draw_graphs(const View& v, const std::vector<std::size_t>& ids, const Snapshot& snap, float x0, float y0,
@@ -647,8 +718,8 @@ void Dash::draw_graphs(const View& v, const std::vector<std::size_t>& ids, const
     for (int k = 0; k <= window / step; ++k) ticks.push_back(k * step);
     for (int i = 0; i < n; ++i) {
         const std::size_t id = ids[static_cast<std::size_t>(i)];
-        draw_panel(SENSORS[id], snap.sensors[id], snap.now, x0, y0 + i * (ph + gap), x1 - x0, ph, iw, px0, px1,
-                   v.window, ticks);
+        draw_panel(SENSORS[id], snap.sensors[id], alerts_[id].on(), snap.now, x0, y0 + i * (ph + gap), x1 - x0, ph, iw,
+                   px0, px1, v.window, ticks);
     }
     const float yl = y0 + n * ph + (n - 1) * gap + S(8);
     for (int t : ticks) {
@@ -657,8 +728,8 @@ void Dash::draw_graphs(const View& v, const std::vector<std::size_t>& ids, const
     }
 }
 
-void Dash::draw_panel(const Sensor& s, const SensorView& sv, double now, float x, float y, float w, float h, float iw,
-                      float px0, float px1, double window, const std::vector<int>& ticks) {
+void Dash::draw_panel(const Sensor& s, const SensorView& sv, Alert alert, double now, float x, float y, float w,
+                      float h, float iw, float px0, float px1, double window, const std::vector<int>& ticks) {
     cv_.rrect(x, y, x + w, y + h, S(14), BORDER);
     const float pad = S(26);
     cv_.text(SANS_BOLD, S(16), track(s.name), x + pad, y + S(30), Anchor::W, TEXT2);
@@ -680,22 +751,21 @@ void Dash::draw_panel(const Sensor& s, const SensorView& sv, double now, float x
     }
     vpx = std::floor(std::min(vpx, (iw - pad - S(50)) / (vchars * 0.62f)));
     const float xr = x + pad + cv_.width(MONO_BOLD, vpx, "0", true) * vchars;
-    const Shown val = shown_value(s, sv, now);
+    const Shown val = shown_value(s, sv, now, alert);
     cv_.text(MONO_BOLD, vpx, val.text, xr, vy, Anchor::E, val.color, true);
     cv_.text(SANS, std::max(S(14), vpx * 0.3f), s.unit, xr + S(8), vy + vpx * 0.30f, Anchor::SW, TEXT2);
 
     const float py0 = y + S(16), py1 = y + h - S(16);
-    std::vector<double> vals;
-    trace(s, sv, now, window, px0, py0, px1, py1, &vals);
+    trace(s, sv, now, window, px0, py0, px1, py1);
     if (big) {
         const char* const labels[] = {"MIN", "MAX", "PROM", "CRUCES λ / 10 s"};
         std::string values[4] = {"--", "--", "--", std::to_string(crossings(sv.t, sv.v, now))};
-        if (!vals.empty()) {
+        if (!vals_.empty()) {
             double sum = 0;
-            for (double v : vals) sum += v;
-            values[0] = fmt_value(s, *std::min_element(vals.begin(), vals.end()));
-            values[1] = fmt_value(s, *std::max_element(vals.begin(), vals.end()));
-            values[2] = fmt_value(s, sum / static_cast<double>(vals.size()));
+            for (double v : vals_) sum += v;
+            values[0] = fmt_value(s, *std::min_element(vals_.begin(), vals_.end()));
+            values[1] = fmt_value(s, *std::max_element(vals_.begin(), vals_.end()));
+            values[2] = fmt_value(s, sum / static_cast<double>(vals_.size()));
         }
         for (int k = 0; k < rows; ++k) {
             const float sy = y + h - S(20) - (rows - 1 - k) * S(24);
@@ -704,10 +774,10 @@ void Dash::draw_panel(const Sensor& s, const SensorView& sv, double now, float x
         }
     }
 
-    // área de la gráfica: umbrales, rejilla y referencias
+    // área de la gráfica: umbrales (crit_lo en verde, como su tramo de línea), rejilla y referencias
     cv_.frame(px0, py0, px1, py1, BORDER);
     const std::pair<std::optional<double>, Color> limits[] = {
-        {s.warn, WARN}, {s.crit, CRIT}, {s.warn_lo, WARN}, {s.crit_lo, CRIT}};
+        {s.warn, WARN}, {s.crit, CRIT}, {s.warn_lo, WARN}, {s.crit_lo, OK}};
     std::vector<float> special;   // y de umbrales y referencias, para no tapar una línea con un rótulo
     for (const auto& lim : limits) {
         if (!lim.first || !(s.y_min < *lim.first && *lim.first < s.y_max)) continue;
@@ -740,10 +810,9 @@ void Dash::draw_panel(const Sensor& s, const SensorView& sv, double now, float x
         ref_labels.push_back({ry - S(9) > py0 + S(26) && !crowded ? ry - S(9) : ry + S(10), ref->label});
     }
 
-    // traza, punto final, rótulos de referencia y mensaje
-    const Color lc = val.stale ? STALE : TEXT;
+    // traza, punto final (del color del último tramo), rótulos de referencia y mensaje
     if (pts_.size() >= 2) {
-        cv_.polyline(pts_, std::max(2.0f, S(2)), lc);
+        const Color lc = draw_trace(std::max(2.0f, S(2)), val.stale);
         const Vector2 p = pts_.back();
         cv_.disc(p.x, p.y, S(5) + S(1), BG);   // aro negro que separa el punto de la línea
         cv_.disc(p.x, p.y, S(5), lc);
@@ -782,17 +851,80 @@ void Dash::draw_panel(const Sensor& s, const SensorView& sv, double now, float x
     }
 }
 
-// Puntos de la ventana: "ahora" siempre en el borde derecho
+// Puntos de la ventana ("ahora" siempre en el borde derecho) y tramos de la línea en crit o arriba (rojo) o
+// en crit_lo o abajo (verde), con la misma regla que el número (beyond). Los tramos usan el dato crudo, sin
+// hold, y se cortan justo donde el segmento cruza la línea del umbral (interpolación lineal) para que el
+// cambio de color caiga sobre ella. Los tramos se arman en vectores que se reusan cuadro a cuadro: no se
+// pide memoria nueva.
 void Dash::trace(const Sensor& s, const SensorView& sv, double now, double window, float x0, float y0, float x1,
-                 float y1, std::vector<double>* vals) {
+                 float y1) {
     pts_.clear();
-    if (vals) vals->clear();
+    vals_.clear();
+    run_pts_.clear();
+    runs_.clear();
+    tail_ = Alert::None;
     const double t_min = now - window, k = (x1 - x0) / window;
     for (std::size_t i = 0; i < sv.t.size(); ++i) {
         if (sv.t[i] < t_min) continue;
         pts_.push_back(Vector2{static_cast<float>(x0 + (sv.t[i] - t_min) * k), ymap(s, y0, y1, sv.v[i])});
-        if (vals) vals->push_back(sv.v[i]);
+        vals_.push_back(sv.v[i]);
     }
+    if (pts_.empty() || !has_alert(s)) return;
+
+    // Punto del segmento i−1 → i (recto en pantalla) a la altura del umbral; si los dos extremos quedaron
+    // recortados a la misma orilla de la gráfica, se interpola con los valores (igual que la versión Python).
+    // Un umbral fuera de la escala (la batería: 15.5 V con escala hasta 15) queda a la altura de la orilla.
+    auto cut = [&](std::size_t i, double limit) {
+        const Vector2 a = pts_[i - 1], b = pts_[i];
+        float f = std::fabs(b.y - a.y) > 1e-3f
+                      ? (ymap(s, y0, y1, limit) - a.y) / (b.y - a.y)
+                      : static_cast<float>((limit - vals_[i - 1]) / (vals_[i] - vals_[i - 1]));
+        f = std::clamp(f, 0.0f, 1.0f);
+        return Vector2{a.x + (b.x - a.x) * f, a.y + (b.y - a.y) * f};
+    };
+    Alert cur = beyond(s, vals_[0]);
+    if (cur != Alert::None) {
+        runs_.push_back({0, cur});
+        run_pts_.push_back(pts_[0]);
+    }
+    for (std::size_t i = 1; i < pts_.size(); ++i) {
+        const Alert next = beyond(s, vals_[i]);
+        if (next != cur) {
+            // umbrales que cruza el segmento, en orden: subiendo sale de crit_lo y luego llega a crit
+            std::pair<double, Alert> steps[2];
+            int n = 0;
+            if (vals_[i] > vals_[i - 1]) {
+                if (cur == Alert::Lo) steps[n++] = {*s.crit_lo, Alert::None};
+                if (next == Alert::Hi) steps[n++] = {*s.crit, Alert::Hi};
+            } else {
+                if (cur == Alert::Hi) steps[n++] = {*s.crit, Alert::None};
+                if (next == Alert::Lo) steps[n++] = {*s.crit_lo, Alert::Lo};
+            }
+            for (int j = 0; j < n; ++j) {
+                const Vector2 p = cut(i, steps[j].first);
+                if (cur != Alert::None) run_pts_.push_back(p);   // cierra el tramo de color
+                cur = steps[j].second;
+                if (cur != Alert::None) {                        // abre uno nuevo en el mismo punto
+                    runs_.push_back({run_pts_.size(), cur});
+                    run_pts_.push_back(p);
+                }
+            }
+        }
+        if (cur != Alert::None) run_pts_.push_back(pts_[i]);
+    }
+    tail_ = cur;
+}
+
+// Traza blanca (gris si el dato es viejo) con los tramos rojos y verdes encima; devuelve el color del final
+Color Dash::draw_trace(float thick, bool stale) {
+    const Color base = stale ? STALE : TEXT;
+    cv_.polyline(pts_, thick, base);
+    if (stale) return base;
+    for (std::size_t r = 0; r < runs_.size(); ++r) {
+        const std::size_t end = r + 1 < runs_.size() ? runs_[r + 1].begin : run_pts_.size();
+        cv_.polyline(run_pts_.data() + runs_[r].begin, end - runs_[r].begin, thick, alert_color(runs_[r].alert));
+    }
+    return tail_ == Alert::None ? base : alert_color(tail_);
 }
 
 bool key_pressed(std::initializer_list<int> keys) {
@@ -854,8 +986,20 @@ bool Dash::run(const std::atomic<bool>& quit) {
         const View& v = *views_[static_cast<std::size_t>(vi_)];
         unsigned mask = 0;
         for (std::size_t id : view_sensors(v)) mask |= 1u << id;
+        for (std::size_t i = 0; i < SENSOR_COUNT; ++i)   // las alertas siguen aunque el sensor no esté en la vista
+            if (cfg_.active[i] && has_alert(SENSORS[i])) mask |= 1u << i;
         const double now = tel_.elapsed();
         const Snapshot snap = tel_.snapshot(now - std::max(v.window, 10.0) - 1.0, mask);
+        for (std::size_t i = 0; i < SENSOR_COUNT; ++i)
+            if (cfg_.active[i] && has_alert(SENSORS[i]))
+                alerts_[i].update(SENSORS[i], snap.sensors[i].t, snap.sensors[i].v, snap.now);
+        if (vi_ != shown_vi_) {   // cambió de vista (cualquier tecla o captura): destello; se reinicia si ya había
+            shown_vi_ = vi_;
+            if (cfg_.flash_ms > 0) flash_until_ = snap.now + cfg_.flash_ms / 1000.0;
+        }
+        flash_ = cfg_.flash_ms > 0 && snap.now < flash_until_
+                     ? static_cast<float>((flash_until_ - snap.now) * 1000.0 / cfg_.flash_ms)
+                     : 0.0f;
         if (web_.listening() && now - ip_at_ >= 5.0) {   // la IP puede cambiar si cambia la red
             ip_ = WebServer::local_ip(cfg_.obd_ip);
             ip_at_ = now;
