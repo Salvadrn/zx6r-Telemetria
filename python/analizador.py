@@ -97,7 +97,6 @@ TEXT2  = "#9A9A9A"
 TEXT3  = "#666666"
 STALE  = "#444444"
 OK, WARN, CRIT = "#6FB583", "#D6A24A", "#D65C57"
-CRIT_BG, OK_BG = "#3A1515", "#12301C"      # fondo de una tarjeta en alerta (Tk no tiene alfa: tinte sólido)
 FLASH      = "#FF2020"                     # destello al cambiar de vista: marco de la pantalla y pestaña activa
 FLASH_TEXT = "#000000"                     # texto de la pestaña mientras destella
 # Tk no tiene alfa: el destello se desvanece en tres pasos de color (hasta qué fracción de OBD2_FLASH_MS, color)
@@ -179,10 +178,12 @@ def _p_bat(resp):
 # period: segundos entre lecturas; 0 = en cada vuelta (la O2 lo necesita para ver la oscilación).
 # Umbrales (configurables; verifícalos con el manual):
 #   warn (alto) / warn_lo (bajo) = número en ámbar.
-#   crit (alto) = alerta ROJA; crit_lo (bajo) = alerta VERDE: tarjeta teñida, borde doble y número del color.
+#   crit (alto) = ROJO; crit_lo (bajo) = VERDE. Solo cambian de color la línea de las gráficas y el número;
+#   la tarjeta se dibuja igual que siempre.
+#   En todas las gráficas, la traza va roja arriba de crit y verde abajo de crit_lo (dato crudo, sin hold).
+#   El número toma el color de la alerta crítica, que usa hold e hyst para no parpadear:
 #   hold = s que el valor debe quedarse más allá de crit/crit_lo antes de prender la alerta (default 0).
 #   hyst = cuánto debe regresar de este lado del umbral para apagarla (default 0).
-#   En todas las gráficas, la traza va roja arriba de crit y verde abajo de crit_lo (dato crudo, sin hold).
 # TPS, MAP y dirección no llevan umbrales críticos: 0–100 % de acelerador, la presión de admisión y el
 # ángulo del manubrio no tienen un "crítico" que tenga sentido.
 SENSORS = [
@@ -197,8 +198,8 @@ SENSORS = [
      "y_min": 40, "y_max": 120, "dec": 0, "parser": _p_temp, "enabled": True, "period": 2.0,
      "warn": 105, "crit": 115, "hyst": 2},
     # Sonda de banda angosta: en lazo cerrado oscila entre ~0.1 y ~0.9 V varias veces por segundo, así que
-    # tocar 0.10 o 0.90 V es normal; sin el hold de 1 s la tarjeta parpadearía todo el tiempo. Alerta solo
-    # si se queda pegada: abajo = mezcla pobre (verde), arriba = rica (rojo).
+    # tocar 0.10 o 0.90 V es normal; sin el hold de 1 s el número parpadearía todo el tiempo. El número cambia
+    # de color solo si se queda pegada: abajo = mezcla pobre (verde), arriba = rica (rojo).
     {"id": "o2", "pid": "0114", "name": "O2", "desc": "Sonda lambda B1S1", "unit": "V",
      "y_min": 0.0, "y_max": 1.0, "dec": 2, "parser": _p_o2, "enabled": True, "period": 0,
      "crit_lo": 0.10, "crit": 0.90, "hold": 1.0, "hyst": 0.03},
@@ -292,10 +293,10 @@ def _crossings(ts, vs, now, span=10.0, hi=0.5, lo=0.4):
 
 
 # =====================================================
-# ALERTAS CRÍTICAS — crit (alto) = rojo, crit_lo (bajo) = verde; con hold e histéresis
+# ALERTAS CRÍTICAS — crit (alto) = rojo, crit_lo (bajo) = verde. Pintan la traza de las gráficas
+# (dato crudo) y el número (con hold e histéresis); las tarjetas no cambian.
 # =====================================================
 ALERT_COLOR = {"hi": CRIT, "lo": OK}
-ALERT_LOOK = {None: (PANEL, BORDER, 1), "hi": (CRIT_BG, CRIT, 2), "lo": (OK_BG, OK, 2)}   # fondo, borde, grosor
 
 
 def _beyond(s, v):
@@ -1087,7 +1088,7 @@ class Dash:
 
     def _tile(self, s, x, y, w, h, window):
         c, S = self.c, self.S
-        card = self._rrect(x, y, x + w, y + h, S(14), fill=PANEL, outline=BORDER)
+        self._rrect(x, y, x + w, y + h, S(14), fill=PANEL, outline=BORDER)
         pad = S(26)
         name = _track(s["name"])
         c.create_text(x + pad, y + S(30), anchor="w", text=name, fill=TEXT2,
@@ -1108,7 +1109,7 @@ class Dash:
         c.create_line(box[0], box[1], box[2], box[1], fill=GRID)
         lw = max(2, S(2))
         line = c.create_line(0, 0, 0, 0, fill=TEXT, width=lw, state="hidden")
-        self.dyn.append((self._upd_tile, {"s": s, "card": card, "val": val, "line": line, "lw": lw, "runs": [],
+        self.dyn.append((self._upd_tile, {"s": s, "val": val, "line": line, "lw": lw, "runs": [],
                                           "box": box, "window": window}))
 
     def _build_graphs(self, v, sensors, area):
@@ -1132,7 +1133,7 @@ class Dash:
 
     def _graph_panel(self, s, x, y, w, h, iw, xs, window, ticks):
         c, S = self.c, self.S
-        card = self._rrect(x, y, x + w, y + h, S(14), fill=PANEL, outline=BORDER)
+        self._rrect(x, y, x + w, y + h, S(14), fill=PANEL, outline=BORDER)
         pad = S(26)
         c.create_text(x + pad, y + S(30), anchor="w", text=_track(s["name"]), fill=TEXT2,
                       font=self.f("sans", S(16), True))
@@ -1206,7 +1207,7 @@ class Dash:
             c.tag_lower(c.create_rectangle(x0 - S(4), y0b, x1 + S(2), y1b, fill=PLOT, outline=""), t_id)
         msg_bg = c.create_rectangle(0, 0, 0, 0, fill=PLOT, outline="", state="hidden")   # que no lo tache una línea
         msg = c.create_text((px0 + px1) / 2, (py0 + py1) / 2, text="", fill=STALE, font=self.f("sans", S(15), True))
-        self.dyn.append((self._upd_graph, {"s": s, "card": card, "val": val, "line": line, "lw": lw, "runs": [],
+        self.dyn.append((self._upd_graph, {"s": s, "val": val, "line": line, "lw": lw, "runs": [],
                                            "dot": dot, "msg": msg, "msg_bg": msg_bg, "stats": stats, "r": r,
                                            "window": window, "box": (px0, py0, px1, py1)}))
 
@@ -1279,42 +1280,57 @@ class Dash:
 
     @staticmethod
     def _trace(s, sd, now, window, box):
-        """(puntos x, y de la traza, valores, tramos fuera de umbral, lado del último punto).
+        """(puntos x, y de la traza, valores, tramos fuera de umbral, de qué lado queda el último punto).
 
-        Tramos: [(lado, [x, y, ...])], lado +1 = arriba de crit (rojo), −1 = abajo de crit_lo (verde).
-        Cada tramo empieza y termina justo donde la traza cruza el umbral (interpolación lineal sobre el
-        segmento que se dibuja), para que el cambio de color caiga sobre la línea del umbral. Dato crudo:
+        Tramos: [(lado, [x, y, ...])], lado 'hi' = en crit o arriba (rojo), 'lo' = en crit_lo o abajo (verde);
+        el lado del último punto es 'hi', 'lo' o None. Cada tramo empieza y termina justo donde el segmento
+        que se dibuja cruza la línea del umbral, para que el cambio de color caiga sobre ella. Dato crudo:
         aquí no hay hold."""
         x0, y0, x1, y1 = box
         t_min, k = now - window, (x1 - x0) / window
-        hi, lo = s.get("crit", math.inf), s.get("crit_lo", -math.inf)
-        pts, vals, runs = [], [], []
-        run, side = None, 0                            # tramo abierto y lado del punto anterior
-        px = py = pv = None
+        pts, vals = [], []
         for tv, v in zip(sd["t"], sd["v"]):
-            if tv < t_min:
-                continue
-            x, y = x0 + (tv - t_min) * k, _ymap(s, y0, y1, v)
-            z = 1 if v > hi else -1 if v < lo else 0
-            if z != side and pv is not None:           # cruzó un umbral entre el punto anterior y este
-                if side:                               # sale: cierra el tramo sobre su umbral
-                    f = ((hi if side > 0 else lo) - pv) / (v - pv)
-                    run += (px + f * (x - px), py + f * (y - py))
-                    runs.append((side, run))
-                    run = None
-                if z:                                  # entra: el tramo empieza sobre el umbral
-                    f = ((hi if z > 0 else lo) - pv) / (v - pv)
-                    run = [px + f * (x - px), py + f * (y - py)]
-            if z:
-                if run is None:                        # el primer punto de la ventana ya estaba fuera
-                    run = []
-                run += (x, y)
-            pts += (x, y)
-            vals.append(v)
-            px, py, pv, side = x, y, v, z
-        if run and len(run) >= 4:
-            runs.append((side, run))
-        return pts, vals, runs, side
+            if tv >= t_min:
+                pts += (x0 + (tv - t_min) * k, _ymap(s, y0, y1, v))
+                vals.append(v)
+        runs = []
+        if not vals or ("crit" not in s and "crit_lo" not in s):
+            return pts, vals, runs, None
+
+        def cut(i, limit):
+            """Punto del segmento i−1 → i (recto en pantalla) a la altura del umbral; si los dos extremos
+            quedaron recortados a la misma orilla de la gráfica, se interpola con los valores."""
+            ax, ay, bx, by = pts[2 * i - 2:2 * i + 2]
+            if abs(by - ay) > 1e-3:
+                f = (_ymap(s, y0, y1, limit) - ay) / (by - ay)
+            else:
+                f = (limit - vals[i - 1]) / (vals[i] - vals[i - 1])
+            f = min(1.0, max(0.0, f))
+            return ax + (bx - ax) * f, ay + (by - ay) * f
+
+        cur = _beyond(s, vals[0])
+        run = pts[0:2] if cur else None
+        for i in range(1, len(vals)):
+            nxt = _beyond(s, vals[i])
+            if nxt != cur:                             # umbrales que cruza el segmento, en orden
+                if vals[i] > vals[i - 1]:              # subiendo: sale de crit_lo y luego llega a crit
+                    steps = ([(s["crit_lo"], None)] if cur == "lo" else []) + \
+                            ([(s["crit"], "hi")] if nxt == "hi" else [])
+                else:                                  # bajando: sale de crit y luego llega a crit_lo
+                    steps = ([(s["crit"], None)] if cur == "hi" else []) + \
+                            ([(s["crit_lo"], "lo")] if nxt == "lo" else [])
+                for limit, kind in steps:
+                    p = cut(i, limit)
+                    if cur:                            # cierra el tramo de color
+                        run += p
+                        runs.append((cur, run))
+                    cur = kind
+                    run = list(p) if cur else None     # abre uno nuevo en el mismo punto
+            if cur:
+                run += pts[2 * i:2 * i + 2]
+        if cur and len(run) >= 4:
+            runs.append((cur, run))
+        return pts, vals, runs, cur
 
     def _upd_runs(self, d, runs):
         """Tramos rojos/verdes encima de la traza blanca: reusa los items y esconde los que sobran."""
@@ -1325,9 +1341,9 @@ class Dash:
             pool.append(item)
         for i, item in enumerate(pool):
             if i < len(runs):
-                side, coords = runs[i]
+                kind, coords = runs[i]
                 c.coords(item, *coords)
-                self._set(item, state="normal", fill=CRIT if side > 0 else OK)
+                self._set(item, state="normal", fill=ALERT_COLOR[kind])
             else:
                 self._set(item, state="hidden")
 
@@ -1341,12 +1357,11 @@ class Dash:
         return _fmt(s, sd["last"]), (STALE if stale else _zone_color(s, sd["last"], alert)), stale
 
     def _paint(self, d, s, sd, now):
-        """Número y tarjeta (fondo, borde) según la alerta crítica del sensor; devuelve si está obsoleto."""
+        """Número del color de la alerta crítica del sensor (o ámbar en warn); devuelve si está obsoleto.
+        La tarjeta no cambia: lo único más que se pinta por los umbrales es la traza de la gráfica."""
         alert = self.alerts[s["id"]].on if s["id"] in self.alerts else None
         text, color, stale = self._value(s, sd, now, alert)
         self._set(d["val"], text=text, fill=color)
-        fill, edge, width = ALERT_LOOK[alert]
-        self._set(d["card"], fill=fill, outline=edge, width=width)
         return stale
 
     def _upd_tile(self, d, snap, now):
@@ -1362,7 +1377,7 @@ class Dash:
     def _upd_graph(self, d, snap, now):
         s, sd, c = d["s"], snap[d["s"]["id"]], self.c
         stale = self._paint(d, s, sd, now)
-        pts, vals, runs, side = self._trace(s, sd, now, d["window"], d["box"])
+        pts, vals, runs, tail = self._trace(s, sd, now, d["window"], d["box"])
         shown = len(pts) >= 4
         if shown:
             c.coords(d["line"], *pts)
@@ -1370,7 +1385,7 @@ class Dash:
         state = "normal" if shown else "hidden"
         lc = STALE if stale else TEXT
         self._set(d["line"], state=state, fill=lc)
-        self._set(d["dot"], state=state, fill=lc if stale or not side else CRIT if side > 0 else OK)
+        self._set(d["dot"], state=state, fill=lc if stale or not tail else ALERT_COLOR[tail])   # color del final
         self._upd_runs(d, runs if shown and not stale else [])     # dato viejo: toda la traza gris
 
         if s["id"] == "steer" and steer_state["status"] in ("sin_sensor", "sin_iman"):
