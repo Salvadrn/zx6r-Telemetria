@@ -61,6 +61,14 @@ bool parse_size(const std::string& s, int& w, int& h) {
     return true;
 }
 
+// "300" -> 300: solo dígitos ASCII, de 0 a 99999 ms; false si está mal escrito
+bool parse_ms(const std::string& s, int& ms) {
+    if (s.empty() || s.size() > 5 || !std::all_of(s.begin(), s.end(), [](unsigned char c) { return std::isdigit(c); }))
+        return false;
+    ms = std::stoi(s);
+    return true;
+}
+
 std::string home_dir() {
     const char* h = std::getenv("HOME");
     if (h && *h) return h;
@@ -81,6 +89,10 @@ Config load_config() {
     const std::string size = env("OBD2_SIZE");
     if (!size.empty() && !parse_size(size, c.win_w, c.win_h))
         std::printf("[UI] OBD2_SIZE=%s no es ANCHOxALTO (p. ej. 1024x600); uso %dx%d\n", size.c_str(), c.win_w, c.win_h);
+    const std::string flash = env("OBD2_FLASH_MS");
+    if (!flash.empty() && !parse_ms(flash, c.flash_ms))
+        std::printf("[UI] OBD2_FLASH_MS=%s no son milisegundos (p. ej. 300; 0 = sin destello); uso %d\n", flash.c_str(),
+                    c.flash_ms);
     c.headless = env_flag("OBD2_HEADLESS");
     c.fps = std::clamp(env_int("OBD2_FPS", 30), 1, 240);
     c.db_path = expand_home(env("OBD2_DB", home_dir() + "/obd2_logs/telemetria.db"));
