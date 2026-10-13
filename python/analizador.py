@@ -62,6 +62,12 @@ if _flash and not re.fullmatch(r"[0-9]{1,5}", _flash):      # solo dígitos ASCI
     print(f"[UI] OBD2_FLASH_MS={_flash} no son milisegundos (p. ej. 300; 0 = sin destello); uso {FLASH_MS}")
 elif _flash:
     FLASH_MS = int(_flash)
+BTN_MS = 250                                                # OBD2_BTN_MS: ignora un segundo toque antes de esto; 0 = sin
+_btn = os.environ.get("OBD2_BTN_MS", "")                    # filtro (rebote de contactos pogo con la vibración)
+if _btn and not re.fullmatch(r"[0-9]{1,5}", _btn):
+    print(f"[UI] OBD2_BTN_MS={_btn} no son milisegundos (p. ej. 250; 0 = sin filtro); uso {BTN_MS}")
+elif _btn:
+    BTN_MS = int(_btn)
 HEADLESS  = os.environ.get("OBD2_HEADLESS", "0") == "1"    # sin pantalla: solo lee, guarda y sirve la web
 FONT_SANS = os.environ.get("OBD2_FONT_SANS", "")
 FONT_MONO = os.environ.get("OBD2_FONT_MONO", "")
@@ -923,6 +929,7 @@ class Dash:
         self._fonts = {}
         self.views = [v for v in VIEWS if any(SENSOR[i]["enabled"] for i in v["sensors"])]
         self.vi = 0
+        self._last_step = -1e9           # último cambio de vista aceptado (filtro OBD2_BTN_MS)
         self.cmds = queue.SimpleQueue()
         self._buttons = _attach_gpio(self.cmds)
         self._cache = {}
@@ -954,6 +961,10 @@ class Dash:
             steer_set_center()
 
     def step(self, d):
+        now = time.monotonic()
+        if BTN_MS and now - self._last_step < BTN_MS / 1000:   # rebote o toque doble: no cuenta
+            return
+        self._last_step = now
         self.vi = (self.vi + d) % len(self.views)   # el destello lo prende _frame al dibujar la vista nueva
 
     def quit(self):
