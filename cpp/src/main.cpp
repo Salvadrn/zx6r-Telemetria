@@ -93,6 +93,9 @@ Config load_config() {
     if (!flash.empty() && !parse_ms(flash, c.flash_ms))
         std::printf("[UI] OBD2_FLASH_MS=%s no son milisegundos (p. ej. 300; 0 = sin destello); uso %d\n", flash.c_str(),
                     c.flash_ms);
+    const std::string btn = env("OBD2_BTN_MS");
+    if (!btn.empty() && !parse_ms(btn, c.btn_ms))
+        std::printf("[UI] OBD2_BTN_MS=%s no son milisegundos (p. ej. 250; 0 = sin filtro); uso %d\n", btn.c_str(), c.btn_ms);
     c.headless = env_flag("OBD2_HEADLESS");
     c.fps = std::clamp(env_int("OBD2_FPS", 30), 1, 240);
     c.db_path = expand_home(env("OBD2_DB", home_dir() + "/obd2_logs/telemetria.db"));
