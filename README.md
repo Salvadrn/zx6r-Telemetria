@@ -25,7 +25,11 @@ Hay dos versiones con el mismo diseño, la misma base de datos y el mismo visor 
   <img src="docs/web-en-vivo.jpg" width="230" alt="Visor web en vivo en el celular">
   <img src="docs/web-sesion.jpg" width="230" alt="Sesión guardada en el visor web">
 </p>
-<p align="center"><sub>Tablero de la versión C++ y visor web en el celular. Todo con datos del simulador.</sub></p>
+<p align="center">
+  <img src="docs/tablero-alerta.png" width="380" alt="Líneas de la gráfica en rojo y verde al pasar los límites">
+  <img src="docs/tablero-destello.png" width="380" alt="Destello rojo al cambiar de vista">
+</p>
+<p align="center"><sub>Tablero de la versión C++ a 1024 × 600, el tamaño de la pantalla de 7″, y visor web en el celular. Todo con datos del simulador. Abajo, a la izquierda: al pasar un límite solo cambia de color la línea de la gráfica, roja arriba del límite alto y verde abajo del bajo (en esta foto los límites están bajados para que se vea). A la derecha: el destello rojo al cambiar de vista, que dura 0.3 s (aquí alargado para poder capturarlo).</sub></p>
 
 ## Qué hace
 
