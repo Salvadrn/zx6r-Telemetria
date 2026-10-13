@@ -292,6 +292,7 @@ Todo se configura con variables de entorno, con los mismos nombres en las dos ve
 | `OBD2_WINDOWED` | `0` | `1` = ventana en vez de pantalla completa |
 | `OBD2_SIZE` | `1280x720` | tamaño de esa ventana, `ANCHOxALTO`; `1024x600` = la pantalla de 7" de la moto. En pantalla completa no cuenta: toma el tamaño de la pantalla |
 | `OBD2_FLASH_MS` | `300` | duración en milisegundos del destello rojo al cambiar de vista; `0` lo apaga |
+| `OBD2_BTN_MS` | `250` | ignora otro cambio de vista que llegue antes de estos milisegundos (rebote de los contactos pogo del manubrio con la vibración); `0` lo apaga |
 | `OBD2_HEADLESS` | `0` | `1` = sin pantalla: solo lee, guarda y sirve la web |
 | `OBD2_FPS` | `12` Python · `30` C++ | cuadros por segundo de la pantalla |
 | `OBD2_DB` | `~/obd2_logs/telemetria.db` | archivo SQLite |
