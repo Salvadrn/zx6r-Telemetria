@@ -13,6 +13,7 @@ struct Config {
     bool windowed = false;                  // OBD2_WINDOWED=1: ventana en vez de pantalla completa
     int win_w = 1280, win_h = 720;          // OBD2_SIZE="1024x600": tamaño de esa ventana (default 1280x720)
     int flash_ms = 300;                     // OBD2_FLASH_MS: destello rojo al cambiar de vista (0 = sin destello)
+    int btn_ms = 250;                       // OBD2_BTN_MS: ignora otro cambio de vista antes de esto (0 = sin filtro)
     bool headless = false;                  // OBD2_HEADLESS=1: sin pantalla (lee, guarda y sirve la web)
     int fps = 30;                           // OBD2_FPS
     std::string db_path;                    // OBD2_DB (default ~/obd2_logs/telemetria.db)
