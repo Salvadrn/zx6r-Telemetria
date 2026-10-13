@@ -81,17 +81,17 @@ Para ver cómo se ve cada resultado sin la moto: `python3 tools/pretest.py --dem
 
 ## Qué comprar
 
-La lista completa está en **[`BOM.xlsx`](BOM.xlsx)** (Excel) y en [`BOM.csv`](BOM.csv), con el precio que muestra cada tienda (en dólares para Mouser, Pololu y K&J), su equivalente en pesos y la liga de cada pieza. Los precios se revisaron abriendo cada liga el 2026-10-06 (el ventilador, el 2026-10-09); en MercadoLibre cambian seguido. El Excel calcula los totales solo y tiene una columna de estado (Pendiente / Pedido / Llegó) para ir marcando lo que compras. Va en fases:
+La lista completa está en **[`BOM.xlsx`](BOM.xlsx)** (Excel) y en [`BOM.csv`](BOM.csv), con el precio de cada pieza en pesos y su liga. Todo es de Amazon México y MercadoLibre. Los precios se revisaron abriendo cada liga el 2026-10-13 y cambian seguido. El Excel calcula los totales solo y tiene una columna de estado (Pendiente / Pedido / Llegó) para ir marcando lo que compras. Va en fases:
 
 | Fase | Qué | Aprox. |
 |---|---|---|
-| 1 · Prueba | Solo el cable adaptador KDS → OBD2, para ver si tu Steren habla con la moto | $616 |
-| 2 · Montaje | microSD, ventilador de la Pi 5, energía, caja, botones, sensor de dirección y cableado | ~$4,470 + envíos |
-| 3 · Condicional | OBDLink EX, solo si el Steren no pasa la prueba | $1,719 |
+| 1 · Prueba | Solo el cable adaptador KDS → OBD2, para ver si tu Steren habla con la moto | ~$463 |
+| 2 · Montaje | microSD, ventilador y pila del reloj de la Pi 5, energía, cables HDMI y pasamuros, caja, botones, sensor de dirección y cableado | ~$5,451 + envíos |
+| 3 · Condicional | OBDLink EX (~$1,668), solo si el Steren no pasa la prueba, y cable micro-USB a 2 hilos (~$456), solo si tu pantalla es micro-USB | hasta ~$2,124 |
 
 La computadora no se compra: es la Raspberry Pi 5 de 8 GB del proyecto ISIC (ver abajo). La pantalla tampoco: es la tuya, HDMI de 7″ y 1024 × 600 con touch.
 
-Los envíos no están incluidos: Pololu y K&J mandan desde EE. UU., y 330ohms desde México. En Mouser el envío es gratis desde US$100, y lo que va de Mouser suma ~US$87.
+Los envíos no están incluidos.
 
 ## Conexión en la moto
 
