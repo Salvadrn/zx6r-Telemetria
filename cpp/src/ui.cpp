@@ -518,6 +518,7 @@ private:
     std::vector<const View*> views_;
     int vi_ = 0;
     int shown_vi_ = 0;              // vista del cuadro anterior: si cambia, destella
+    double last_step_ = -1e9;       // s (GetTime) del último cambio de vista aceptado: filtro OBD2_BTN_MS
     double flash_until_ = -1;       // s (tel_.elapsed()) hasta el que dura el destello de la vista nueva
     float flash_ = 0;               // opacidad del destello en este cuadro: 1 al cambiar de vista, baja lineal a 0
     std::array<AlertTracker, SENSOR_COUNT> alerts_;   // alertas críticas, se vea o no el sensor
@@ -968,9 +969,14 @@ bool Dash::run(const std::atomic<bool>& quit) {
         if (snapshot) {
             vi_ = static_cast<int>(shot);   // capturas en orden aunque llegue una tecla a la ventana
         } else {
-            if (key_pressed({KEY_RIGHT, KEY_SPACE, KEY_ENTER, KEY_KP_ENTER, KEY_PAGE_DOWN, KEY_DOWN, KEY_N}))
-                vi_ = (vi_ + 1) % nviews;
-            if (key_pressed({KEY_LEFT, KEY_BACKSPACE, KEY_PAGE_UP, KEY_UP, KEY_P})) vi_ = (vi_ + nviews - 1) % nviews;
+            int step = 0;
+            if (key_pressed({KEY_RIGHT, KEY_SPACE, KEY_ENTER, KEY_KP_ENTER, KEY_PAGE_DOWN, KEY_DOWN, KEY_N})) step = 1;
+            if (key_pressed({KEY_LEFT, KEY_BACKSPACE, KEY_PAGE_UP, KEY_UP, KEY_P})) step = -1;
+            const double t = GetTime();   // rebote o toque doble (contactos pogo con la vibración): no cuenta
+            if (step != 0 && (cfg_.btn_ms == 0 || t - last_step_ >= cfg_.btn_ms / 1000.0)) {
+                last_step_ = t;
+                vi_ = (vi_ + nviews + step) % nviews;
+            }
             if (IsKeyPressed(KEY_C)) steer_.set_center();   // teclado de taller: fija el centro de la dirección
         }
 
